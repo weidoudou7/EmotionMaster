@@ -17,6 +17,13 @@ struct HomePage {
       })
   }
 
+  // 导航到个人资料页面
+  navigateToProfile() {
+    let uiContext: UIContext = this.getUIContext();
+    let router = uiContext.getRouter();
+    router.pushUrl({ url: 'pages/yourpage' });
+  }
+
   build() {
     Column() {
       // 标题
@@ -62,6 +69,17 @@ struct HomePage {
 
       // 主题切换
       this.ThemeToggleButton()
+
+      // 个人资料导航按钮
+      Button('👤 个人资料')
+        .width(200)
+        .height(40)
+        .margin({ top: 20 })
+        .backgroundColor('#2980B9')
+        .fontColor('#FFFFFF')
+        .onClick(() => {
+          this.navigateToProfile()
+        })
     }
     .width('100%')
     .height('100%')

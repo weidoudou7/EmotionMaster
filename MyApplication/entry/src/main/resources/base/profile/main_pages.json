@@ -1,6 +1,7 @@
 {
   "src": [
-    "pages/homepage"
-
+    "pages/homepage",
+    "pages/yourpage",
+    "pages/infopage"
   ]
 }
