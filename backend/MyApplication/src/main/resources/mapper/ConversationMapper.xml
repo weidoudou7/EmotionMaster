@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ai.companion.mapper.ConversationMapper">
+    <resultMap id="ConversationResultMap" type="com.ai.companion.entity.Conversation">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="aiRoleId" column="ai_role_id"/>
+        <result property="turns" column="turns"/>
+        <result property="title" column="title"/>
+        <result property="startTime" column="start_time"/>
+        <result property="lastActive" column="last_active"/>
+        <result property="moodTag" column="mood_tag"/>
+        <result property="mode" column="mode"/>
+        <result property="planetGrowth" column="planet_growth"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="ConversationResultMap">
+        SELECT * FROM conversations WHERE id = #{id}
+    </select>
+
+    <select id="selectByUserId" resultMap="ConversationResultMap">
+        SELECT * FROM conversations WHERE user_id = #{userId}
+    </select>
+
+    <insert id="insertConversation" parameterType="com.ai.companion.entity.Conversation" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO conversations (user_id, ai_role_id, turns, title, start_time, last_active, mood_tag, mode, planet_growth)
+        VALUES (#{userId}, #{aiRoleId}, #{turns}, #{title}, #{startTime}, #{lastActive}, #{moodTag}, #{mode}, #{planetGrowth})
+    </insert>
+
+    <update id="updateConversation" parameterType="com.ai.companion.entity.Conversation">
+        UPDATE conversations
+        SET user_id=#{userId}, ai_role_id=#{aiRoleId}, turns=#{turns}, title=#{title}, start_time=#{startTime},
+            last_active=#{lastActive}, mood_tag=#{moodTag}, mode=#{mode}, planet_growth=#{planetGrowth}
+        WHERE id=#{id}
+    </update>
+
+    <delete id="deleteConversation">
+        DELETE FROM conversations WHERE id=#{id}
+    </delete>
+
+    <select id="selectAll" resultMap="ConversationResultMap">
+        SELECT * FROM conversations
+    </select>
+</mapper> 

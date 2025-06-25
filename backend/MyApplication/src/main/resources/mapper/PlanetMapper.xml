@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ai.companion.mapper.PlanetMapper">
+    <resultMap id="PlanetResultMap" type="com.ai.companion.entity.Planet">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="level" column="level"/>
+        <result property="experience" column="experience"/>
+        <result property="name" column="name"/>
+        <result property="appearance" column="appearance"/>
+        <result property="unlockedItems" column="unlocked_items"/>
+        <result property="lastUpdated" column="last_updated"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="PlanetResultMap">
+        SELECT * FROM planets WHERE id = #{id}
+    </select>
+
+    <select id="selectByUserId" resultMap="PlanetResultMap">
+        SELECT * FROM planets WHERE user_id = #{userId}
+    </select>
+
+    <insert id="insertPlanet" parameterType="com.ai.companion.entity.Planet" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO planets (user_id, level, experience, name, appearance, unlocked_items, last_updated)
+        VALUES (#{userId}, #{level}, #{experience}, #{name}, #{appearance}, #{unlockedItems}, #{lastUpdated})
+    </insert>
+
+    <update id="updatePlanet" parameterType="com.ai.companion.entity.Planet">
+        UPDATE planets
+        SET user_id=#{userId}, level=#{level}, experience=#{experience}, name=#{name}, appearance=#{appearance},
+            unlocked_items=#{unlockedItems}, last_updated=#{lastUpdated}
+        WHERE id=#{id}
+    </update>
+
+    <delete id="deletePlanet">
+        DELETE FROM planets WHERE id=#{id}
+    </delete>
+
+    <select id="selectAll" resultMap="PlanetResultMap">
+        SELECT * FROM planets
+    </select>
+</mapper> 

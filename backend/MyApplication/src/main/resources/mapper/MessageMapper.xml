@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ai.companion.mapper.MessageMapper">
+    <resultMap id="MessageResultMap" type="com.ai.companion.entity.Message">
+        <id property="id" column="id"/>
+        <result property="conversationId" column="conversation_id"/>
+        <result property="senderType" column="sender_type"/>
+        <result property="content" column="content"/>
+        <result property="audioUrl" column="audio_url"/>
+        <result property="sentimentScore" column="sentiment_score"/>
+        <result property="topicTag" column="topic_tag"/>
+        <result property="timestamp" column="timestamp"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="MessageResultMap">
+        SELECT * FROM messages WHERE id = #{id}
+    </select>
+
+    <select id="selectByConversationId" resultMap="MessageResultMap">
+        SELECT * FROM messages WHERE conversation_id = #{conversationId}
+    </select>
+
+    <insert id="insertMessage" parameterType="com.ai.companion.entity.Message" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO messages (conversation_id, sender_type, content, audio_url, sentiment_score, topic_tag, timestamp)
+        VALUES (#{conversationId}, #{senderType}, #{content}, #{audioUrl}, #{sentimentScore}, #{topicTag}, #{timestamp})
+    </insert>
+
+    <update id="updateMessage" parameterType="com.ai.companion.entity.Message">
+        UPDATE messages
+        SET conversation_id=#{conversationId}, sender_type=#{senderType}, content=#{content}, audio_url=#{audioUrl},
+            sentiment_score=#{sentimentScore}, topic_tag=#{topicTag}, timestamp=#{timestamp}
+        WHERE id=#{id}
+    </update>
+
+    <delete id="deleteMessage">
+        DELETE FROM messages WHERE id=#{id}
+    </delete>
+
+    <select id="selectAll" resultMap="MessageResultMap">
+        SELECT * FROM messages
+    </select>
+</mapper> 

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ai.companion.mapper.UserMapper">
+    <resultMap id="UserResultMap" type="com.ai.companion.entity.User">
+        <id property="id" column="id"/>
+        <result property="userUID" column="uid"/>
+        <result property="userName" column="username"/>
+        <result property="gender" column="gender"/>
+        <result property="privacyVisible" column="is_private"/>
+        <result property="signature" column="signature"/>
+        <result property="email" column="email"/>
+        <result property="level" column="level"/>
+        <result property="registerTime" column="created_at"/>
+        <result property="updateTime" column="last_login"/>
+        <result property="userAvatar" column="profile_image"/>
+    </resultMap>
+
+    <select id="selectByUID" resultMap="UserResultMap">
+        SELECT * FROM users WHERE uid = #{userUID}
+    </select>
+
+    <insert id="insertUser" parameterType="com.ai.companion.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (uid, username, gender, is_private, signature, email, level, created_at, last_login, profile_image)
+        VALUES (#{userUID}, #{userName}, #{gender}, #{privacyVisible}, #{signature}, #{email}, #{level}, #{registerTime}, #{updateTime}, #{userAvatar})
+    </insert>
+
+    <update id="updateUser" parameterType="com.ai.companion.entity.User">
+        UPDATE users
+        SET username=#{userName}, gender=#{gender}, is_private=#{privacyVisible}, signature=#{signature},
+            email=#{email}, level=#{level}, last_login=#{updateTime}, profile_image=#{userAvatar}
+        WHERE uid=#{userUID}
+    </update>
+
+    <delete id="deleteUser">
+        DELETE FROM users WHERE uid=#{userUID}
+    </delete>
+
+    <select id="selectAll" resultMap="UserResultMap">
+        SELECT * FROM users
+    </select>
+</mapper> 
