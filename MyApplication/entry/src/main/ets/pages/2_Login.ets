@@ -1,3 +1,5 @@
+import router from '@ohos.router';
+
 @Entry
 @Component
 struct LoginPage {
@@ -39,16 +41,9 @@ struct LoginPage {
         .backgroundColor('#14DCA0')
         .borderRadius(28)
         .margin({ bottom: 20 })
-
-      // Sign up 按钮
-      Button('注册')
-        .width('80%')
-        .height(56)
-        .fontSize(20)
-        .fontWeight(FontWeight.Bold)
-        .fontColor('#14DCA0')
-        .backgroundColor('#E6FCF5')
-        .borderRadius(28)
+        .onClick(() => {
+          router.pushUrl({ url: 'pages/3_EmailConfirm' });
+        })
     }
     .width('100%')
     .height('100%')
