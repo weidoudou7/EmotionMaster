@@ -1,12 +1,7 @@
 // userdata.ets
 // 用户数据模型
 
-export interface UserInfo {
-  userName: string;
-  userUID: string;
-  userAvatar: string;
-  isPrivacyVisible: boolean;
-}
+import { UserInfo } from '../common/types';
 
 export class UserData {
   userName: string = '用户';
@@ -47,7 +42,12 @@ export class UserData {
       userName: this.userName,
       userUID: this.userUID,
       userAvatar: this.userAvatar,
-      isPrivacyVisible: this.isPrivacyVisible
+      isPrivacyVisible: this.isPrivacyVisible,
+      level: '1',
+      gender: '保密',
+      signature: '这个人很懒，什么都没有留下',
+      registerTime: new Date().toISOString(),
+      updateTime: new Date().toISOString()
     };
   }
 }

@@ -4,6 +4,8 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import promptAction from '@ohos.promptAction';
 import picker from '@ohos.file.picker';
 import { globalUserData } from '../models/userdata';
+import { ApiService } from '../service/apiservice';
+import { UserInfo } from '../common/types';
 
 @Entry
 @Component
@@ -14,6 +16,36 @@ struct InfoPage {
   @State isPrivacyVisible: boolean = globalUserData.isPrivacyVisible; // 用户隐私是否可见
   @State showNameDialog: boolean = false; // 显示名称编辑对话框
   @State tempName: string = ''; // 临时存储编辑的名称
+  @State isLoading: boolean = false; // 加载状态
+  @State userInfo: UserInfo | null = null; // 用户信息
+
+  // 页面生命周期
+  aboutToAppear() {
+    this.loadUserInfo();
+  }
+
+  // 加载用户信息
+  async loadUserInfo() {
+    try {
+      this.isLoading = true;
+      const userInfo = await ApiService.getUserInfo(this.userUID);
+      this.userInfo = userInfo;
+      this.userName = userInfo.userName;
+      this.userUID = userInfo.userUID;
+      this.isPrivacyVisible = userInfo.isPrivacyVisible;
+      // 如果有头像URL，更新头像显示
+      if (userInfo.userAvatar && userInfo.userAvatar !== '/avatars/default.png') {
+        // 注意：这里需要处理字符串到Resource的转换
+        // 暂时保持使用默认图片，实际项目中需要根据URL加载图片
+        this.userAvatar = $r("app.media.image");
+      }
+    } catch (error) {
+      console.error('加载用户信息失败:', error);
+      promptAction.showToast({ message: '加载用户信息失败' });
+    } finally {
+      this.isLoading = false;
+    }
+  }
 
   // 头像选择器
   async selectAvatar() {
@@ -25,10 +57,14 @@ struct InfoPage {
       };
       let photoViewPicker = await photoPicker.select(photoSelectOptions);
       if (photoViewPicker && photoViewPicker.photoUris && photoViewPicker.photoUris.length > 0) {
-        // 这里可以处理选中的图片，暂时使用默认图片
+        // 这里应该上传到后端，暂时使用默认图片
         this.userAvatar = $r("app.media.image");
-        globalUserData.updateUserAvatar('new_avatar_path');
         promptAction.showToast({ message: '头像更新成功' });
+        
+        // 更新后端用户信息
+        await ApiService.updateUserInfo(this.userUID, {
+          userAvatar: this.userAvatar.toString()
+        });
       }
     } catch (error) {
       console.error('选择头像失败:', error);
@@ -43,11 +79,21 @@ struct InfoPage {
   }
 
   // 确认编辑用户名称
-  confirmEditName() {
+  async confirmEditName() {
     if (this.tempName.trim() !== '') {
-      this.userName = this.tempName.trim();
-      globalUserData.updateUserName(this.userName);
-      promptAction.showToast({ message: '用户名称更新成功' });
+      try {
+        this.isLoading = true;
+        const updatedUser = await ApiService.updateUserInfo(this.userUID, {
+          userName: this.tempName.trim()
+        });
+        this.userName = updatedUser.userName;
+        promptAction.showToast({ message: '用户名称更新成功' });
+      } catch (error) {
+        console.error('更新用户名称失败:', error);
+        promptAction.showToast({ message: '更新用户名称失败' });
+      } finally {
+        this.isLoading = false;
+      }
     }
     this.showNameDialog = false;
   }
@@ -58,13 +104,22 @@ struct InfoPage {
   }
 
   // 切换隐私可见性
-  togglePrivacy() {
-    this.isPrivacyVisible = !this.isPrivacyVisible;
-    globalUserData.togglePrivacy();
-    promptAction.showToast({ 
-      message: this.isPrivacyVisible ? '隐私已隐藏' : '隐私已可见' 
-    });
+  async togglePrivacy() {
+    try {
+      this.isLoading = true;
+      const newPrivacyState = await ApiService.togglePrivacy(this.userUID);
+      this.isPrivacyVisible = newPrivacyState;
+      promptAction.showToast({ 
+        message: this.isPrivacyVisible ? '隐私已隐藏' : '隐私已可见' 
+      });
+    } catch (error) {
+      console.error('切换隐私状态失败:', error);
+      promptAction.showToast({ message: '切换隐私状态失败' });
+    } finally {
+      this.isLoading = false;
+    }
   }
+
   build() {
     Stack() {
       Column() {
@@ -79,89 +134,157 @@ struct InfoPage {
         .padding({ left: 20, right: 20, top: 20, bottom: 20 })
         .justifyContent(FlexAlign.Start)
 
-        // 用户信息列表
-        List() {
-          // 头像项
-          ListItem() {
-            Row() {
-              Text('头像')
-                .fontSize(18)
-                .fontWeight(FontWeight.Medium)
-                .width('30%')
-              
-              Image(this.userAvatar)
-                .width(60)
-                .height(60)
-                .borderRadius(30)
-                .margin({ left: 20 })
-              
-              Text('点击修改')
-                .fontSize(14)
-                .fontColor('#666666')
-                .margin({ left: 'auto' })
-            }
-            .width('100%')
-            .padding({ left: 20, right: 20, top: 15, bottom: 15 })
-            .backgroundColor('#FFFFFF')
-            .borderRadius(8)
-            .onClick(() => this.selectAvatar())
+        // 加载状态
+        if (this.isLoading) {
+          Column() {
+            LoadingProgress()
+              .width(50)
+              .height(50)
+            Text('处理中...')
+              .fontSize(16)
+              .fontColor('#666')
+              .margin({ top: 10 })
           }
+          .width('100%')
+          .height('100%')
+          .justifyContent(FlexAlign.Center)
+        } else {
+          // 用户信息列表
+          List() {
+            // 头像项
+            ListItem() {
+              Row() {
+                Text('头像')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Medium)
+                  .width('30%')
+                
+                Image(this.userAvatar)
+                  .width(60)
+                  .height(60)
+                  .borderRadius(30)
+                  .margin({ left: 20 })
+                
+                Text('点击修改')
+                  .fontSize(14)
+                  .fontColor('#666666')
+                  .margin({ left: 'auto' })
+              }
+              .width('100%')
+              .padding({ left: 20, right: 20, top: 15, bottom: 15 })
+              .backgroundColor('#FFFFFF')
+              .borderRadius(8)
+              .onClick(() => this.selectAvatar())
+            }
 
-          // 用户名称项
-          ListItem() {
-            Row() {
-              Text('用户名称')
-                .fontSize(18)
-                .fontWeight(FontWeight.Medium)
-                .width('30%')
-              
-              Text(this.userName)
-                .fontSize(16)
-                .fontColor('#333333')
-                .margin({ left: 20 })
-              
-              Text('点击修改')
-                .fontSize(14)
-                .fontColor('#666666')
-                .margin({ left: 'auto' })
+            // 用户名称项
+            ListItem() {
+              Row() {
+                Text('用户名称')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Medium)
+                  .width('30%')
+                
+                Text(this.userName)
+                  .fontSize(16)
+                  .fontColor('#333333')
+                  .margin({ left: 20 })
+                
+                Text('点击修改')
+                  .fontSize(14)
+                  .fontColor('#666666')
+                  .margin({ left: 'auto' })
+              }
+              .width('100%')
+              .padding({ left: 20, right: 20, top: 15, bottom: 15 })
+              .backgroundColor('#FFFFFF')
+              .borderRadius(8)
+              .onClick(() => this.editUserName())
             }
-            .width('100%')
-            .padding({ left: 20, right: 20, top: 15, bottom: 15 })
-            .backgroundColor('#FFFFFF')
-            .borderRadius(8)
-            .onClick(() => this.editUserName())
-          }
 
-          // 隐私可见性项
-          ListItem() {
-            Row() {
-              Text('隐私可见性')
-                .fontSize(18)
-                .fontWeight(FontWeight.Medium)
-                .width('30%')
-              
-              Text(this.isPrivacyVisible ? '隐藏' : '可见')
-                .fontSize(16)
-                .fontColor(this.isPrivacyVisible ? '#FF4D4F' : '#52C41A')
-                .margin({ left: 20 })
-              
-              Toggle({ type: ToggleType.Switch, isOn: !this.isPrivacyVisible })
-                .margin({ left: 'auto' })
-                .onChange((isOn: boolean) => {
-                  this.isPrivacyVisible = !isOn;
-                  globalUserData.togglePrivacy();
-                })
+            // 隐私可见性项
+            ListItem() {
+              Row() {
+                Text('隐私可见性')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Medium)
+                  .width('30%')
+                
+                Text(this.isPrivacyVisible ? '隐藏' : '可见')
+                  .fontSize(16)
+                  .fontColor(this.isPrivacyVisible ? '#FF4D4F' : '#52C41A')
+                  .margin({ left: 20 })
+                
+                Toggle({ type: ToggleType.Switch, isOn: !this.isPrivacyVisible })
+                  .margin({ left: 'auto' })
+                  .onChange((isOn: boolean) => {
+                    this.togglePrivacy();
+                  })
+              }
+              .width('100%')
+              .padding({ left: 20, right: 20, top: 15, bottom: 15 })
+              .backgroundColor('#FFFFFF')
+              .borderRadius(8)
             }
-            .width('100%')
-            .padding({ left: 20, right: 20, top: 15, bottom: 15 })
-            .backgroundColor('#FFFFFF')
-            .borderRadius(8)
-            .onClick(() => this.togglePrivacy())
+
+            // 性别项
+            ListItem() {
+              Row() {
+                Text('性别')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Medium)
+                  .width('30%')
+                
+                Text(this.userInfo?.gender || '未设置')
+                  .fontSize(16)
+                  .fontColor('#333333')
+                  .margin({ left: 20 })
+                
+                Text('点击修改')
+                  .fontSize(14)
+                  .fontColor('#666666')
+                  .margin({ left: 'auto' })
+              }
+              .width('100%')
+              .padding({ left: 20, right: 20, top: 15, bottom: 15 })
+              .backgroundColor('#FFFFFF')
+              .borderRadius(8)
+              .onClick(() => {
+                promptAction.showToast({ message: '性别修改功能开发中...' });
+              })
+            }
+
+            // 个性签名项
+            ListItem() {
+              Row() {
+                Text('个性签名')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Medium)
+                  .width('30%')
+                
+                Text(this.userInfo?.signature || '这个人很懒，什么都没留下~')
+                  .fontSize(16)
+                  .fontColor('#333333')
+                  .margin({ left: 20 })
+                
+                Text('点击修改')
+                  .fontSize(14)
+                  .fontColor('#666666')
+                  .margin({ left: 'auto' })
+              }
+              .width('100%')
+              .padding({ left: 20, right: 20, top: 15, bottom: 15 })
+              .backgroundColor('#FFFFFF')
+              .borderRadius(8)
+              .onClick(() => {
+                promptAction.showToast({ message: '个性签名修改功能开发中...' });
+              })
+            }
           }
+          .width('100%')
+          .padding({ left: 20, right: 20 })
+          .margin({ top: 20 })
         }
-        .width('100%')
-        .padding({ left: 20, right: 20 })
-        .margin({ top: 20 })
       }
       .width('100%')
       .height('100%')

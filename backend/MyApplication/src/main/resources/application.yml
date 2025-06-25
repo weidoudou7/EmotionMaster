@@ -7,6 +7,20 @@ spring:
         options:
           model: deepseek-ai/DeepSeek-R1-0528-Qwen3-8B #模型名称
           temperature: 0.7  #模型温度，温度越高，结果越随机
+  
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
+
+# 服务器配置
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
 logging:
   level:
     org.springframework.ai.chat.client.advisor: debug

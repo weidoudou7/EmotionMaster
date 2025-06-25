@@ -1,0 +1,234 @@
+import { globalUserData } from '../models/userdata';
+import { Config } from '../common/config';
+import { UserInfo, UpdateUserRequest, ApiResponse } from '../common/types';
+import http from '@ohos.net.http';
+
+// API基础配置 - 从配置文件获取
+const API_BASE_URL = Config.getApiBaseUrl();
+
+// 定义HTTP请求选项接口
+interface HttpRequestOptions {
+  method?: http.RequestMethod;
+  header?: Record<string, string>;
+  body?: string;
+}
+
+/**
+ * API服务类
+ */
+export class ApiService {
+  
+  /**
+   * 通用HTTP请求方法
+   */
+  private static async request<T>(
+    url: string, 
+    options: HttpRequestOptions = {}
+  ): Promise<ApiResponse<T>> {
+    try {
+      const httpRequest = http.createHttp();
+      
+      // 设置请求头
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 合并自定义请求头
+      const customHeader = options.header ?? {};
+      Object.keys(customHeader).forEach(key => {
+        headers[key] = customHeader[key];
+      });
+
+      // 设置请求选项
+      const requestOptions: http.HttpRequestOptions = {
+        method: options.method || http.RequestMethod.GET,
+        header: headers,
+        readTimeout: Config.getTimeout(),
+        connectTimeout: Config.getTimeout()
+      };
+
+      // 如果有请求体，添加到选项中
+      if (options.body) {
+        requestOptions.extraData = options.body;
+      }
+
+      const response = await httpRequest.request(url, requestOptions);
+      httpRequest.destroy();
+
+      if (response.responseCode !== 200) {
+        throw new Error(`HTTP error! status: ${response.responseCode}`);
+      }
+
+      const result: ApiResponse<T> = JSON.parse(response.result.toString());
+      
+      // 调试模式下的日志
+      if (Config.isDebug()) {
+        console.log(`API请求: ${url}`, result);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('API请求失败:', error);
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error('Unknown error occurred');
+      }
+    }
+  }
+
+  /**
+   * 获取用户信息
+   */
+  static async getUserInfo(userUID: string): Promise<UserInfo> {
+    const response = await ApiService.request<UserInfo>(`${API_BASE_URL}/user/${userUID}`);
+    if (response.success) {
+      // 同步到前端全局状态
+      globalUserData.updateUserName(response.data.userName);
+      globalUserData.updateUserUID(response.data.userUID);
+      globalUserData.updateUserAvatar(response.data.userAvatar);
+      if (response.data.isPrivacyVisible !== globalUserData.isPrivacyVisible) {
+        globalUserData.togglePrivacy();
+      }
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to get user info');
+    }
+  }
+
+  /**
+   * 更新用户信息
+   */
+  static async updateUserInfo(userUID: string, userData: UpdateUserRequest): Promise<UserInfo> {
+    const response = await ApiService.request<UserInfo>(`${API_BASE_URL}/user/${userUID}`, {
+      method: http.RequestMethod.PUT,
+      body: JSON.stringify(userData)
+    });
+
+    if (response.success) {
+      // 同步到前端全局状态
+      if (userData.userName) {
+        globalUserData.updateUserName(userData.userName);
+      }
+      if (userData.userAvatar) {
+        globalUserData.updateUserAvatar(userData.userAvatar);
+      }
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to update user info');
+    }
+  }
+
+  /**
+   * 上传用户头像 (简化版本，使用base64)
+   */
+  static async uploadAvatar(userUID: string, imageData: string): Promise<string> {
+    try {
+      const response = await ApiService.request<string>(`${API_BASE_URL}/user/${userUID}/avatar`, {
+        method: http.RequestMethod.POST,
+        body: JSON.stringify({ imageData: imageData })
+      });
+
+      if (response.success) {
+        // 同步到前端全局状态
+        globalUserData.updateUserAvatar(response.data);
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to upload avatar');
+      }
+    } catch (error) {
+      console.error('头像上传失败:', error);
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error('Avatar upload failed');
+      }
+    }
+  }
+
+  /**
+   * 切换隐私可见性
+   */
+  static async togglePrivacy(userUID: string): Promise<boolean> {
+    const response = await ApiService.request<boolean>(`${API_BASE_URL}/user/${userUID}/privacy/toggle`, {
+      method: http.RequestMethod.POST
+    });
+
+    if (response.success) {
+      // 同步到前端全局状态
+      globalUserData.togglePrivacy();
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to toggle privacy');
+    }
+  }
+
+  /**
+   * 创建新用户
+   */
+  static async createUser(userUID: string, userName: string): Promise<UserInfo> {
+    const response = await ApiService.request<UserInfo>(`${API_BASE_URL}/user/create?userUID=${userUID}&userName=${encodeURIComponent(userName)}`, {
+      method: http.RequestMethod.POST
+    });
+
+    if (response.success) {
+      // 同步到前端全局状态
+      globalUserData.updateUserName(response.data.userName);
+      globalUserData.updateUserUID(response.data.userUID);
+      globalUserData.updateUserAvatar(response.data.userAvatar);
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to create user');
+    }
+  }
+
+  /**
+   * 健康检查
+   */
+  static async healthCheck(): Promise<boolean> {
+    try {
+      const response = await ApiService.request<string>(`${API_BASE_URL}/user/health`);
+      return response.success;
+    } catch (error) {
+      console.error('健康检查失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * AI聊天接口
+   */
+  static async chatWithAI(prompt: string, chatId: string, identity: string = 'default'): Promise<string> {
+    const url = `${API_BASE_URL}/ai/chat/${identity}?prompt=${encodeURIComponent(prompt)}&chatId=${encodeURIComponent(chatId)}`;
+    const response = await ApiService.request<string>(url, {
+      method: http.RequestMethod.POST
+    });
+    return response.data;
+  }
+
+  /**
+   * 获取AI身份列表
+   */
+  static async getAIIdentities(): Promise<string[]> {
+    const response = await ApiService.request<string[]>(`${API_BASE_URL}/ai/identities`);
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to get AI identities');
+    }
+  }
+
+  /**
+   * 获取当前服务器地址
+   */
+  static getServerUrl(): string {
+    return API_BASE_URL;
+  }
+
+  /**
+   * 获取当前环境信息
+   */
+  static getEnvironmentInfo(): string {
+    return `环境: ${Config.getCurrentEnv()}, 服务器: ${API_BASE_URL}`;
+  }
+}

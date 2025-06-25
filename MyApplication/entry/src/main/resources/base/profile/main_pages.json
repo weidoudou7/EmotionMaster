@@ -2,6 +2,7 @@
   "src": [
     "pages/homepage",
     "pages/yourpage",
-    "pages/infopage"
+    "pages/infopage",
+    "pages/serverconfig"
   ]
 }

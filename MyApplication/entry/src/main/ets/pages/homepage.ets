@@ -24,6 +24,13 @@ struct HomePage {
     router.pushUrl({ url: 'pages/yourpage' });
   }
 
+  // 导航到服务器配置页面
+  navigateToServerConfig() {
+    let uiContext: UIContext = this.getUIContext();
+    let router = uiContext.getRouter();
+    router.pushUrl({ url: 'pages/serverconfig' });
+  }
+
   build() {
     Column() {
       // 标题
@@ -79,6 +86,17 @@ struct HomePage {
         .fontColor('#FFFFFF')
         .onClick(() => {
           this.navigateToProfile()
+        })
+
+      // 服务器配置按钮
+      Button('⚙️ 服务器配置')
+        .width(200)
+        .height(40)
+        .margin({ top: 10 })
+        .backgroundColor('#FF9500')
+        .fontColor('#FFFFFF')
+        .onClick(() => {
+          this.navigateToServerConfig()
         })
     }
     .width('100%')
