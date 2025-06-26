@@ -17,14 +17,22 @@ interface Conversation {
 @Component
 struct ConversationList {
   // 从路由参数获取情绪信息
-  @Link emotionId: number ;
-  @Link emotionName: string ;
-  @Link emotionEmoji: string ;
-
+  // @Link emotionId: number ;
+  // @Link emotionName: string ;
+  // @Link emotionEmoji: string ;
+  @State emotionId: number = 0 ;
+  @State emotionName: string = '' ;
+  @State emotionEmoji: string = '';
   @State conversations: Conversation[] = [];
   @State isLoading: boolean = true;
 
   aboutToAppear() {
+    // 获取带类型注解的上下文
+    const params = router.getParams() as Record<string, string>;
+    this.emotionId = Number(params?.emotionId) || 0;
+    this.emotionName = params?.emotionName || '';
+    this.emotionEmoji = params?.emotionEmoji || '';
+
     if (!this.emotionId || !this.emotionName || !this.emotionEmoji) {
       console.error('未接收到情绪参数');
       router.back();
@@ -96,12 +104,15 @@ struct ConversationList {
 
           // 新建对话按钮
           Button('+')
-            .width(32)
+            .width(45)
             .height(32)
-            .backgroundColor('#007DFF')
-            .fontColor('#FFFFFF')
-            .borderRadius(16)
-            .margin({ right: 16 })
+            .backgroundColor('transparent')
+              //.borderRadius(16)
+            .borderColor('#007DFF')          // 边框颜色（可选）
+            .borderWidth(1)// 边框宽度（可选）
+            .fontColor(Color.Black)            // 图标颜色
+            .fontSize(18)
+            .margin({ left:10,right: 16 })
             .onClick(() => this.createNewConversation())
         }
         .width('100%')
