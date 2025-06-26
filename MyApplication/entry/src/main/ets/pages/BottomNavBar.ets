@@ -56,7 +56,7 @@ export struct BottomNavBar {
           .backgroundColor('#fff')
           .onClick(() => {
             if (this.navIndex !== 'personal') {
-              router.replaceUrl({ url: 'pages/infopage' });
+              router.replaceUrl({ url: 'pages/yourpage' });
             }
           })
       }
