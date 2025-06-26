@@ -7,6 +7,9 @@
     "pages/1_Light_splash",
     "pages/2_Login",
     "pages/3_EmailConfirm",
-    "pages/chat","pages/planetpage"
+    "pages/chat",
+    "pages/planetpage",
+    "pages/DynamicList",
+    "pages/DynamicEdit"
   ]
 }

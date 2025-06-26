@@ -1,3 +1,4 @@
+import http from '@ohos.net.http';
 import router from '@ohos.router';
 
 @Entry
@@ -7,11 +8,62 @@ struct EmailConfirmPage {
   @State code: string = ''
   @State agree: boolean = false
 
+  sendEmailCode() {
+    let httpRequest = http.createHttp();
+    httpRequest.request(
+      'http://121.36.225.8:8081/auth/send-code',
+      {
+        method: http.RequestMethod.POST,
+        header: {
+          'Content-Type': 'application/json'
+        },
+        extraData: {
+          email: this.email
+        }
+      }
+    ).then((response) => {
+      if (response.responseCode === 200) {
+        AlertDialog.show({ message: response.result.toString() });
+      } else {
+        AlertDialog.show({ message: '发送失败: ' + response.result.toString() });
+      }
+    }).catch((err:Error) => {
+      AlertDialog.show({ message: '请求异常: ' + JSON.stringify(err) });
+    });
+  }
+
+  verifyEmailCode() {
+    let httpRequest = http.createHttp();
+    httpRequest.request(
+      'http://121.36.225.8:8081/auth/verify-code',
+      {
+        method: http.RequestMethod.POST,
+        header: {
+          'Content-Type': 'application/json'
+        },
+        extraData: {
+          email: this.email,
+          verificationCode: this.code
+        }
+      }
+    ).then((response) => {
+      if (response.responseCode === 200) {
+        AlertDialog.show({ message: response.result.toString() });
+        // 这里可以跳转到主页面
+        // router.pushUrl({ url: 'pages/你的主页面' });
+      } else {
+        AlertDialog.show({ message: '验证失败: ' + response.result.toString() });
+      }
+    }).catch((err:Error) => {
+      AlertDialog.show({ message: '请求异常: ' + JSON.stringify(err) });
+    });
+  }
+
   build() {
     Column() {
       // 顶部返回按钮
       Row() {
-        Image($r('app.media.return')) // 请替换为你的返回图标资源
+        Image($r('app.media.return'))
           .width(24)
           .height(24)
           .onClick(() => {
@@ -80,8 +132,7 @@ struct EmailConfirmPage {
           .borderRadius(22)
           .margin({ left: 10 })
           .onClick(() => {
-            // 这里调用后端发送验证码接口
-            console.log('获取验证码');
+            this.sendEmailCode();
           })
       }
       .width('90%')
@@ -98,8 +149,7 @@ struct EmailConfirmPage {
         .borderRadius(25)
         .margin({ bottom: 20 })
         .onClick(() => {
-          // 登录逻辑
-          console.log('确认登录');
+          this.verifyEmailCode();
         })
 
       // 用户协议勾选框
