@@ -6,6 +6,7 @@ import picker from '@ohos.file.picker';
 import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
 import { UserInfo } from '../common/types';
+import { BottomNavBar } from './BottomNavBar';
 
 @Entry
 @Component
@@ -282,57 +283,16 @@ struct InfoPage {
             }
           }
           .width('100%')
-          .padding({ left: 20, right: 20 })
-          .margin({ top: 20 })
+          .layoutWeight(1)
+          .padding({ bottom: 80 })
         }
       }
       .width('100%')
       .height('100%')
       .backgroundColor('#F5F5F5')
-
-      // 用户名称编辑对话框
-      if (this.showNameDialog) {
-        Column() {
-          Column() {
-            Text('编辑用户名称')
-              .fontSize(20)
-              .fontWeight(FontWeight.Bold)
-              .margin({ bottom: 20 })
-            
-            TextInput({ placeholder: '请输入用户名称', text: this.tempName })
-              .width('100%')
-              .height(50)
-              .margin({ bottom: 20 })
-              .onChange((value: string) => {
-                this.tempName = value;
-              })
-            
-            Row() {
-              Button('取消')
-                .width(100)
-                .height(40)
-                .backgroundColor('#F5F5F5')
-                .fontColor('#666666')
-                .onClick(() => this.cancelEditName())
-              
-              Button('确定')
-                .width(100)
-                .height(40)
-                .margin({ left: 20 })
-                .backgroundColor('#007DFF')
-                .onClick(() => this.confirmEditName())
-            }
-          }
-          .width('80%')
-          .padding(30)
-          .backgroundColor('#FFFFFF')
-          .borderRadius(12)
-        }
-        .width('100%')
-        .height('100%')
-        .backgroundColor('rgba(0, 0, 0, 0.5)')
-        .justifyContent(FlexAlign.Center)
-      }
+      
+      // 底部导航栏
+      BottomNavBar({ navIndex: 'personal' })
     }
   }
 } 

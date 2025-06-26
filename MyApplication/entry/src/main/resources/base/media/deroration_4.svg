@@ -1,0 +1,27 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- 星球基底 -->
+    <circle cx="100" cy="100" r="90" fill="#E0E0E0" stroke="#BDBDBD" stroke-width="2"/>
+
+    <!-- 山脉主体 -->
+    <path d="M0,100 Q50,70 100,100 T200,100" fill="#795548"/>
+    <path d="M0,110 Q50,80 100,110 T200,110" fill="#6D4C41" opacity="0.9"/>
+    <path d="M0,120 Q50,90 100,120 T200,120" fill="#5D4037" opacity="0.8"/>
+
+    <!-- 山峰细节 -->
+    <path d="M80,80 L100,60 L120,80 Z" fill="#FFFFFF" opacity="0.7"/>
+    <path d="M60,90 L80,70 L100,90 T140,90" fill="#FFFFFF" opacity="0.6"/>
+    <path d="M120,90 L140,70 L160,90 T200,90" fill="#FFFFFF" opacity="0.5"/>
+
+    <!-- 山脉阴影 -->
+    <path d="M0,100 Q50,70 100,100 T200,100" fill="#4E342E" opacity="0.3"/>
+
+    <!-- 山体纹理 -->
+    <path d="M70,100 L80,90 L90,100" stroke="#4E342E" stroke-width="1" fill="none"/>
+    <path d="M110,100 L120,90 L130,100" stroke="#4E342E" stroke-width="1" fill="none"/>
+    <path d="M70,110 L80,100 L90,110" stroke="#4E342E" stroke-width="1" fill="none"/>
+    <path d="M110,110 L120,100 L130,110" stroke="#4E342E" stroke-width="1" fill="none"/>
+
+    <!-- 山脚下的平原 -->
+    <path d="M0,130 Q50,120 100,130 T200,130" fill="#8D6E63" opacity="0.7"/>
+    <path d="M0,140 Q50,130 100,140 T200,140" fill="#A1887F" opacity="0.5"/>
+</svg>

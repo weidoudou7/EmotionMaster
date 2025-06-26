@@ -1,0 +1,49 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- 星球基底 -->
+    <circle cx="100" cy="100" r="90" fill="#212121" stroke="#303030" stroke-width="2"/>
+
+    <!-- 城市建筑群 -->
+    <g>
+        <!-- 中央高楼 -->
+        <rect x="90" y="50" width="20" height="40" fill="#616161"/>
+        <rect x="85" y="40" width="30" height="10" fill="#424242"/>
+        <rect x="80" y="30" width="40" height="10" fill="#212121"/>
+
+        <!-- 左侧建筑 -->
+        <rect x="60" y="70" width="15" height="30" fill="#757575"/>
+        <rect x="50" y="80" width="15" height="20" fill="#616161"/>
+        <rect x="40" y="90" width="15" height="10" fill="#757575"/>
+
+        <!-- 右侧建筑 -->
+        <rect x="130" y="60" width="15" height="40" fill="#757575"/>
+        <rect x="145" y="70" width="15" height="30" fill="#616161"/>
+        <rect x="160" y="80" width="15" height="20" fill="#757575"/>
+
+        <!-- 建筑窗户 -->
+        <g fill="#FFEB3B" opacity="0.8">
+            <rect x="92" y="55" width="4" height="4" rx="1"/>
+            <rect x="97" y="55" width="4" height="4" rx="1"/>
+            <rect x="102" y="55" width="4" height="4" rx="1"/>
+
+            <rect x="92" y="65" width="4" height="4" rx="1"/>
+            <rect x="102" y="65" width="4" height="4" rx="1"/>
+
+            <rect x="92" y="75" width="4" height="4" rx="1"/>
+            <rect x="97" y="75" width="4" height="4" rx="1"/>
+            <rect x="102" y="75" width="4" height="4" rx="1"/>
+        </g>
+    </g>
+
+    <!-- 城市灯光 -->
+    <g fill="#03A9F4" opacity="0.6">
+        <circle cx="70" cy="100" r="3"/>
+        <circle cx="130" cy="100" r="3"/>
+        <circle cx="100" cy="110" r="4"/>
+        <circle cx="80" cy="115" r="2"/>
+        <circle cx="120" cy="115" r="2"/>
+    </g>
+
+    <!-- 科技光环 -->
+    <circle cx="100" cy="100" r="95" fill="none" stroke="#00E5FF" stroke-width="1" stroke-dasharray="5,3" opacity="0.5"/>
+    <circle cx="100" cy="100" r="100" fill="none" stroke="#00E5FF" stroke-width="0.5" stroke-dasharray="3,2" opacity="0.3"/>
+</svg>

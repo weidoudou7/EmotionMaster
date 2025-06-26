@@ -6,6 +6,7 @@ import { ApiService } from '../service/apiservice';
 import { UserInfo } from '../common/types';
 import promptAction from '@ohos.promptAction';
 //导入图片模块
+import { BottomNavBar } from './BottomNavBar';
 
 @Entry
 @Component
@@ -217,14 +218,18 @@ struct YourPage {
                 promptAction.showToast({ message: '功能开发中...' });
               })
           }
-          .margin({ top: 10, bottom: 30 })
+          .width('90%')
+          .justifyContent(FlexAlign.SpaceAround)
+          .margin({ top: 20, bottom: 80 })
         }
         .width('100%')
-        .justifyContent(FlexAlign.Center)
-        .alignItems(HorizontalAlign.Center)
+        .height('100%')
+        .justifyContent(FlexAlign.Start)
+        .padding({ top: 20 })
       }
+      
+      // 底部导航栏
+      BottomNavBar({ navIndex: 'personal' })
     }
-    .width('100%')
-    .height('100%')
   }
 } 

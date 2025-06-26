@@ -3,9 +3,10 @@
     "pages/homepage",
     "pages/yourpage",
     "pages/infopage",
-    "pages/serverconfig"
+    "pages/serverconfig",
     "pages/1_Light_splash",
     "pages/2_Login",
-    "pages/3_EmailConfirm"
+    "pages/3_EmailConfirm",
+    "pages/chat","pages/planetpage"
   ]
 }

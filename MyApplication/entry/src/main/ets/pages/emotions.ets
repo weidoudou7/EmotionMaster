@@ -1,4 +1,5 @@
 import router from '@ohos.router';
+import { BottomNavBar } from './BottomNavBar';
 
 interface Emotions {
   id: number;
@@ -126,10 +127,14 @@ struct EmotionList {
         .width('90%')
         .margin({ left: 'auto', right: 'auto' })
         .layoutWeight(1)
+        .padding({ bottom: 80 })
       }
       .width('100%')
       .height('100%')
       .opacity(0.8)
+      
+      // 底部导航栏
+      BottomNavBar({ navIndex: 'planet' })
     }
   }
 }

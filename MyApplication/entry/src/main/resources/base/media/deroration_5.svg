@@ -1,0 +1,38 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- 星球基底 -->
+    <circle cx="100" cy="100" r="60" fill="#1E88E5" stroke="#0D47A1" stroke-width="2"/>
+
+    <!-- 卫星轨道 -->
+    <circle cx="100" cy="100" r="80" fill="none" stroke="#64B5F6" stroke-width="1" stroke-dasharray="5,3" opacity="0.7"/>
+    <circle cx="100" cy="100" r="90" fill="none" stroke="#90CAF9" stroke-width="0.7" stroke-dasharray="4,2" opacity="0.5"/>
+    <circle cx="100" cy="100" r="100" fill="none" stroke="#BBDEFB" stroke-width="0.5" stroke-dasharray="3,1" opacity="0.3"/>
+
+    <!-- 主卫星 -->
+    <g transform="rotate(45 100 100)">
+        <circle cx="100" cy="20" r="8" fill="#607D8B"/>
+        <rect x="95" y="15" width="10" height="2" fill="#455A64"/>
+        <rect x="95" y="25" width="10" height="2" fill="#455A64"/>
+    </g>
+
+    <!-- 副卫星1 -->
+    <g transform="rotate(135 100 100)">
+        <circle cx="100" cy="30" r="6" fill="#78909C"/>
+        <path d="M97,25 L103,25 M97,35 L103,35" stroke="#558B2F" stroke-width="1.5"/>
+    </g>
+
+    <!-- 副卫星2 -->
+    <g transform="rotate(225 100 100)">
+        <circle cx="100" cy="25" r="5" fill="#546E7A"/>
+        <path d="M95,20 L105,20 M95,30 L105,30 M90,25 L110,25" stroke="#F9A825" stroke-width="1"/>
+    </g>
+
+    <!-- 副卫星3 -->
+    <g transform="rotate(315 100 100)">
+        <circle cx="100" cy="15" r="7" fill="#627D82"/>
+        <path d="M90,15 L110,15" stroke="#E53935" stroke-width="2"/>
+    </g>
+
+    <!-- 星球光晕 -->
+    <circle cx="100" cy="100" r="65" fill="none" stroke="#BBDEFB" stroke-width="3" opacity="0.3"/>
+    <circle cx="100" cy="100" r="70" fill="none" stroke="#BBDEFB" stroke-width="2" opacity="0.2"/>
+</svg>

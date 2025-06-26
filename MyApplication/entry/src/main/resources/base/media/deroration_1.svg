@@ -1,0 +1,33 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- 星球基底 -->
+    <circle cx="100" cy="100" r="90" fill="#4CAF50" stroke="#388E3C" stroke-width="2"/>
+
+    <!-- 地形轮廓 -->
+    <path d="M0,130 Q50,110 100,130 T200,130" fill="#2E7D32" opacity="0.8"/>
+    <path d="M0,140 Q50,120 100,140 T200,140" fill="#26A69A" opacity="0.6"/>
+
+    <!-- 树木群 -->
+    <g>
+        <!-- 大树 -->
+        <rect x="70" y="110" width="6" height="20" fill="#8D6E63"/>
+        <ellipse cx="73" cy="95" rx="12" ry="15" fill="#4CAF50"/>
+
+        <!-- 中树 -->
+        <rect x="100" y="115" width="4" height="15" fill="#8D6E63"/>
+        <ellipse cx="102" cy="102" rx="8" ry="10" fill="#4CAF50"/>
+
+        <!-- 小树群 -->
+        <rect x="130" y="120" width="3" height="12" fill="#8D6E63"/>
+        <ellipse cx="131.5" cy="108" rx="5" ry="7" fill="#4CAF50"/>
+
+        <rect x="50" y="125" width="3" height="10" fill="#8D6E63"/>
+        <ellipse cx="51.5" cy="115" rx="4" ry="6" fill="#4CAF50"/>
+
+        <rect x="150" y="122" width="3" height="11" fill="#8D6E63"/>
+        <ellipse cx="151.5" cy="111" rx="4.5" ry="6.5" fill="#4CAF50"/>
+    </g>
+
+    <!-- 植被细节 -->
+    <path d="M30,135 Q40,130 50,135 T90,135 T130,135 T170,135" fill="#43A047" opacity="0.7"/>
+    <path d="M35,138 Q45,133 55,138 T95,138 T135,138 T175,138" fill="#66BB6A" opacity="0.5"/>
+</svg>

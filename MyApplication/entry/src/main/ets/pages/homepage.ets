@@ -1,4 +1,6 @@
 // homepage.ets
+import { BottomNavBar } from './BottomNavBar';
+
 @Entry
 @Component
 struct HomePage {
@@ -32,76 +34,82 @@ struct HomePage {
   }
 
   build() {
-    Column() {
-      // 标题
-      Text('HarmonyOS 计数器')
-        .fontSize(24)
-        .fontWeight(FontWeight.Bold)
+    Stack() {
+      Column() {
+        // 标题
+        Text('HarmonyOS 计数器')
+          .fontSize(24)
+          .fontWeight(FontWeight.Bold)
+          .margin({ bottom: 30 })
+
+        // 计数显示
+        Text(`当前计数: ${this.count}`)
+          .fontSize(36)
+          .fontColor(this.isDarkMode ? '#FFFFFF' : '#000000')
+          .margin({ bottom: 20 })
+
+        // 操作按钮
+        Row() {
+          Button('增加')
+            .width(100)
+            .height(40)
+            .backgroundColor('#0D9FFB')
+            .onClick(() => {
+              this.count += 1
+            })
+
+          Button('减少')
+            .width(100)
+            .height(40)
+            .margin({ left: 20 })
+            .backgroundColor('#FF4D4F')
+            .onClick(() => {
+              this.count -= 1
+            })
+        }
         .margin({ bottom: 30 })
 
-      // 计数显示
-      Text(`当前计数: ${this.count}`)
-        .fontSize(36)
-        .fontColor(this.isDarkMode ? '#FFFFFF' : '#000000')
-        .margin({ bottom: 20 })
-
-      // 操作按钮
-      Row() {
-        Button('增加')
-          .width(100)
+        // 重置按钮
+        Button('重置')
+          .width(200)
           .height(40)
-          .backgroundColor('#0D9FFB')
           .onClick(() => {
-            this.count += 1
+            this.count = 0
           })
 
-        Button('减少')
-          .width(100)
+        // 主题切换
+        this.ThemeToggleButton()
+
+        // 个人资料导航按钮
+        Button('👤 个人资料')
+          .width(200)
           .height(40)
-          .margin({ left: 20 })
-          .backgroundColor('#FF4D4F')
+          .margin({ top: 20 })
+          .backgroundColor('#2980B9')
+          .fontColor('#FFFFFF')
           .onClick(() => {
-            this.count -= 1
+            this.navigateToProfile()
+          })
+
+        // 服务器配置按钮
+        Button('⚙️ 服务器配置')
+          .width(200)
+          .height(40)
+          .margin({ top: 10 })
+          .backgroundColor('#FF9500')
+          .fontColor('#FFFFFF')
+          .onClick(() => {
+            this.navigateToServerConfig()
           })
       }
-      .margin({ bottom: 30 })
-
-      // 重置按钮
-      Button('重置')
-        .width(200)
-        .height(40)
-        .onClick(() => {
-          this.count = 0
-        })
-
-      // 主题切换
-      this.ThemeToggleButton()
-
-      // 个人资料导航按钮
-      Button('👤 个人资料')
-        .width(200)
-        .height(40)
-        .margin({ top: 20 })
-        .backgroundColor('#2980B9')
-        .fontColor('#FFFFFF')
-        .onClick(() => {
-          this.navigateToProfile()
-        })
-
-      // 服务器配置按钮
-      Button('⚙️ 服务器配置')
-        .width(200)
-        .height(40)
-        .margin({ top: 10 })
-        .backgroundColor('#FF9500')
-        .fontColor('#FFFFFF')
-        .onClick(() => {
-          this.navigateToServerConfig()
-        })
+      .width('100%')
+      .height('100%')
+      .justifyContent(FlexAlign.Center)
+      .backgroundColor(this.isDarkMode ? '#222222' : '#F5F5F5')
+      .padding({ bottom: 80 })
+      
+      // 底部导航栏
+      BottomNavBar({ navIndex: 'home' })
     }
-    .width('100%')
-    .height('100%')
-    .justifyContent(FlexAlign.Center)
-    .backgroundColor(this.isDarkMode ? '#222222' : '#F5F5F5')
   }
 }

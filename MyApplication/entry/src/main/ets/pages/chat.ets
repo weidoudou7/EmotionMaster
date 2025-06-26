@@ -1,3 +1,5 @@
+import { BottomNavBar } from './BottomNavBar';
+
 interface ChatMessage {
   id: number;
   isMe: boolean; // 是否是自己发送的消息
@@ -87,6 +89,7 @@ struct Chat {
         .width('100%')
         .layoutWeight(1) // 占据剩余空间
         .backgroundColor('#00FFFFFF') // 透明背景，显示下层的背景图
+        .padding({ bottom: 80 })
 
         Row() {
           TextInput({
@@ -108,12 +111,15 @@ struct Chat {
         .padding(10)
         .backgroundColor('#00FFFFFF') // 透明背景，显示下层的背景图
         .border({ width: 1, color: '#EAEAEA' })
+        .margin({ bottom: 20 }) // 添加底部边距，避开导航栏
 
       }
       .width('100%')
       .height('100%')
       .backgroundColor('#00FFFFFF') // 透明背景，显示下层的背景图
 
+      // 底部导航栏
+      BottomNavBar({ navIndex: 'chat' })
     }
 
   }

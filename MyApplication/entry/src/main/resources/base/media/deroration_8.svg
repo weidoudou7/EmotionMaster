@@ -1,0 +1,57 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- 滤镜定义 -->
+    <defs>
+        <linearGradient id="groundGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stop-color="#2E7D32"/>
+            <stop offset="100%" stop-color="#4CAF50"/>
+        </linearGradient>
+        <linearGradient id="creatureGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#81C784"/>
+            <stop offset="50%" stop-color="#43A047"/>
+            <stop offset="100%" stop-color="#2E7D32"/>
+        </linearGradient>
+        <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.3"/>
+        </filter>
+    </defs>
+
+    <!-- 星球基底 -->
+    <circle cx="100" cy="100" r="80" fill="#E0E0E0" stroke="#BDBDBD" stroke-width="2"/>
+
+    <!-- 生态基底 -->
+    <path d="M0,120 Q50,100 100,120 T200,120 T200,140 T150,140 T100,120 T50,140 T0,140 T0,120" fill="url(#groundGradient)"/>
+
+    <!-- 巨型植物 -->
+    <g filter="url(#shadow)">
+        <!-- 主植物 -->
+        <rect x="80" y="90" width="8" height="30" fill="#5D4037"/>
+        <ellipse cx="84" cy="70" rx="20" ry="25" fill="#4CAF50" opacity="0.8"/>
+        <ellipse cx="84" cy="70" rx="15" ry="20" fill="#43A047" opacity="0.6"/>
+        <ellipse cx="84" cy="70" rx="10" ry="15" fill="#388E3C" opacity="0.4"/>
+
+        <!-- 副植物1 -->
+        <rect x="120" y="100" width="6" height="25" fill="#5D4037"/>
+        <path d="M123,75 Q135,85 123,95 Q111,85 123,75" fill="#4CAF50" opacity="0.7"/>
+        <path d="M123,78 Q132,88 123,98 Q114,88 123,78" fill="#43A047" opacity="0.5"/>
+
+        <!-- 副植物2 -->
+        <rect x="60" y="105" width="5" height="20" fill="#5D4037"/>
+        <path d="M62.5,85 Q55,90 62.5,95 Q70,90 62.5,85" fill="#4CAF50" opacity="0.7"/>
+        <path d="M62.5,88 Q57.5,93 62.5,98 Q67.5,93 62.5,88" fill="#43A047" opacity="0.5"/>
+    </g>
+
+    <!-- 外星生物 -->
+    <g filter="url(#shadow)">
+        <path d="M100,120 Q110,110 120,120 Q110,130 100,120" fill="url(#creatureGradient)"/>
+        <path d="M105,115 L110,110 L115,115 L110,120 Z" fill="#2E7D32"/>
+        <path d="M95,115 L90,110 L85,115 L90,120 Z" fill="#2E7D32"/>
+        <path d="M100,120 L100,130" stroke="#263238" stroke-width="1"/>
+        <circle cx="105" cy="112" r="2" fill="#000000"/>
+        <circle cx="95" cy="112" r="2" fill="#000000"/>
+    </g>
+
+    <!-- 生物活动痕迹 -->
+    <path d="M70,130 Q80,135 90,130 Q80,125 70,130" fill="#8D6E63" opacity="0.5"/>
+    <path d="M130,130 Q120,135 110,130 Q120,125 130,130" fill="#8D6E63" opacity="0.5"/>
+    <path d="M100,135 Q110,140 120,135 Q110,130 100,135" fill="#8D6E63" opacity="0.5"/>
+</svg>
