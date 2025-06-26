@@ -204,7 +204,9 @@ struct YourPage {
               .borderRadius(20)
               .shadow({ radius: 4, color: 'rgba(41,128,185,0.08)', offsetX: 0, offsetY: 1 })
               .onClick(() => {
-                promptAction.showToast({ message: '功能开发中...' });
+                let uiContext: UIContext = this.getUIContext();
+                let router = uiContext.getRouter();
+                router.pushUrl({ url: 'pages/DynamicList' });
               })
             Button('我的相册')
               .width(120)

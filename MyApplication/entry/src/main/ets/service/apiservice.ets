@@ -1,6 +1,6 @@
 import { globalUserData } from '../models/userdata';
 import { Config } from '../common/config';
-import { UserInfo, UpdateUserRequest, ApiResponse } from '../common/types';
+import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest } from '../common/types';
 import http from '@ohos.net.http';
 
 // API基础配置 - 从配置文件获取
@@ -230,5 +230,102 @@ export class ApiService {
    */
   static getEnvironmentInfo(): string {
     return `环境: ${Config.getCurrentEnv()}, 服务器: ${API_BASE_URL}`;
+  }
+
+  /**
+   * 创建动态
+   */
+  static async createDynamic(userUID: string, dynamicData: CreateDynamicRequest): Promise<Dynamic> {
+    const response = await ApiService.request<Dynamic>(`${API_BASE_URL}/dynamic/create/${userUID}`, {
+      method: http.RequestMethod.POST,
+      body: JSON.stringify(dynamicData)
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to create dynamic');
+    }
+  }
+
+  /**
+   * 获取用户的所有动态
+   */
+  static async getUserDynamics(userUID: string): Promise<Dynamic[]> {
+    const response = await ApiService.request<Dynamic[]>(`${API_BASE_URL}/dynamic/user/${userUID}`);
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to get user dynamics');
+    }
+  }
+
+  /**
+   * 获取用户的公开动态
+   */
+  static async getUserPublicDynamics(userUID: string): Promise<Dynamic[]> {
+    const response = await ApiService.request<Dynamic[]>(`${API_BASE_URL}/dynamic/user/${userUID}/public`);
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to get user public dynamics');
+    }
+  }
+
+  /**
+   * 点赞动态
+   */
+  static async likeDynamic(dynamicId: string): Promise<boolean> {
+    const response = await ApiService.request<boolean>(`${API_BASE_URL}/dynamic/${dynamicId}/like`, {
+      method: http.RequestMethod.POST
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to like dynamic');
+    }
+  }
+
+  /**
+   * 取消点赞动态
+   */
+  static async unlikeDynamic(dynamicId: string): Promise<boolean> {
+    const response = await ApiService.request<boolean>(`${API_BASE_URL}/dynamic/${dynamicId}/unlike`, {
+      method: http.RequestMethod.POST
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to unlike dynamic');
+    }
+  }
+
+  /**
+   * 删除动态
+   */
+  static async deleteDynamic(dynamicId: string, userUID: string): Promise<boolean> {
+    const response = await ApiService.request<boolean>(`${API_BASE_URL}/dynamic/${dynamicId}/delete/${userUID}`, {
+      method: http.RequestMethod.DELETE
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to delete dynamic');
+    }
+  }
+
+  /**
+   * 获取所有公开动态
+   */
+  static async getAllPublicDynamics(): Promise<Dynamic[]> {
+    const response = await ApiService.request<Dynamic[]>(`${API_BASE_URL}/dynamic/public`);
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to get public dynamics');
+    }
   }
 }

@@ -23,6 +23,26 @@ export interface UpdateUserRequest {
   signature?: string;
 }
 
+// 动态接口
+export interface Dynamic {
+  id: string;
+  userUID: string;
+  content: string;
+  images?: string[];
+  likeCount: number;
+  commentCount: number;
+  isPrivate: boolean;
+  createTime: string;
+  updateTime: string;
+}
+
+// 创建动态请求接口
+export interface CreateDynamicRequest {
+  content: string;
+  images?: string[];
+  isPrivate?: boolean;
+}
+
 // API响应接口
 export interface ApiResponse<T> {
   success: boolean;
