@@ -12,6 +12,12 @@
     "pages/DynamicList",
     "pages/DynamicEdit",
     "pages/CreateFigure",
-    "pages/FigureResult"
+    "pages/FigureResult",
+    "pages/ConversationList",
+    "pages/emotions",
+    "pages/fmhome",
+    "pages/fm_musicBegin",
+    "pages/fm_columnpage",
+    "pages/fm_articleDetail"
   ]
 }

@@ -59,7 +59,18 @@ export class ApiService {
         throw new Error(`HTTP error! status: ${response.responseCode}`);
       }
 
-      const result: ApiResponse<T> = JSON.parse(response.result.toString());
+      let result: ApiResponse<T>;
+      try {
+        result = JSON.parse(response.result.toString());
+      } catch (e) {
+        // 不是JSON，直接返回字符串内容
+        result = {
+          success: true,
+          message: 'ok',
+          data: response.result.toString() as T,
+          timestamp: Date.now()
+        };
+      }
       
       // 调试模式下的日志
       if (Config.isDebug()) {
@@ -447,5 +458,17 @@ export class ApiService {
     } else {
       throw new Error(response.message || 'Failed to get public dynamics');
     }
+  }
+
+  /**
+   * AI生成专栏文章
+   */
+  static async generateAIArticle(type: 'deep' | 'tech' | 'industry', prompt: string): Promise<string> {
+    let url = '';
+    if (type === 'deep') url = `${API_BASE_URL}/ai/article/deep-analysis?prompt=${encodeURIComponent(prompt)}`;
+    if (type === 'tech') url = `${API_BASE_URL}/ai/article/tech-enjoy?prompt=${encodeURIComponent(prompt)}`;
+    if (type === 'industry') url = `${API_BASE_URL}/ai/article/industry-observation?prompt=${encodeURIComponent(prompt)}`;
+    const response = await ApiService.request<string>(url, { method: http.RequestMethod.GET });
+    return response.data;
   }
 }
