@@ -207,6 +207,126 @@ export class ApiService {
   }
 
   /**
+   * 生成形象描述接口
+   */
+  static async generateDescription(userInput: string): Promise<string> {
+    try {
+      const url = `${API_BASE_URL}/ai/generate-description?userInput=${encodeURIComponent(userInput)}`;
+      
+      console.log('发送请求到:', url);
+      console.log('用户输入:', userInput);
+      
+      // 测试连接
+      const testUrl = `${API_BASE_URL}/user/health`;
+      const testRequest = http.createHttp();
+      const testResponse = await testRequest.request(testUrl, { method: http.RequestMethod.GET });
+      testRequest.destroy();
+      console.log('连接测试结果:', testResponse.responseCode);
+      
+      const httpRequest = http.createHttp();
+      const requestOptions: http.HttpRequestOptions = {
+        method: http.RequestMethod.POST,
+        header: {
+          'Content-Type': 'application/json'
+        },
+        readTimeout: Config.getTimeout(),
+        connectTimeout: Config.getTimeout()
+      };
+
+      const response = await httpRequest.request(url, requestOptions);
+      httpRequest.destroy();
+
+      console.log('响应状态码:', response.responseCode);
+      console.log('响应头:', JSON.stringify(response.header));
+      console.log('响应内容长度:', response.result.toString().length);
+      console.log('响应内容:', response.result.toString());
+
+      if (response.responseCode !== 200) {
+        throw new Error(`HTTP error! status: ${response.responseCode}, message: ${response.result.toString()}`);
+      }
+
+      // 直接返回响应内容，因为后端返回的是纯文本
+      const result = response.result.toString();
+      console.log('生成的描述:', result);
+      return result;
+    } catch (error) {
+      console.error('生成形象描述失败:', error);
+      console.error('错误类型:', typeof error);
+      console.error('错误详情:', JSON.stringify(error));
+      
+      // 检查是否是超时错误
+      if (error && typeof error === 'object') {
+        const errorObj = error as Record<string, string | number>;
+        if (errorObj.code === 2300028) {
+          throw new Error('生成描述超时，请稍后重试。AI生成需要较长时间，请耐心等待。');
+        }
+      }
+      
+      if (error instanceof Error) {
+        throw new Error(`生成描述失败: ${error.message}`);
+      } else {
+        throw new Error('生成描述失败: 未知错误');
+      }
+    }
+  }
+
+  /**
+   * 生成形象图片接口
+   */
+  static async generateFigure(userInput: string, style: string): Promise<string> {
+    try {
+      const url = `${API_BASE_URL}/ai/generate-figure?userInput=${encodeURIComponent(userInput)}&style=${encodeURIComponent(style)}`;
+      
+      console.log('发送生成图片请求到:', url);
+      console.log('用户输入:', userInput);
+      console.log('风格:', style);
+      
+      const httpRequest = http.createHttp();
+      const requestOptions: http.HttpRequestOptions = {
+        method: http.RequestMethod.POST,
+        header: {
+          'Content-Type': 'application/json'
+        },
+        readTimeout: 180000, // 3分钟超时，专门用于图片生成
+        connectTimeout: 30000 // 30秒连接超时
+      };
+
+      const response = await httpRequest.request(url, requestOptions);
+      httpRequest.destroy();
+
+      console.log('图片生成响应状态码:', response.responseCode);
+      console.log('图片生成响应内容:', response.result.toString());
+
+      if (response.responseCode !== 200) {
+        throw new Error(`HTTP error! status: ${response.responseCode}, message: ${response.result.toString()}`);
+      }
+
+      // 直接返回响应内容，因为后端返回的是图片URL
+      const result = response.result.toString();
+      console.log('生成的图片URL:', result);
+      return result;
+    } catch (error) {
+      console.error('生成形象图片失败:', error);
+      console.error('错误类型:', typeof error);
+      console.error('错误详情:', JSON.stringify(error));
+      
+      // 检查是否是超时错误
+      if (error && typeof error === 'object') {
+        const errorObj = error as Record<string, string | number>;
+        if (errorObj.code === 2300028) {
+          throw new Error('生成图片超时，请稍后重试。AI生成需要较长时间，请耐心等待。');
+        }
+      }
+      
+      if (error instanceof Error) {
+        throw new Error(`生成图片失败: ${error.message}`);
+      } else {
+        throw new Error('生成图片失败: 未知错误');
+      }
+    }
+  }
+
+  /**
    * 获取AI身份列表
    */
   static async getAIIdentities(): Promise<string[]> {

@@ -34,6 +34,20 @@ export struct BottomNavBar {
       }
       .layoutWeight(1)
 
+      // 创建
+      Column() {
+        Button('+')
+          .fontSize(14)
+          .fontColor(this.navIndex === '+' ? '#5a4fff' : '#888')
+          .backgroundColor('#fff')
+          .onClick(() => {
+            if (this.navIndex !== '+') {
+              router.replaceUrl({ url: 'pages/CreateFigure' });
+            }
+          })
+      }
+      .layoutWeight(1)
+
       // 星球
       Column() {
         Button('星球')
@@ -56,7 +70,7 @@ export struct BottomNavBar {
           .backgroundColor('#fff')
           .onClick(() => {
             if (this.navIndex !== 'personal') {
-              router.replaceUrl({ url: 'pages/infopage' });
+              router.replaceUrl({ url: 'pages/yourpage' });
             }
           })
       }

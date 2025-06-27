@@ -1,187 +1,149 @@
-import { BottomNavBar } from './BottomNavBar';
-
-interface ChatMessage {
-  id: number;
-  isMe: boolean; // 是否是自己发送的消息
-  avatar: Resource; // 头像资源
-  content: string; // 消息内容
-  time: string; // 发送时间
-}
+import router from '@ohos.router'
+import promptAction from '@ohos.promptAction'
+import { BottomNavBar } from './BottomNavBar'
 
 @Entry
 @Component
-struct Chat {
-  @State private chatData: ChatMessage[] = [
-    { id: 1, isMe: false, avatar: $r('app.media.return'), content: '你好呀！今天有空吗？', time: '10:30' },
-    { id: 2, isMe: true, avatar: $r('app.media.return'), content: '有的，最近怎么样？', time: '10:32' },
-    { id: 3, isMe: false, avatar: $r('app.media.return'), content: '还不错，周末一起吃饭？', time: '10:33' },
-  ];
+struct ChatPage {
+  private userName: string = '谢庆之'
+  private userAvatar: Resource = $r('app.media.background') // 头像资源
+  private bgImage: Resource = $r('app.media.background')   // 聊天背景图（可换成专用背景图）
+  private fans: string = '6.9万'
+  private comments: number = 127
+  private intro: string = '简介 谢庆之，男大，谢家独子，高富帅，有胃病，要亲情有钱，要友情有钱，要爱情还是有钱，习惯用钱解决所有问题，严重缺爱，三观正，有教养，有洁癖。'
+  private introExpanded: boolean = false
+  private chatText: string = ''
 
-  @State private inputText: string = '';
-
-  private sendMessage() {
-    if (this.inputText.trim() === '') return;
-
-    const newMessage: ChatMessage = {
-      id: this.chatData.length + 1,
-      isMe: true,
-      avatar: $r('app.media.return'),
-      content: this.inputText,
-      time: new Date().toLocaleTimeString().slice(0, 5) // 获取当前时间（如 "14:20"）
-    };
-
-    // 更新聊天数据
-    this.chatData = [...this.chatData, newMessage];
-    this.inputText = ''; // 清空输入框
-  }
-
-  build() {
-
-    Stack(){
-      Image($r('app.media.bc_blue'))
+  build(): void {
+    Stack() {
+      // 聊天背景图
+      Image(this.bgImage)
         .width('100%')
         .height('100%')
         .objectFit(ImageFit.Cover)
-        .opacity(0.8) // 设置背景透明度
-        .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
 
-
-      Column(){
-
+      // 内容区
+      Column() {
+        // 顶部信息栏
         Row() {
-          Image($r('app.media.return')) // 返回按键图片
-            .width(20)
-            .margin({left: 20})
-          //.onClick(()=>{})
-
-          // 2. 中间备注文本（居中）
-          Text('备注')
-            .fontSize(18)
-            .fontWeight(FontWeight.Bold)
-            .textAlign(TextAlign.Center) // 文本居中
-            .layoutWeight(1) // 占据剩余空间，实现居中效果
-
-
-          Image($r('app.media.return')) // 右侧的图片
-            .width(20)
-            .height(20)
-            .margin({right: 20})
+          Image(this.userAvatar)
+            .width(38).height(38)
+            .borderRadius(19)
+          Column() {
+            Text(this.userName)
+              .fontSize(16)
+              .fontColor('#fff')
+              .fontWeight(FontWeight.Bold)
+            Text(this.fans + ' 连接者')
+              .fontSize(12)
+              .fontColor('#aaa')
+          }
+          .margin({ left: 8 })
+          Blank()
+          Button('≡')
+            .backgroundColor('transparent')
+            .fontColor('#fff')
+            .fontSize(20)
+            .onClick(() => promptAction.showToast({ message: '更多功能开发中' }))
         }
         .width('100%')
         .height(56)
-        //.backgroundColor('#F5F5F5') // 背景色
-        .backgroundColor('#00FFFFFF') // 透明背景，显示下层的背景图
-        .alignItems(VerticalAlign.Center) // 垂直居中
-        .border({ width: 1, color: '#DDDDDD' })
+        .backgroundColor('rgba(35,35,35,0.85)')
+        .alignItems(VerticalAlign.Center)
+        .padding({ left: 10, right: 10, top: 8 })
 
-        List({ space: 10 }) {
-          ForEach(this.chatData, (item: ChatMessage) => {
-            ListItem() {
-              // 根据 isMe 区分消息左右布局
-              if (item.isMe) {
-                this.MyMessage(item) // 右侧（自己发送）
-              } else {
-                this.FriendMessage(item) // 左侧（好友发送）
-              }
-            }
-          }, (item: ChatMessage) => item.id.toString()) // 键生成函数
+        // 简介卡片
+        Column() {
+          Text(this.introExpanded ? this.intro : (this.intro.length > 30 ? this.intro.slice(0, 30) + '…' : this.intro))
+            .fontSize(15)
+            .fontColor('#fff')
+            .margin({ bottom: 4 })
+          Row() {
+            Button(this.introExpanded ? '收起' : '展开')
+              .fontSize(13)
+              .fontColor('#FFD700')
+              .backgroundColor('transparent')
+              .onClick(() => this.introExpanded = !this.introExpanded)
+          }
+        }
+        .width('90%')
+        .backgroundColor('rgba(35,35,35,0.92)')
+        .borderRadius(14)
+        .padding(14)
+        .alignSelf(ItemAlign.Center)
+        .margin({ top: 16, bottom: 8 })
+
+        Blank().height('60%') // 占位，让输入栏靠底部
+
+        // 底部输入栏（完全还原图片样式）
+        Column() {
+          // 顶部分割线
+
+          // 主输入区
+          Row() {
+            // 语音按钮
+            Button('🎤') // 改为文字描述，也可以使用图标
+              .width(50).height(36)
+              .backgroundColor('#F5F5F7')
+              .borderRadius(18)
+              .fontSize(12) // 调整字体大小以适应文字
+              .fontColor('#232323')
+              .onClick(() => promptAction.showToast({ message: '语音输入开发中' }))
+
+            // 输入框
+            TextInput({ placeholder: '发送消息给' + this.userName })
+              .fontSize(15)
+              .fontColor('#232323')
+              .backgroundColor('transparent')
+              .borderRadius(18)
+              .width('50%')
+              .onChange((v: string) => this.chatText = v)
+
+
+
+            // 加号按钮 - 使用HTML实体编码
+            Button('➕') // 改为普通加号
+              .width(50).height(36)
+              .backgroundColor('#F5F5F7')
+              .borderRadius(18)
+              .fontSize(20)
+              .fontColor('#232323')
+              .onClick(() => promptAction.showToast({ message: '快捷功能开发中' }))
+              .margin({right:8})
+
+            // 发送按钮 - 使用HTML实体编码
+            Button('➤') // 改为普通大于号
+              .width(50).height(36)
+              .backgroundColor('#F5F5F7')
+              .borderRadius(18)
+              .fontSize(20)
+              .fontColor('#232323')
+              .onClick(() => {
+                promptAction.showToast({ message: '发送功能开发中' })
+                this.chatText = ''
+              })
+          }
+          .width('100%')
+          .height(44)
+          .backgroundColor('#F5F5F7')
+          .borderRadius(22)
+          .shadow({ radius: 8, color: '#e0e0e0', offsetX: 0, offsetY: 2 })
+
         }
         .width('100%')
-        .layoutWeight(1) // 占据剩余空间
-        .backgroundColor('#00FFFFFF') // 透明背景，显示下层的背景图
-        .padding({ bottom: 80 })
-
-        Row() {
-          TextInput({
-            text: this.inputText,
-            placeholder: '请输入消息...'
-          })
-
-            .height(40)
-            .layoutWeight(1)
-            .onChange((text: string) => {
-              this.inputText = text;
-            })
-
-          Button('发送')
-            .margin({ left: 8 })
-            .onClick(() => this.sendMessage())
-        }
-        .width('100%')
-        .padding(10)
-        .backgroundColor('#00FFFFFF') // 透明背景，显示下层的背景图
-        .border({ width: 1, color: '#EAEAEA' })
-        .margin({ bottom: 20 }) // 添加底部边距，避开导航栏
-
+        .padding({ left: 0, right: 0, top: 0, bottom: 8 })
+        .backgroundColor('transparent')
+        .margin({ bottom: 8 })
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#00FFFFFF') // 透明背景，显示下层的背景图
+      .justifyContent(FlexAlign.SpaceBetween)
+      .margin({bottom:60})
 
       // 底部导航栏
       BottomNavBar({ navIndex: 'chat' })
     }
-
-  }
-
-
-  // 好友消息组件（左侧）
-  @Builder
-  FriendMessage(item: ChatMessage) {
-    Row() {
-      // 头像
-      Image(item.avatar)
-        .width(40)
-        .height(40)
-        .borderRadius(20)
-        .margin({ right: 8 })
-
-      // 消息内容+时间
-      Column() {
-        Text(item.content)
-          .fontSize(16)
-          .padding(10)
-          .backgroundColor('#EAEAEA')
-          .borderRadius(8)
-        Text(item.time)
-          .fontSize(12)
-          .fontColor('#999999')
-          .margin({ top: 4 })
-      }
-    }
     .width('100%')
-    .justifyContent(FlexAlign.Start)
-    .margin({ top: 10 })
-  }
-
-  // 我的消息组件（右侧）
-  @Builder
-  MyMessage(item: ChatMessage) {
-    Row() {
-      // 消息内容+时间
-      Column() {
-        Text(item.content)
-          .fontSize(16)
-          .padding(10)
-          .backgroundColor('#1890FF')
-          .borderRadius(8)
-          .fontColor('#FFFFFF')
-        Text(item.time)
-          .fontSize(12)
-          .fontColor('#999999')
-          .margin({ top: 4 })
-      }
-
-      // 头像
-      Image(item.avatar)
-        .width(40)
-        .height(40)
-        .borderRadius(20)
-        .margin({ left: 8 })
-    }
-    .width('100%')
-    .justifyContent(FlexAlign.End)
-    .margin({ top: 10 })
+    .height('100%')
   }
 }
-

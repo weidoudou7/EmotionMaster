@@ -14,22 +14,22 @@ type Environment = 'DEV' | 'TEST' | 'PROD';
 export class Config {
   // 开发环境配置
   private static readonly DEV_CONFIG: EnvironmentConfig = {
-    API_BASE_URL: 'http://localhost:8080/api',
-    TIMEOUT: 10000,
+    API_BASE_URL: 'http://localhost:8081/api',
+    TIMEOUT: 180000,
     DEBUG: true
   };
 
   // 测试环境配置
   private static readonly TEST_CONFIG: EnvironmentConfig = {
-    API_BASE_URL: 'http://192.168.1.100:8080/api', // 替换为您的局域网IP
-    TIMEOUT: 15000,
+    API_BASE_URL: 'http://192.168.1.100:8081/api', // 替换为您的局域网IP
+    TIMEOUT: 180000,
     DEBUG: true
   };
 
   // 生产环境配置
   private static readonly PROD_CONFIG: EnvironmentConfig = {
     API_BASE_URL: 'https://your-domain.com/api', // 替换为您的生产域名
-    TIMEOUT: 20000,
+    TIMEOUT: 180000,
     DEBUG: false
   };
 

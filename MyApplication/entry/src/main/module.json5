@@ -9,13 +9,17 @@
     "pages": "$profile:main_pages",
     "requestPermissions": [
       {
-
         "name": "ohos.permission.INTERNET",
-
         "reason": "$string:app_name"
-
+      },
+      {
+        "name": "ohos.permission.GET_NETWORK_INFO",
+        "reason": "$string:app_name"
+      },
+      {
+        "name": "ohos.permission.GET_WIFI_INFO",
+        "reason": "$string:app_name"
       }
-
     ],
     "abilities": [
       {

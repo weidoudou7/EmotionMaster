@@ -10,6 +10,8 @@
     "pages/chat",
     "pages/planetpage",
     "pages/DynamicList",
-    "pages/DynamicEdit"
+    "pages/DynamicEdit",
+    "pages/CreateFigure",
+    "pages/FigureResult"
   ]
 }
