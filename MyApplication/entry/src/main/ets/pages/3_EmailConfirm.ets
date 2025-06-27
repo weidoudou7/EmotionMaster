@@ -1,5 +1,6 @@
 import http from '@ohos.net.http';
 import router from '@ohos.router';
+import promptAction from '@ohos.promptAction';
 
 @Entry
 @Component
@@ -23,12 +24,12 @@ struct EmailConfirmPage {
       }
     ).then((response) => {
       if (response.responseCode === 200) {
-        AlertDialog.show({ message: response.result.toString() });
+        promptAction.showToast({ message: response.result.toString() });
       } else {
-        AlertDialog.show({ message: '发送失败: ' + response.result.toString() });
+        promptAction.showToast({ message: '发送失败: ' + response.result.toString() });
       }
     }).catch((err:Error) => {
-      AlertDialog.show({ message: '请求异常: ' + JSON.stringify(err) });
+      promptAction.showToast({ message: '请求异常: ' + JSON.stringify(err) });
     });
   }
 
@@ -48,14 +49,14 @@ struct EmailConfirmPage {
       }
     ).then((response) => {
       if (response.responseCode === 200) {
-        AlertDialog.show({ message: response.result.toString() });
+        promptAction.showToast({ message: response.result.toString() });
         // 这里可以跳转到主页面
         // router.pushUrl({ url: 'pages/你的主页面' });
       } else {
-        AlertDialog.show({ message: '验证失败: ' + response.result.toString() });
+        promptAction.showToast({ message: '验证失败: ' + response.result.toString() });
       }
     }).catch((err:Error) => {
-      AlertDialog.show({ message: '请求异常: ' + JSON.stringify(err) });
+      promptAction.showToast({ message: '请求异常: ' + JSON.stringify(err) });
     });
   }
 
