@@ -342,17 +342,6 @@ struct ColumnPage {
             .textAlign(TextAlign.Center)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .margin({ bottom: 8 })
-          Row() {
-            Text(`${this.currentColumn.articleCount}篇文章`)
-              .fontColor('#0D9FFB')
-              .fontSize(13)
-              .margin({ right: 16 })
-            Text(`${this.currentColumn.followerCount}人关注`)
-              .fontColor('#0D9FFB')
-              .fontSize(13)
-          }
-          .justifyContent(FlexAlign.Center)
-          .margin({ bottom: 12 })
           Button(this.currentColumn.isFollowed ? '已关注' : '关注')
             .fontSize(14)
             .fontColor(this.currentColumn.isFollowed ? '#999' : '#fff')
