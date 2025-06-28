@@ -33,6 +33,7 @@ struct DynamicList {
   @State isLocalMode: boolean = false; // 是否为本地模式
   @State isPublishing: boolean = false; // 是否正在发布
   @State localDynamics: Dynamic[] = []; // 本地动态列表
+  @State showImagePickerModal: boolean = false; // 是否显示图片选择弹窗
 
   // 页面生命周期
   aboutToAppear() {
@@ -502,9 +503,9 @@ struct DynamicList {
       Row() {
         // 点赞按钮
         Row() {
-          Image(dynamic.likeCount > 0 ? $r("app.media.return") : $r("app.media.return"))
-            .width(20)
-            .height(20)
+          Image(dynamic.likeCount > 0 ? $r("app.media.up") : $r("app.media.up"))
+            .width(24)
+            .height(24)
             .fillColor(dynamic.likeCount > 0 ? '#ff6b6b' : '#999')
             .margin({ right: 4 })
           
@@ -528,7 +529,7 @@ struct DynamicList {
 
         // 评论按钮
         Row() {
-          Image($r("app.media.return"))
+          Image($r("app.media.disc"))
             .width(20)
             .height(20)
             .fillColor('#999')
@@ -632,8 +633,8 @@ struct DynamicList {
           .backgroundColor('rgba(41, 128, 185, 0.1)')
           .borderRadius(16)
           .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-          .onClick(async () => {
-            await this.addImage();
+          .onClick(() => {
+            this.showImagePickerModal = true;
           })
         }
         .width('100%')
@@ -659,51 +660,6 @@ struct DynamicList {
               this.publishContent = text;
             })
 
-          // 图片预览区域
-          if (this.publishImages.length > 0) {
-            Column() {
-              Text('已选择的图片')
-                .fontSize(14)
-                .fontColor('#666')
-                .margin({ bottom: 8, left: 16 })
-                .textAlign(TextAlign.Start)
-              
-              Grid() {
-                ForEach(this.publishImages, (image: string, index: number) => {
-                  GridItem() {
-                    Stack() {
-                      Image(image)
-                        .width('100%')
-                        .height(80)
-                        .borderRadius(8)
-                        .objectFit(ImageFit.Cover)
-                        .backgroundColor('#f0f0f0')
-                      
-                      // 删除按钮
-                      Button('×')
-                        .fontSize(16)
-                        .fontColor('#fff')
-                        .backgroundColor('rgba(0,0,0,0.6)')
-                        .borderRadius(10)
-                        .width(20)
-                        .height(20)
-                        .position({ x: '85%', y: '5%' })
-                        .onClick(() => {
-                          this.removeImage(index);
-                        })
-                    }
-                  }
-                })
-              }
-              .columnsTemplate('1fr 1fr 1fr')
-              .columnsGap(8)
-              .rowsGap(8)
-              .width('100%')
-              .padding({ left: 16, right: 16, bottom: 16 })
-            }
-            .width('100%')
-          }
-
           // 底部工具栏
           Row() {
             if (this.isPublishing) {
@@ -725,6 +681,141 @@ struct DynamicList {
       .borderRadius({ topLeft: 20, topRight: 20 })
       .position({ x: 0, y: '40%' })
       .zIndex(1000)
+      .animation({
+        duration: 300,
+        curve: Curve.EaseInOut
+      })
+    }
+  }
+
+  // 图片选择弹窗组件
+  @Builder
+  ImagePickerModal() {
+    if (this.showImagePickerModal) {
+      Column() {
+        // 弹窗头部
+        Row() {
+          Button('取消')
+            .fontSize(16)
+            .fontColor('#666')
+            .backgroundColor('transparent')
+            .onClick(() => {
+              this.showImagePickerModal = false;
+            })
+          
+          Blank()
+          
+          Text('选择图片')
+            .fontSize(18)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#333')
+          
+          Blank()
+          
+          Button('确定')
+            .fontSize(16)
+            .fontColor('#2980B9')
+            .backgroundColor('transparent')
+            .onClick(() => {
+              this.showImagePickerModal = false;
+            })
+        }
+        .width('100%')
+        .height(56)
+        .padding({ left: 16, right: 16 })
+        .backgroundColor('#fff')
+        .border({ width: { bottom: 1 }, color: '#f0f0f0' })
+
+        // 图片选择区域
+        Column() {
+          // 选择图片按钮
+          Button() {
+            Row() {
+              Image($r('app.media.ic_add_circle'))
+                .width(24)
+                .height(24)
+              Text('从相册选择图片')
+                .fontSize(16)
+                .fontColor('#2980B9')
+                .margin({ left: 8 })
+            }
+          }
+          .width('100%')
+          .height(56)
+          .backgroundColor('rgba(41, 128, 185, 0.1)')
+          .borderRadius(12)
+          .margin({ left: 16, right: 16, top: 16, bottom: 16 })
+          .onClick(async () => {
+            await this.addImage();
+          })
+
+          // 已选择图片预览
+          if (this.publishImages.length > 0) {
+            Column() {
+              Text('已选择的图片')
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#333')
+                .margin({ left: 16, bottom: 12 })
+                .textAlign(TextAlign.Start)
+              
+              Grid() {
+                ForEach(this.publishImages, (image: string, index: number) => {
+                  GridItem() {
+                    Stack() {
+                      Image(image)
+                        .width('100%')
+                        .height(100)
+                        .borderRadius(8)
+                        .objectFit(ImageFit.Cover)
+                        .backgroundColor('#f0f0f0')
+                      
+                      // 删除按钮
+                      Button('×')
+                        .fontSize(18)
+                        .fontColor('#fff')
+                        .backgroundColor('rgba(0,0,0,0.7)')
+                        .borderRadius(12)
+                        .width(24)
+                        .height(24)
+                        .position({ x: '85%', y: '5%' })
+                        .onClick(() => {
+                          this.removeImage(index);
+                        })
+                    }
+                  }
+                })
+              }
+              .columnsTemplate('1fr 1fr 1fr')
+              .columnsGap(12)
+              .rowsGap(12)
+              .width('100%')
+              .padding({ left: 16, right: 16, bottom: 16 })
+            }
+            .width('100%')
+          }
+
+          // 提示信息
+          if (this.publishImages.length === 0) {
+            Column() {
+              Text('暂无选择的图片')
+                .fontSize(14)
+                .fontColor('#999')
+                .margin({ top: 20 })
+            }
+            .width('100%')
+            .alignItems(HorizontalAlign.Center)
+          }
+        }
+        .backgroundColor('#fff')
+        .layoutWeight(1)
+      }
+      .width('100%')
+      .height('50%')
+      .backgroundColor('#fff')
+      .borderRadius({ topLeft: 20, topRight: 20 })
+      .position({ x: 0, y: '50%' })
+      .zIndex(2000) // 比发布弹窗更高的层级
       .animation({
         duration: 300,
         curve: Curve.EaseInOut
@@ -899,6 +990,9 @@ struct DynamicList {
 
       // 发布弹窗
       this.PublishModal()
+
+      // 图片选择弹窗
+      this.ImagePickerModal()
 
       // 底部导航栏
       BottomNavBar({ navIndex: 'dynamic' })
