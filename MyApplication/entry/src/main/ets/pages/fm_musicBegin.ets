@@ -235,10 +235,7 @@ struct FMMusicBegin {
       }
       .width('100%')
       .height('100%')
-      .linearGradient({
-        direction: GradientDirection.Bottom,
-        colors: [['#1a1a1a', 0.0], ['#2d2d2d', 0.5], ['#1a1a1a', 1.0]]
-      })
+      .backgroundColor('#2d2d2d')
 
       Column() {
         // 顶部导航栏
