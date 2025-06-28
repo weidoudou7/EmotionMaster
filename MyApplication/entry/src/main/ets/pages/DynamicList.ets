@@ -250,10 +250,14 @@ struct DynamicList {
             .fontColor(dynamic.likeCount > 0 ? '#ff6b6b' : '#999')
         }
         .onClick(() => {
-          if (dynamic.likeCount > 0) {
-            this.unlikeDynamic(dynamic);
+          if (!isLocal) {
+            if (dynamic.likeCount > 0) {
+              this.unlikeDynamic(dynamic);
+            } else {
+              this.likeDynamic(dynamic);
+            }
           } else {
-            this.likeDynamic(dynamic);
+            promptAction.showToast({ message: '本地动态暂不支持点赞' });
           }
         })
 
