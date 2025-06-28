@@ -29,6 +29,8 @@ struct CreateFigurePage {
   @State private isGeneratingFigure: boolean = false
   @State private selectedFigureType: number = 0
   @State private selectedImageIndex: number = 0
+  @State private lastClickTime: number = 0
+  @State private lastClickIndex: number = -1
 
   // 预定义的五种风格
   private readonly figureStyles: string[] = ['古风', '赛博', '卡通', '动漫', 'Q版']
@@ -200,7 +202,7 @@ struct CreateFigurePage {
               .borderRadius(12)
               .objectFit(ImageFit.Cover)
               .border({ width: this.selectedImageIndex === idx ? 3 : 0, color: '#FFD700' })
-              .onClick(() => this.selectedImageIndex = idx)
+              .onClick(() => this.handleImageClick(img, this.figureTypes[this.selectedFigureType], idx))
           }
         })
       }
@@ -421,6 +423,54 @@ struct CreateFigurePage {
           console.error('UI错误处理失败:', uiError)
         }
       }, 0)
+    }
+  }
+
+  /**
+   * 处理图片点击事件，实现双击功能
+   */
+  private handleImageClick(figureImageUrl: string, figureType: string, index: number): void {
+    const currentTime = Date.now()
+    
+    // 检查是否是双击（300ms内的两次点击）
+    if (currentTime - this.lastClickTime < 300 && this.lastClickIndex === index) {
+      // 双击事件 - 跳转到聊天页面
+      this.startChatWithFigure(figureImageUrl, figureType)
+      // 重置状态
+      this.lastClickTime = 0
+      this.lastClickIndex = -1
+    } else {
+      // 单击事件 - 选择图片
+      this.selectedImageIndex = index
+      this.lastClickTime = currentTime
+      this.lastClickIndex = index
+    }
+  }
+
+  /**
+   * 开始与选定人物聊天
+   */
+  private startChatWithFigure(figureImageUrl: string, figureType: string): void {
+    try {
+      console.log('开始与人物聊天，图片URL:', figureImageUrl);
+      console.log('人物类型:', figureType);
+      
+      // 跳转到聊天页面，传递人物信息
+      router.pushUrl({
+        url: 'pages/chat',
+        params: {
+          figureImageUrl: figureImageUrl,
+          figureType: figureType,
+          figureName: `${figureType}角色`,
+          isFromCreateFigure: true
+        }
+      })
+    } catch (error) {
+      console.error('跳转到聊天页面失败:', error);
+      promptAction.showToast({ 
+        message: '跳转失败，请稍后重试',
+        duration: 2000
+      })
     }
   }
 } 

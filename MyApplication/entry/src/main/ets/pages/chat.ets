@@ -12,14 +12,20 @@ interface ChatMessage {
   duration?: number; // 语音时长，单位秒
 }
 
+// 新增：路由参数接口
+interface ChatParams {
+  figureImageUrl?: string;
+  figureType?: string;
+  figureName?: string;
+  isFromCreateFigure?: boolean;
+}
+
 @Entry
 @Component
 struct Chat {
   @State private chatData: ChatMessage[] = [
     // 模拟图片中的消息数据
-    { id: 1, isMe: false, avatar: $r('app.media.splash'), content: '简介 小黄：听说班里会来2个新同学。小黑：谁知道呢，希望不会来一个绿茶。（小蓝看书）小粉：希望会来一个女孩子吧！这样我又能多好朋友。小红：不打我妹妹😀就行。（小绿睡觉）这时茶茶走进了进来）大家好~我叫茶茶。（其他人都要吐了', time: '10:30' }, // TODO: 替换为实际的 user_avatar 图片资源
-    { id: 2, isMe: false, avatar: $r('app.media.splash'), content: '16\"\n(小黄) 听说班里会来2个新同学。\n(小黑) 谁知道呢，希望不会来一个绿茶。\n(小蓝看书) (小粉) 希望会来一个女孩子吧！这样我又\n能多好朋友。(小红) 不打我妹妹😀\n就行。(小绿睡觉) (这时茶茶走\n了进来) 大家好~我叫茶茶。(其\n他人都呕吐了', time: '10:32', type: 'voice', duration: 16 }, // TODO: 替换为实际的 user_avatar 图片资源
-    { id: 3, isMe: true, avatar: $r('app.media.splash'), content: '好的，收到！', time: '10:33' }, // TODO: 替换为实际的 my_avatar 图片资源
+    { id: 1, isMe: false, avatar: $r('app.media.splash'), content: '你好！很高兴认识你！', time: '10:30' }, // TODO: 替换为实际的 user_avatar 图片资源
   ];
 
   @State private inputText: string = '';
@@ -31,6 +37,39 @@ struct Chat {
   @State private scrollOffset: number = 0; // 滚动偏移量
   @State private isHeaderCompact: boolean = false; // 顶部栏是否紧凑
   @State private isInputFocused: boolean = false; // 输入框是否获得焦点
+
+  // 新增：从CreateFigure页面传递的参数
+  @State private figureImageUrl: string = '';
+  @State private figureType: string = '';
+  @State private figureName: string = '';
+  @State private isFromCreateFigure: boolean = false;
+
+  aboutToAppear() {
+    // 获取路由参数
+    const params = router.getParams() as ChatParams;
+    if (params) {
+      this.figureImageUrl = params.figureImageUrl || '';
+      this.figureType = params.figureType || '';
+      this.figureName = params.figureName || '';
+      this.isFromCreateFigure = params.isFromCreateFigure || false;
+      
+      // 如果是从CreateFigure页面来的，更新聊天信息
+      if (this.isFromCreateFigure && this.figureImageUrl) {
+        this.agentName = this.figureName;
+        this.agentSubInfo = `${this.figureType}风格角色`;
+        
+        // 添加欢迎消息
+        const welcomeMessage: ChatMessage = {
+          id: this.chatData.length + 1,
+          isMe: false,
+          avatar: $r('app.media.splash'),
+          content: `你好！我是${this.figureName}，很高兴认识你！让我们开始聊天吧~`,
+          time: new Date().toLocaleTimeString().slice(0, 5)
+        };
+        this.chatData = [welcomeMessage, ...this.chatData];
+      }
+    }
+  }
 
   private sendMessage() {
     if (this.inputText.trim() === '') return;
@@ -50,14 +89,27 @@ struct Chat {
   build() {
     Stack() {
       // 全屏背景图片 (Z-index: 0)
-      Image(this.bgImage)
-        .width('100%')
-        .height('100%')
-        .objectFit(ImageFit.Cover)
-        .position({ x: 0, y: 0 })
-        .zIndex(0)
-        .align(Alignment.TopStart) // 确保图片从左上角开始填充
-        .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+      if (this.isFromCreateFigure && this.figureImageUrl) {
+        // 如果是从CreateFigure页面来的，使用人物图片作为背景
+        Image(this.figureImageUrl)
+          .width('100%')
+          .height('100%')
+          .objectFit(ImageFit.Cover)
+          .position({ x: 0, y: 0 })
+          .zIndex(0)
+          .align(Alignment.TopStart) // 确保图片从左上角开始填充
+          .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+      } else {
+        // 默认背景图片
+        Image(this.bgImage)
+          .width('100%')
+          .height('100%')
+          .objectFit(ImageFit.Cover)
+          .position({ x: 0, y: 0 })
+          .zIndex(0)
+          .align(Alignment.TopStart) // 确保图片从左上角开始填充
+          .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+      }
         //.expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
 
       Column() {
@@ -65,9 +117,18 @@ struct Chat {
         Row() {
           // 左侧：智能体头像和名称/连接者信息
           Row() {
-            Image(this.agentAvatar)
-              .width(this.isHeaderCompact ? 24 : 30).height(this.isHeaderCompact ? 24 : 30).borderRadius(this.isHeaderCompact ? 12 : 24)
-              .margin({ right: this.isHeaderCompact ? 4 : 6 })
+            if (this.isFromCreateFigure && this.figureImageUrl) {
+              // 如果是从CreateFigure页面来的，使用人物图片作为头像
+              Image(this.figureImageUrl)
+                .width(this.isHeaderCompact ? 24 : 30).height(this.isHeaderCompact ? 24 : 30).borderRadius(this.isHeaderCompact ? 12 : 24)
+                .margin({ right: this.isHeaderCompact ? 4 : 6 })
+                .objectFit(ImageFit.Cover)
+            } else {
+              // 默认头像
+              Image(this.agentAvatar)
+                .width(this.isHeaderCompact ? 24 : 30).height(this.isHeaderCompact ? 24 : 30).borderRadius(this.isHeaderCompact ? 12 : 24)
+                .margin({ right: this.isHeaderCompact ? 4 : 6 })
+            }
 
             Column() {
               Text(this.agentName)
@@ -274,7 +335,7 @@ struct Chat {
             //   .opacity(0.7)
             //   .padding({ left: 10, right: 10, bottom: 8, top: 0 }) // 调整时间文本的padding
           }
-          .backgroundColor('#1a1a1a') // 语音条背景色调整为浅黑色
+          .backgroundColor('rgba(26, 26, 26, 0.6)') // 语音条背景色调整为半透明
           .borderRadius(8)
           .alignItems(HorizontalAlign.Start) // 气泡内内容左对齐
           .constraintSize({ maxWidth: '70%' }) // 限制整个气泡的最大宽度
@@ -289,7 +350,7 @@ struct Chat {
             //   .opacity(0.7)
             //   .padding({ left: 12, right: 12, bottom: 8, top: 0 }) // 调整时间文本的padding
           }
-          .backgroundColor('#1a1a1a') // 消息气泡背景色调整为浅黑色
+          .backgroundColor('rgba(26, 26, 26, 0.6)') // 消息气泡背景色调整为半透明
           .borderRadius(8)
           .alignItems(HorizontalAlign.Start) // 气泡内内容左对齐
           .constraintSize({ maxWidth: '70%' }) // 限制整个气泡的最大宽度
@@ -327,7 +388,7 @@ struct Chat {
             //   .opacity(0.7)
             //   .padding({ left: 10, right: 10, bottom: 8, top: 0 }) // 调整时间文本的padding
           }
-          .backgroundColor('#f9cb82') // 语音条背景色调整为不那么黄的金色
+          .backgroundColor('rgba(249, 203, 130, 0.7)') // 语音条背景色调整为半透明
           .borderRadius(8)
           .alignItems(HorizontalAlign.End) // 气泡内内容右对齐
           .constraintSize({ maxWidth: '70%' }) // 限制整个气泡的最大宽度
@@ -342,7 +403,7 @@ struct Chat {
             //   .opacity(0.7)
             //   .padding({ left: 12, right: 12, bottom: 8, top: 0 }) // 调整时间文本的padding
           }
-          .backgroundColor('#E8C838') // 消息气泡背景色调整为不那么黄的金色
+          .backgroundColor('rgba(232, 200, 56, 0.7)') // 消息气泡背景色调整为半透明
           .borderRadius(8)
           .alignItems(HorizontalAlign.End) // 气泡内内容右对齐
           .constraintSize({ maxWidth: '70%' }) // 限制整个气泡的最大宽度
