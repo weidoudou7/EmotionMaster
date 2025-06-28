@@ -10,7 +10,6 @@
     "pages/chat",
     "pages/planetpage",
     "pages/DynamicList",
-    "pages/DynamicEdit",
     "pages/CreateFigure",
     "pages/FigureResult",
     "pages/ConversationList",
@@ -19,6 +18,9 @@
     "pages/fm_musicBegin",
     "pages/fm_columnpage",
     "pages/fm_articleDetail",
+    "pages/fm_meditation",
+    "pages/fm_breathing",
+    "pages/fm_assessment",
     "pages/BottomNavBar",
     "pages/FeaturedList"
   ]

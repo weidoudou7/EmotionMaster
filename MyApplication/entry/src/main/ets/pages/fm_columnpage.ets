@@ -11,6 +11,9 @@ interface Article {
   tags: string[];
   coverImage: Resource;
   content: string;
+  icon?: string;
+  iconColor?: string;
+  bgColor?: string;
 }
 
 // 定义专栏接口
@@ -22,6 +25,9 @@ interface Column {
   articleCount: number;
   followerCount: number;
   isFollowed: boolean;
+  icon?: string;
+  iconColor?: string;
+  bgColor?: string;
 }
 
 // 定义专栏参数接口
@@ -64,6 +70,9 @@ struct ColumnPage {
       tags: ['心理健康', '现代生活', '压力管理'],
       coverImage: $r('app.media.background'),
       content: '在现代快节奏的生活中，心理健康问题日益突出。本文将从多个角度分析现代人面临的心理挑战，并提供实用的应对策略...',
+      icon: '🧠',
+      iconColor: '#1976D2',
+      bgColor: '#E3F2FD'
     },
     {
       id: '2',
@@ -75,6 +84,9 @@ struct ColumnPage {
       tags: ['正念冥想', '神经科学', '心理健康'],
       coverImage: $r('app.media.background'),
       content: '正念冥想作为一种古老的心理练习方法，在现代神经科学研究中得到了越来越多的验证。本文将详细介绍其科学依据...',
+      icon: '🧘‍♀️',
+      iconColor: '#4CAF50',
+      bgColor: '#E8F5E8'
     },
     {
       id: '3',
@@ -86,6 +98,9 @@ struct ColumnPage {
       tags: ['情绪管理', '认知行为', '自我提升'],
       coverImage: $r('app.media.background'),
       content: '情绪管理是每个人都需要掌握的重要技能。本文将从认知行为的角度，介绍如何更好地理解和控制自己的情绪...',
+      icon: '😊',
+      iconColor: '#FF9800',
+      bgColor: '#FFF3E0'
     }
   ];
 
@@ -101,6 +116,9 @@ struct ColumnPage {
       tags: ['鸿蒙开发', 'ArkTS', '应用开发'],
       coverImage: $r('app.media.background'),
       content: '本文将从零开始，详细介绍如何使用鸿蒙HarmonyOS开发一个心理健康应用。包括项目搭建、UI设计、数据管理等核心内容...',
+      icon: '📱',
+      iconColor: '#4CAF50',
+      bgColor: '#E8F5E8'
     },
     {
       id: '2',
@@ -112,6 +130,9 @@ struct ColumnPage {
       tags: ['ArkTS', '状态管理', '架构设计'],
       coverImage: $r('app.media.background'),
       content: '状态管理是应用开发中的核心概念。本文将深入探讨ArkTS中的状态管理机制，包括@State、@Link、@Prop等装饰器的使用...',
+      icon: '⚙️',
+      iconColor: '#2196F3',
+      bgColor: '#E3F2FD'
     },
     {
       id: '3',
@@ -123,6 +144,9 @@ struct ColumnPage {
       tags: ['UI设计', '组件库', '鸿蒙开发'],
       coverImage: $r('app.media.background'),
       content: '优秀的UI组件库能够大大提高开发效率。本文将分享如何设计一个高质量的鸿蒙UI组件库，包括组件设计原则、实现技巧等...',
+      icon: '🎨',
+      iconColor: '#9C27B0',
+      bgColor: '#F3E5F5'
     }
   ];
 
@@ -138,6 +162,9 @@ struct ColumnPage {
       tags: ['行业分析', '市场趋势', '心理健康'],
       coverImage: $r('app.media.background'),
       content: '随着人们对心理健康的重视程度不断提升，心理健康行业正在经历前所未有的发展机遇。本文将从多个维度分析2024年的行业趋势...',
+      icon: '📈',
+      iconColor: '#FF9800',
+      bgColor: '#FFF3E0'
     },
     {
       id: '2',
@@ -149,6 +176,9 @@ struct ColumnPage {
       tags: ['人工智能', '心理健康', '技术创新'],
       coverImage: $r('app.media.background'),
       content: '人工智能技术正在各个领域发挥重要作用，心理健康领域也不例外。本文将探讨AI在心理咨询、情绪识别、个性化治疗等方面的应用...',
+      icon: '🤖',
+      iconColor: '#607D8B',
+      bgColor: '#ECEFF1'
     },
     {
       id: '3',
@@ -160,6 +190,9 @@ struct ColumnPage {
       tags: ['商业模式', '数字化转型', '心理健康服务'],
       coverImage: $r('app.media.background'),
       content: '数字化正在重塑心理健康服务的商业模式。本文将分析传统心理健康服务向数字化转型的路径，以及新的商业机会...',
+      icon: '💡',
+      iconColor: '#FFC107',
+      bgColor: '#FFF8E1'
     }
   ];
 
@@ -181,7 +214,10 @@ struct ColumnPage {
           coverImage: $r('app.media.background'),
           articleCount: 156,
           followerCount: 2847,
-          isFollowed: false
+          isFollowed: false,
+          icon: '🔍',
+          iconColor: '#1976D2',
+          bgColor: '#E3F2FD'
         };
         this.articles = this.depthArticles;
         break;
@@ -193,7 +229,10 @@ struct ColumnPage {
           coverImage: $r('app.media.background'),
           articleCount: 89,
           followerCount: 1567,
-          isFollowed: false
+          isFollowed: false,
+          icon: '💻',
+          iconColor: '#4CAF50',
+          bgColor: '#E8F5E8'
         };
         this.articles = this.techArticles;
         break;
@@ -205,7 +244,10 @@ struct ColumnPage {
           coverImage: $r('app.media.background'),
           articleCount: 203,
           followerCount: 3921,
-          isFollowed: false
+          isFollowed: false,
+          icon: '📊',
+          iconColor: '#FF9800',
+          bgColor: '#FFF3E0'
         };
         this.articles = this.observeArticles;
         break;
@@ -217,7 +259,10 @@ struct ColumnPage {
           coverImage: $r('app.media.background'),
           articleCount: 156,
           followerCount: 2847,
-          isFollowed: false
+          isFollowed: false,
+          icon: '🔍',
+          iconColor: '#1976D2',
+          bgColor: '#E3F2FD'
         };
         this.articles = this.depthArticles;
     }
@@ -247,65 +292,84 @@ struct ColumnPage {
 
   build() {
     Column() {
-      // 顶部导航栏
-      Row() {
+      // 返回按钮（绝对定位悬浮最上方）
+      Stack() {
+        // 返回按钮
         Button('‹')
-          .fontSize(24)
-          .fontColor('#333')
-          .backgroundColor('transparent')
+          .fontSize(22)
+          .fontColor('#1976D2')
+          .backgroundColor('#fff')
+          .borderRadius(18)
+          .width(36)
+          .height(36)
+          .shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
+          .position({ x: 16, y: 16 })
           .onClick(() => router.back())
-
+        // 卡片内容整体下移
         Column() {
+          // 如果有图标就显示图标，否则显示封面图片
+          if (this.currentColumn.icon) {
+            Row() {
+              Text(this.currentColumn.icon)
+                .fontSize(32)
+                .fontColor(this.currentColumn.iconColor || '#666')
+            }
+            .width(60)
+            .height(60)
+            .backgroundColor(this.currentColumn.bgColor || '#F5F5F5')
+            .borderRadius(8)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(VerticalAlign.Center)
+            .margin({ bottom: 12, top: 12 })
+          } else {
+            Image(this.currentColumn.coverImage)
+              .width(60)
+              .height(60)
+              .borderRadius(8)
+              .objectFit(ImageFit.Cover)
+              .margin({ bottom: 12, top: 12 })
+          }
           Text(this.currentColumn.name)
-            .fontSize(18)
-            .fontWeight(FontWeight.Medium)
-            .fontColor('#333')
-          Text(`${this.currentColumn.articleCount}篇文章 · ${this.currentColumn.followerCount}人关注`)
-            .fontSize(12)
-            .fontColor('#999')
-            .margin({ top: 2 })
-        }
-        .layoutWeight(1)
-        .margin({ left: 16, right: 16 })
-
-        Button(this.currentColumn.isFollowed ? '已关注' : '关注')
-          .fontSize(14)
-          .fontColor(this.currentColumn.isFollowed ? '#999' : '#fff')
-          .backgroundColor(this.currentColumn.isFollowed ? '#f5f5f5' : '#0D9FFB')
-          .borderRadius(16)
-          .padding({ left: 16, right: 16, top: 6, bottom: 6 })
-          .onClick(() => this.toggleFollow())
-      }
-      .width('100%')
-      .height(64)
-      .padding({ left: 16, right: 16 })
-      .backgroundColor('#fff')
-      .border({ width: { bottom: 1 }, color: '#f0f0f0' })
-
-      // 专栏介绍
-      Row() {
-        Image(this.currentColumn.coverImage)
-          .width(60)
-          .height(60)
-          .borderRadius(8)
-          .objectFit(ImageFit.Cover)
-
-        Column() {
+            .fontSize(20)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#1976D2')
+            .textAlign(TextAlign.Center)
+            .margin({ bottom: 4 })
           Text(this.currentColumn.description)
             .fontSize(14)
             .fontColor('#666')
             .maxLines(2)
+            .textAlign(TextAlign.Center)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .margin({ bottom: 8 })
+          Row() {
+            Text(`${this.currentColumn.articleCount}篇文章`)
+              .fontColor('#0D9FFB')
+              .fontSize(13)
+              .margin({ right: 16 })
+            Text(`${this.currentColumn.followerCount}人关注`)
+              .fontColor('#0D9FFB')
+              .fontSize(13)
+          }
+          .justifyContent(FlexAlign.Center)
+          .margin({ bottom: 12 })
+          Button(this.currentColumn.isFollowed ? '已关注' : '关注')
+            .fontSize(14)
+            .fontColor(this.currentColumn.isFollowed ? '#999' : '#fff')
+            .backgroundColor(this.currentColumn.isFollowed ? '#f5f5f5' : '#0D9FFB')
+            .borderRadius(16)
+            .padding({ left: 24, right: 24, top: 8, bottom: 8 })
+            .margin({ top: 4 })
+            .onClick(() => this.toggleFollow())
         }
-        .layoutWeight(1)
-        .margin({ left: 12 })
-        .justifyContent(FlexAlign.Center)
+        .width('100%')
+        .padding(20)
+        .backgroundColor(this.currentColumn.bgColor || '#E3F2FD')
+        .borderRadius(16)
+        .shadow({ radius: 8, color: 'rgba(0,0,0,0.10)', offsetX: 0, offsetY: 4 })
+        .margin({ top: 65, left: 16, right: 16, bottom: 8 })
       }
       .width('100%')
-      .padding(16)
-      .backgroundColor('#fff')
-      .margin({ bottom: 8 })
-
       // 标签栏
       Row() {
         ForEach(this.tabs, (tab: string, idx: number) => {
@@ -387,12 +451,28 @@ struct ColumnPage {
         }
         .layoutWeight(1)
 
-        Image(article.coverImage)
+        // 如果有图标就显示图标，否则显示封面图片
+        if (article.icon) {
+          Row() {
+            Text(article.icon)
+              .fontSize(28)
+              .fontColor(article.iconColor || '#666')
+          }
           .width(80)
           .height(80)
+          .backgroundColor(article.bgColor || '#F5F5F5')
           .borderRadius(8)
-          .objectFit(ImageFit.Cover)
+          .justifyContent(FlexAlign.Center)
+          .alignItems(VerticalAlign.Center)
           .margin({ left: 12 })
+        } else {
+          Image(article.coverImage)
+            .width(80)
+            .height(80)
+            .borderRadius(8)
+            .objectFit(ImageFit.Cover)
+            .margin({ left: 12 })
+        }
       }
       .width('100%')
     }
