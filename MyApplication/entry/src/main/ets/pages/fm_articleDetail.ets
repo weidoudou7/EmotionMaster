@@ -1,14 +1,11 @@
 import router from '@ohos.router';
 
 interface ArticleParams {
-  articleId?: string;
-  articleTitle?: string;
-  articleType?: string;
+  articleId : string;
+  articleTitle : string;
+  articleType : string;
 }
 
-const params = router.getParams() as ArticleParams;
-
-// 文章内容数据
 interface ArticleContent {
   id: string;
   title: string;
@@ -17,25 +14,16 @@ interface ArticleContent {
   readTime: string;
   content: string;
 }
-
 @Entry
 @Component
 struct ArticleDetail {
-  @State articleId: string = params.articleId || '1';
-  @State articleTitle: string = params.articleTitle || '文章标题';
-  @State articleType: string = params.articleType || 'deep';
+  @State articleId: string = '1';
+  @State articleTitle: string = '文章标题';
+  @State articleType: string = 'deep';
   @State loading: boolean = true;
   @State articleContent: string = '等待生成中...';
-  @State currentArticle: ArticleContent = {
-    id: this.articleId,
-    title: this.articleTitle,
-    author: '心理学专家',
-    publishTime: '2024-01-15',
-    readTime: '8分钟',
-    content: '在现代快节奏的生活中，心理健康问题日益突出。本文将从多个角度分析现代人面临的心理挑战，并提供实用的应对策略。\n\n随着社会的发展，人们面临着前所未有的压力。工作压力、生活压力、人际关系压力等各种压力源不断涌现，给人们的心理健康带来了严峻的挑战。\n\n研究表明，长期的心理压力会导致各种身心疾病，包括焦虑症、抑郁症、失眠等。因此，学会管理压力、维护心理健康变得尤为重要。\n\n本文将为您详细介绍：\n1. 现代人面临的主要心理挑战\n2. 压力对身心健康的影响\n3. 有效的压力管理策略\n4. 建立健康心理状态的方法\n\n通过阅读本文，您将获得实用的心理健康知识，学会更好地照顾自己的心理状态。',
-  };
 
-  // 深度解析专栏文章内容
+  // 文章内容数据
   private depthArticles: ArticleContent[] = [
     {
       id: '1',
@@ -120,29 +108,41 @@ struct ArticleDetail {
   ];
 
   aboutToAppear() {
+    // 每次页面出现时都重新获取参数
+    const params = router.getParams() as ArticleParams;
+    this.articleId = params.articleId || '1';
+    this.articleTitle = params.articleTitle || '文章标题';
+    this.articleType = params.articleType || 'deep';
+
     this.articleContent = '等待生成中...';
     this.loading = true;
-    const type = this.articleType;
+
     // 根据articleType只在对应专栏查找title
     let matchedTitle = this.articleTitle;
     let targetArticle: ArticleContent | undefined;
-    if (type === 'tech') {
+
+    if (this.articleType === 'tech') {
       targetArticle = this.techArticles.find(article => article.id === this.articleId);
-    } else if (type === 'industry') {
+    } else if (this.articleType === 'observe') {
       targetArticle = this.observeArticles.find(article => article.id === this.articleId);
     } else {
       targetArticle = this.depthArticles.find(article => article.id === this.articleId);
     }
+
     if (targetArticle) {
       matchedTitle = targetArticle.title;
-      this.currentArticle = targetArticle;
     }
+
+    console.log(this.articleTitle+" "+this.articleType+" "+this.articleId)
+
     import('../service/apiservice').then((mod) => {
       const ApiService = mod.ApiService;
+
       let safeType: 'deep' | 'tech' | 'industry' = 'deep';
-      if (type === 'tech') safeType = 'tech';
-      else if (type === 'observe') safeType = 'industry';
-      ApiService.generateAIArticle(safeType, matchedTitle).then(content => {
+      if (this.articleType === 'tech') safeType = 'tech';
+      else if (this.articleType === 'observe') safeType = 'industry';
+
+      ApiService.generateAIArticle(safeType, this.articleTitle).then(content => {
         this.articleContent = content;
         this.loading = false;
       }).catch((error:Error) => {
@@ -162,30 +162,6 @@ struct ArticleDetail {
     const articleId = this.articleId;
     let targetArticle: ArticleContent | undefined;
 
-    // 在深度解析专栏中查找
-    targetArticle = this.depthArticles.find(article => article.id === articleId);
-    if (targetArticle && this.articleType === "depth") {
-      this.currentArticle = targetArticle;
-      console.log(this.currentArticle.title);
-      return;
-    }
-
-    // 在技术分享专栏中查找
-    targetArticle = this.techArticles.find(article => article.id === articleId);
-    if (targetArticle && this.articleType === "tech") {
-      this.currentArticle = targetArticle;
-      console.log(this.currentArticle.title);
-      return;
-    }
-
-    // 在行业观察专栏中查找
-    targetArticle = this.observeArticles.find(article => article.id === articleId);
-    if (targetArticle && this.articleType === "observe") {
-      this.currentArticle = targetArticle;
-      console.log(this.currentArticle.title);
-      return;
-    }
-
     // 如果没找到，使用默认文章
     console.log('未找到文章，使用默认内容');
   }
@@ -200,7 +176,7 @@ struct ArticleDetail {
           .backgroundColor('transparent')
           .onClick(() => router.back())
 
-        Text(this.currentArticle.title)
+        Text(this.articleTitle)
           .fontSize(18)
           .fontWeight(FontWeight.Medium)
           .fontColor('#333')
@@ -208,6 +184,9 @@ struct ArticleDetail {
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .layoutWeight(1)
           .margin({ left: 16, right: 16 })
+          .onClick(()=>{
+            console.log(this.articleTitle+' '+this.articleType)
+          })
 
         Button('⋮')
           .fontSize(20)

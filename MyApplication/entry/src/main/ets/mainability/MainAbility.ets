@@ -1,6 +1,7 @@
 import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
+import { KeyboardAvoidMode } from '@kit.ArkUI';
 
 const DOMAIN = 0x0000;
 
@@ -17,7 +18,14 @@ export default class MainAbility extends UIAbility {
     // Main window is created, set main page for this ability
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
 
+<<<<<<< HEAD
     windowStage.loadContent('pages/CreateFigure', (err) => {
+=======
+    windowStage.loadContent('pages/homepage', (err) => {
+      // 设置键盘避免模式为OFFSET，解决键盘弹出时布局问题
+      windowStage.getMainWindowSync().getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.OFFSET);
+
+>>>>>>> b3b4f87 (chat_V3)
       if (err.code) {
         hilog.error(DOMAIN, 'testTag', 'Failed to load the content. Cause: %{public}s', JSON.stringify(err));
         return;

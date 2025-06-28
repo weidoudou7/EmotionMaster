@@ -1,5 +1,6 @@
 import { BottomNavBar } from './BottomNavBar';
 import router from '@ohos.router';
+import { inputMethod } from '@kit.IMEKit';
 
 interface ChatMessage {
   id: number;
@@ -29,6 +30,7 @@ struct Chat {
 
   @State private scrollOffset: number = 0; // 滚动偏移量
   @State private isHeaderCompact: boolean = false; // 顶部栏是否紧凑
+  @State private isInputFocused: boolean = false; // 输入框是否获得焦点
 
   private sendMessage() {
     if (this.inputText.trim() === '') return;
@@ -56,6 +58,7 @@ struct Chat {
         .zIndex(0)
         .align(Alignment.TopStart) // 确保图片从左上角开始填充
         .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+        //.expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
 
       Column() {
         // 顶部信息栏 (Z-index: 1)
@@ -122,6 +125,7 @@ struct Chat {
         .alignItems(VerticalAlign.Center)
         .justifyContent(FlexAlign.SpaceBetween) // 改变布局方式
         .zIndex(1)
+        .expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
 
         // 聊天消息列表 (Z-index: 1)
         List({ space: 8 }) {
@@ -139,6 +143,26 @@ struct Chat {
         .layoutWeight(1) // 占据剩余垂直空间
         .padding({ left: 12, right: 12, top: 0, bottom: 10 }) // 列表本身的padding
         .zIndex(1)
+        .expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
+        .scrollBar(BarState.Off) // 隐藏滚动条
+        .edgeEffect(EdgeEffect.Spring) // 添加边缘弹性效果
+        .onScroll((offsetX: number, offsetY: number) => {
+          // 监听滚动事件，可以用于实现下拉刷新等功能
+          console.log('聊天列表滚动位置:', offsetX, offsetY);
+        })
+        .onReachEnd(() => {
+          // 滚动到底部时的回调，可以用于加载更多历史消息
+          console.log('已滚动到聊天列表底部');
+        })
+        .onTouch(() => {
+          // 点击消息列表区域收起键盘
+          if (this.isInputFocused) {
+            let inputMethodController = inputMethod.getController();
+            inputMethodController.stopInputSession();
+            this.isInputFocused = false;
+          }
+        })
+
 
         // 底部输入区域 (Z-index: 4)
         Row() {
@@ -166,16 +190,19 @@ struct Chat {
             .onChange((text: string) => {
               this.inputText = text;
             })
+            .onFocus(() => {
+              this.isInputFocused = true;
+            })
+            .onBlur(() => {
+              this.isInputFocused = false;
+            })
 
           // 右侧加号按钮 (用于更多功能)
           Image($r('app.media.ic_add_circle')) // TODO: 替换为实际的 ic_add_circle 图片资源
             .width(30).height(30)
             .onClick(() => {
-              if (this.inputText.trim().length > 0) {
-                this.sendMessage();
-              } else {
-                console.log('打开更多功能面板'); // 待实现
-              }
+              // 加号按钮只负责打开更多功能面板，不发送消息
+              console.log('打开更多功能面板'); // 待实现
             })
             .margin({ right: 8 })
 

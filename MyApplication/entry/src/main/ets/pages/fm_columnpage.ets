@@ -52,6 +52,8 @@ struct ColumnPage {
   @State currentTab: number = 0;
   private tabs: string[] = ['最新', '热门', '推荐'];
 
+  @State currentColumnType: string = 'depth';
+
   // 深度解析专栏文章
   private depthArticles: Article[] = [
     {
@@ -171,7 +173,7 @@ struct ColumnPage {
   // 初始化专栏内容
   initializeColumn() {
     const columnType = params.columnType || 'depth';
-    
+    this.currentColumnType = columnType;
     switch(columnType) {
       case 'depth':
         this.currentColumn = {
@@ -327,7 +329,7 @@ struct ColumnPage {
       List() {
         ForEach(this.articles, (article: Article) => {
           ListItem() {
-            this.ArticleCard(article, params.columnType || 'depth')
+            this.ArticleCard(article, this.currentColumnType)
           }
         }, (article: Article) => article.id)
       }
@@ -401,8 +403,8 @@ struct ColumnPage {
     .backgroundColor('#fff')
     .margin({ bottom: 8 })
     .onClick(() => {
-      this.goToArticleDetail(article, columnType);
-      console.log("进入了:"+article.title)
+      this.goToArticleDetail(article, this.currentColumnType);
+      console.log("进入了:"+article.title+",类别为："+this.currentColumnType)
     })
   }
 
