@@ -2,7 +2,7 @@
 import router from '@ohos.router';
 import fs from '@ohos.file.fs';
 import promptAction from '@ohos.promptAction';
-import { BottomNavBar } from './BottomNavBar';
+
 
 
 interface Conversation {
@@ -259,8 +259,7 @@ struct ConversationList {
       .width('100%')
       .height('100%')
       
-      // 底部导航栏
-      BottomNavBar({ navIndex: 'planet' })
+
     }
   }
 

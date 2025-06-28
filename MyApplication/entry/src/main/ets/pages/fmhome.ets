@@ -34,7 +34,7 @@ interface EmotionCard {
 
 @Entry
 @Component
-struct FMHomePage {
+export struct FMHomePage {
   @State activeTab: number = 0
   private tabs: string[] = ['精选', '音乐', '专栏', '工具'];
   private scrollController: Scroller = new Scroller()

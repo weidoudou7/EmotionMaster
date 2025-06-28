@@ -1,4 +1,4 @@
-import { BottomNavBar } from './BottomNavBar'
+
 import { globalUserData } from '../models/userdata'
 import http from '@ohos.net.http'
 
@@ -31,7 +31,7 @@ interface PlanetApiResponse {
 
 @Entry
 @Component
-struct PlanetPage {
+export struct PlanetPage {
   private planetData: PlanetDataType = {
     id: 0,
     userId: 0,
@@ -143,7 +143,7 @@ struct PlanetPage {
         }
         .backgroundColor('#fafbff')
       }
-      BottomNavBar({ navIndex: 'planet' })
+
     }
     .width('100%')
     .height('100%')

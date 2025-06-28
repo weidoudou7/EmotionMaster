@@ -86,7 +86,7 @@ struct PlanetDecorationPhonePage {
         }
         .backgroundColor('#fafbff')
       }
-      BottomNavBar({ navIndex: 'planet' })
+
     }
     .width('100%')
     .height('100%')

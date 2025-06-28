@@ -18,6 +18,8 @@
     "pages/fmhome",
     "pages/fm_musicBegin",
     "pages/fm_columnpage",
-    "pages/fm_articleDetail"
+    "pages/fm_articleDetail",
+    "pages/BottomNavBar",
+    "pages/FeaturedList"
   ]
 }

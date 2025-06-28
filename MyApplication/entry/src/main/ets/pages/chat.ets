@@ -1,4 +1,4 @@
-import { BottomNavBar } from './BottomNavBar';
+
 import router from '@ohos.router';
 import { inputMethod } from '@kit.IMEKit';
 
@@ -22,7 +22,7 @@ interface ChatParams {
 
 @Entry
 @Component
-struct Chat {
+export struct Chat {
   @State private chatData: ChatMessage[] = [
     // 模拟图片中的消息数据
     { id: 1, isMe: false, avatar: $r('app.media.splash'), content: '你好！很高兴认识你！', time: '10:30' }, // TODO: 替换为实际的 user_avatar 图片资源
@@ -110,7 +110,7 @@ struct Chat {
           .align(Alignment.TopStart) // 确保图片从左上角开始填充
           .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
       }
-        //.expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
+        //.expandSafeArea([SafeAreaType.KEYBOARD])  //避开键盘区域
 
       Column() {
         // 顶部信息栏 (Z-index: 1)
@@ -296,7 +296,6 @@ struct Chat {
       // 底部导航栏 (Z-index: 3)
       Column() {
         // Blank() // 移除 Blank()
-        BottomNavBar({ navIndex: 'chat' })
       }
       .width('100%')
       // .height('100%') // 移除此属性

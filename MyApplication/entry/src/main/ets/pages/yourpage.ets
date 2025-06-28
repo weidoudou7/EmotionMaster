@@ -6,11 +6,11 @@ import { ApiService } from '../service/apiservice';
 import { UserInfo } from '../common/types';
 import promptAction from '@ohos.promptAction';
 //导入图片模块
-import { BottomNavBar } from './BottomNavBar';
+
 
 @Entry
 @Component
-struct YourPage {
+export struct YourPage {
   @State yourname: string = globalUserData.userName; //用户名称
   @State UID: string = globalUserData.userUID; //用户UID
   @State ooo: boolean = globalUserData.isPrivacyVisible; //用户隐私
@@ -319,7 +319,7 @@ struct YourPage {
         .height('100%')
       }
       // 底部导航栏
-      BottomNavBar({ navIndex: 'personal' })
+
     }
   }
 } 

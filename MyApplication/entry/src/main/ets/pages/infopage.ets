@@ -10,7 +10,7 @@ import { BottomNavBar } from './BottomNavBar';
 
 @Entry
 @Component
-struct InfoPage {
+export struct InfoPage {
   @State userAvatar: Resource = $r("app.media.image"); // 用户头像
   @State userName: string = globalUserData.userName; // 用户名称
   @State userUID: string = globalUserData.userUID; // 用户UID
@@ -372,8 +372,7 @@ struct InfoPage {
       .height('100%')
       .backgroundColor('#F5F5F5')
       
-      // 底部导航栏
-      BottomNavBar({ navIndex: 'personal' })
+
       
       // 个性签名编辑弹窗
       if (this.showSignatureDialog) {

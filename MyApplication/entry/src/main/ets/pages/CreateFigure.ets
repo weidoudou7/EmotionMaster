@@ -15,13 +15,7 @@ interface FigureTypeImages {
 
 @Entry
 @Component
-struct CreateFigurePage {
-  @State private artStyles: ArtStyle[] = [
-    { name: '云梦泽', image: $r('app.media.background'), selected: true },
-    { name: '丹青', image: $r('app.media.bc_blue'), selected: false },
-    { name: '主角', image: $r('app.media.bc_pink'), selected: false },
-    { name: '魔法学院', image: $r('app.media.splash'), selected: false }
-  ]
+export struct CreateFigurePage {
   @State private styleTags: string[] = ['精选', '动漫', '可爱', '写实', '创意', '国风']
   @State private selectedTags: Set<string> = new Set(['精选'])
   @State private desc: string = ''

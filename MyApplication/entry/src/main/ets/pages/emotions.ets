@@ -133,8 +133,7 @@ struct EmotionList {
       .height('100%')
       .opacity(0.8)
       
-      // 底部导航栏
-      BottomNavBar({ navIndex: 'planet' })
+
     }
   }
 }

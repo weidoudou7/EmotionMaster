@@ -1,87 +1,93 @@
 import router from '@ohos.router';
+import { Chat } from './chat';
+import { CreateFigurePage } from './CreateFigure';
+import { FMHomePage } from './fmhome';
+import { HomePage } from './homepage';
+import { YourPage } from './yourpage';
+import {FeaturedList} from './FeaturedList';
 
+@Entry
 @Component
 export struct BottomNavBar {
-  @Prop navIndex: string;
+  @State currentIndex: number = 0;
+  @State private chatTopTabIndex: number = 2; // 默认"综合"
 
   build() {
-    Row({ space: 0 }) {
-      // 首页
-      Column() {
-        Button('首页')
-          .fontSize(14)
-          .fontColor(this.navIndex === 'home' ? '#5a4fff' : '#888')
-          .backgroundColor('#fff')
-          .onClick(() => {
-            if (this.navIndex !== 'home') {
-              router.replaceUrl({ url: 'pages/homepage' });
-            }
-          })
-      }
-      .layoutWeight(1)
+    Tabs({
+      barPosition: BarPosition.End,
+      index: this.currentIndex
+    }) {
+      TabContent() {
+        HomePage()
+      }.tabBar('首页')
 
-      // 聊天
-      Column() {
-        Button('聊天')
-          .fontSize(14)
-          .fontColor(this.navIndex === 'chat' ? '#5a4fff' : '#888')
-          .backgroundColor('#fff')
-          .onClick(() => {
-            if (this.navIndex !== 'chat') {
-              router.replaceUrl({ url: 'pages/chat' });
-            }
-          })
-      }
-      .layoutWeight(1)
+      TabContent() {
+        // ====== 顶部标签栏+内容 ======
+        Column() {
+          Tabs({
+            index: this.chatTopTabIndex,
+            barPosition: BarPosition.Start
+          }) {
+            TabContent() {
+              // 历史内容
+              Column() {
+                Text('历史对话')
+                  .fontSize(24)
+                  .fontColor('#fff')
+                  .fontWeight(FontWeight.Bold)
+                  .margin({ top: 50, bottom: 20 })
+                  .textAlign(TextAlign.Center)
+                
+                Text('这里显示历史对话记录')
+                  .fontSize(16)
+                  .fontColor('#ccc')
+                  .textAlign(TextAlign.Center)
+              }
+              .width('100%')
+              .height('100%')
+              .backgroundColor('#181818')
+            }.tabBar('历史')
 
-      // 创建
-      Column() {
-        Button('+')
-          .fontSize(14)
-          .fontColor(this.navIndex === '+' ? '#5a4fff' : '#888')
-          .backgroundColor('#fff')
-          .onClick(() => {
-            if (this.navIndex !== '+') {
-              router.replaceUrl({ url: 'pages/CreateFigure' });
-            }
-          })
-      }
-      .layoutWeight(1)
+            TabContent() {
+              Chat()
+            }.tabBar('精选')
 
-      // 星球
-      Column() {
-        Button('星球')
-          .fontSize(14)
-          .fontColor(this.navIndex === 'planet' ? '#5a4fff' : '#888')
-          .backgroundColor('#fff')
-          .onClick(() => {
-            if (this.navIndex !== 'planet') {
-              router.replaceUrl({ url: 'pages/planetpage' });
-            }
+            TabContent() {
+              FeaturedList()
+            }.tabBar('综合')
+          }
+          .onChange((idx: number) => {
+            this.chatTopTabIndex = idx
           })
-      }
-      .layoutWeight(1)
+          .barMode(BarMode.Fixed)
+          .barHeight(40)
+          .backgroundColor('transparent')
+          .barBackgroundColor('rgba(255,255,255,0.8)')
+          .barWidth('100%')
+        }
+      }.tabBar('消息')
 
-      // 个人
-      Column() {
-        Button('个人')
-          .fontSize(14)
-          .fontColor(this.navIndex === 'personal' ? '#5a4fff' : '#888')
-          .backgroundColor('#fff')
-          .onClick(() => {
-            if (this.navIndex !== 'personal') {
-              router.replaceUrl({ url: 'pages/yourpage' });
-            }
-          })
-      }
-      .layoutWeight(1)
+      TabContent() {
+        CreateFigurePage()
+      }.tabBar('+')
+
+      TabContent() {
+        FMHomePage()
+      }.tabBar('电台')
+
+      TabContent() {
+        YourPage()
+      }.tabBar('个人')
     }
-    .height(56)
-    .backgroundColor('#fff')
-    .border({ color: '#e0e0e0', width: 1 })
-    .position({ x: 0, y: '96%' })
-    .width('100%')
-    .zIndex(99)
-    .align(Alignment.Bottom)
+    .onChange((index: number) => {
+      this.currentIndex = index;
+    })
+    .barMode(BarMode.Fixed)
+    .barHeight(56)
+    .backgroundColor('transparent')
+    .barBackgroundColor('rgba(255,255,255,0.8)')
+    .barWidth('100%')
   }
 }
+
+

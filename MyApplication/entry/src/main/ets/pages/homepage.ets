@@ -3,7 +3,7 @@ import { BottomNavBar } from './BottomNavBar';
 
 @Entry
 @Component
-struct HomePage {
+export struct HomePage {
   @State count: number = 0  // 计数器状态
   @State isDarkMode: boolean = false  // 主题状态
 
@@ -108,8 +108,7 @@ struct HomePage {
       .backgroundColor(this.isDarkMode ? '#222222' : '#F5F5F5')
       .padding({ bottom: 80 })
       
-      // 底部导航栏
-      BottomNavBar({ navIndex: 'home' })
+
     }
   }
 }
