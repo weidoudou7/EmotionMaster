@@ -20,15 +20,15 @@ export struct BottomNavBar {
       }
       .layoutWeight(1)
 
-      // 聊天
+      // 动态
       Column() {
-        Button('聊天')
+        Button('动态')
           .fontSize(14)
-          .fontColor(this.navIndex === 'chat' ? '#5a4fff' : '#888')
+          .fontColor(this.navIndex === 'dynamic' ? '#5a4fff' : '#888')
           .backgroundColor('#fff')
           .onClick(() => {
-            if (this.navIndex !== 'chat') {
-              router.replaceUrl({ url: 'pages/chat' });
+            if (this.navIndex !== 'dynamic') {
+              router.replaceUrl({ url: 'pages/DynamicList' });
             }
           })
       }

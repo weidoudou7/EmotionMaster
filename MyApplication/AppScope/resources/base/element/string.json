@@ -3,6 +3,10 @@
     {
       "name": "app_name",
       "value": "MyApplication"
+    },
+    {
+      "name": "permission_read_media_reason",
+      "value": "用于访问相册中的图片"
     }
   ]
 }

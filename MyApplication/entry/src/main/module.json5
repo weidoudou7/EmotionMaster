@@ -19,6 +19,13 @@
       {
         "name": "ohos.permission.GET_WIFI_INFO",
         "reason": "$string:app_name"
+      },
+      {
+        "name": "ohos.permission.READ_MEDIA",
+        "reason": "$string:permission_read_media_reason",
+        "usedScene": {
+          "abilities": [ "MainAbility" ]
+        }
       }
     ],
     "abilities": [

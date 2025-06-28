@@ -208,7 +208,7 @@ struct Chat {
       // 底部导航栏 (Z-index: 3)
       Column() {
         // Blank() // 移除 Blank()
-        BottomNavBar({ navIndex: 'chat' })
+        BottomNavBar({ navIndex: 'dynamic' })
       }
       .width('100%')
       // .height('100%') // 移除此属性
