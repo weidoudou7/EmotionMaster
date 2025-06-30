@@ -143,7 +143,32 @@ struct FigureResultPage {
           .borderRadius(24)
           .alignSelf(ItemAlign.Center)
           .margin({ top: 20, bottom: 20 })
-          .onClick(() => router.back())
+          .onClick(() => {
+            // 跳转到chat页面，传递选定的人物信息
+            const selectedImageUrl = this.imageUrls[this.selectedIndex];
+            const selectedStyle = this.styles[this.selectedIndex] || '自定义角色';
+            // 使用人物形象描述栏中的描述词，如果没有则使用风格作为备选
+            const selectedDescription = this.description || selectedStyle || '一个有趣的角色';
+            
+            console.log('=== FigureResult跳转到Chat的参数 ===');
+            console.log('selectedIndex:', this.selectedIndex);
+            console.log('selectedImageUrl:', selectedImageUrl);
+            console.log('selectedStyle:', selectedStyle);
+            console.log('this.description (人物形象描述):', this.description);
+            console.log('selectedDescription (最终传递给chat的描述词):', selectedDescription);
+            console.log('====================================');
+            
+            router.pushUrl({
+              url: 'pages/chat',
+              params: {
+                figureImageUrl: selectedImageUrl, // 选定的图片作为背景和头像
+                figureType: selectedStyle, // 选定的人物类型
+                figureName: selectedStyle, // 人物名称
+                isFromCreateFigure: true,
+                description: selectedDescription // 使用人物形象描述栏中的描述词
+              }
+            });
+          })
       }
       .width('100%')
       .alignItems(HorizontalAlign.Center)

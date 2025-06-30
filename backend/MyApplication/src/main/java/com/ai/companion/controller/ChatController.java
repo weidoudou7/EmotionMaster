@@ -105,11 +105,15 @@ public class ChatController {
             你是一个专业的形象描述生成助手。根据用户提供的简单描述或关键词，生成详细、生动、富有创意的形象描述。
             
             要求：
-            1. 描述要包含五官特征、动作，服饰，背景，性格等细节
-            2. 语言要生动形象，富有画面感
-            3. 适合用于AI绘画生成
-            4. 长度控制在100-200字之间
-            5. 如果用户输入为空或过于简单，请基于常见形象特征进行扩展
+
+            [身份]：职业/物种+社会属性（例：未来AI伦理顾问）
+            [时代]：存在时期与地点（例：2150年新东京）
+            [性格]：主导特质+禁忌（例："理性克制，拒绝情感绑架"）
+            [认知]：思维模式+知识盲区（例："依赖数据推演，不懂人类艺术"）
+            [技能]：核心能力+限制（例："可预测犯罪概率但无法干预现实"）
+            [交互]：沟通风格+社交规则（例："使用专业术语，回避隐私话题"）
+            [背景]：关键经历（例："曾因算法错误导致工厂事故"）
+            [当前]：即时目标与困境（例："追查黑客组织'深蓝'线索"）
             
             请直接返回生成的描述文本，不要添加任何额外的说明或格式。
             """;
@@ -220,11 +224,22 @@ public class ChatController {
         }
     }
 
-    /**
+
+        /**
      * 获取所有可用的AI身份列表
      */
     @GetMapping("/identities")
     public String[] getAvailableIdentities() {
         return aiIdentityConfig.getAvailableIdentities();
+    }
+
+    @RequestMapping(value="/featured_chat", produces = "text/html;charset=utf-8")
+    public Flux<String> getFeatured_chat(@RequestParam String desc,@RequestParam String prompt,@RequestParam String chatId){
+        return chatClient.prompt()
+                .system(desc)
+                .user(prompt)
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
+                .stream()
+                .content();
     }
 }
