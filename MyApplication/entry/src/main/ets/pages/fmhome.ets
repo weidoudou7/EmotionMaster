@@ -116,32 +116,32 @@ export struct FMHomePage {
   // 定义各分类的数据
   private selectedItems: SectionItem[] = [
     { 
-      title: 'Vol.01 《热门推荐》', 
-      subtitle: '精选内容推荐', 
-      tag: '热门', 
-      author: '推荐官',
-      icon: '🔥',
-      iconColor: '#FF5722',
-      bgColor: '#FFEBEE'
+      title: 'AI个性化推荐', 
+      subtitle: '基于你的情绪状态智能推荐', 
+      tag: 'AI推荐', 
+      author: 'AI助手',
+      icon: '🤖',
+      iconColor: '#607D8B',
+      bgColor: '#ECEFF1'
     },
     { 
-      title: 'Vol.02 《今日精选》', 
-      subtitle: '今日最佳内容', 
-      tag: '精选', 
-      author: '编辑',
-      icon: '⭐',
-      iconColor: '#FFC107',
-      bgColor: '#FFF8E1'
+      title: '今日心理健康工具', 
+      subtitle: '精选心理健康练习和技巧', 
+      tag: '工具', 
+      author: '心理专家',
+      icon: '🧰',
+      iconColor: '#4CAF50',
+      bgColor: '#E8F5E8'
     },
     { 
-      title: 'Vol.03 《热门话题》', 
-      subtitle: '热门话题讨论', 
-      tag: '话题', 
-      author: '话题君',
-      icon: '💬',
-      iconColor: '#2196F3',
-      bgColor: '#E3F2FD'
-    }
+      title: '情绪管理课程', 
+      subtitle: '系统学习情绪管理技能', 
+      tag: '课程', 
+      author: '情绪专家',
+      icon: '📚',
+      iconColor: '#9C27B0',
+      bgColor: '#F3E5F5'
+    },
   ];
 
   private musicItems: SectionItem[] = [
@@ -735,6 +735,52 @@ export struct FMHomePage {
                 columnType: columnType
               }
             });
+          }
+          // 如果是精选推荐模块，根据内容类型跳转到相应页面
+          else if (title === '精选推荐') {
+            switch(item.tag) {
+              case 'AI推荐':
+                // 跳转到AI聊天页面，使用个性化推荐身份
+                router.pushUrl({
+                  url: 'pages/chat',
+                  params: {
+                    identity: 'emotionInspire',
+                    title: 'AI个性化推荐',
+                    description: '基于你的情绪状态，为你推荐最适合的心理健康内容'
+                  }
+                });
+                break;
+              case '工具':
+                // 跳转到心理健康工具页面
+                router.pushUrl({
+                  url: 'pages/fm_assessment',
+                  params: {
+                    toolType: 'comprehensive',
+                    title: '心理健康工具集'
+                  }
+                });
+                break;
+              case '课程':
+                // 跳转到情绪管理课程页面
+                router.pushUrl({
+                  url: 'pages/fm_meditation',
+                  params: {
+                    courseType: 'emotion_management',
+                    title: '情绪管理课程'
+                  }
+                });
+                break;
+              default:
+                // 默认跳转到AI聊天页面
+                router.pushUrl({
+                  url: 'pages/chat',
+                  params: {
+                    identity: 'default',
+                    title: item.title,
+                    description: item.subtitle
+                  }
+                });
+            }
           }
         })
       }, (item: SectionItem) => item.title)
