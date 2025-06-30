@@ -2,6 +2,7 @@ import router from '@ohos.router';
 import { ApiService } from '../service/apiservice';
 import { AudioPlayerService, AudioPlayerState, AudioPlayerCallbacks } from '../service/audioPlayer';
 import promptAction from '@ohos.promptAction';
+import { MusicDetailVO } from '../common/types';
 
 interface SongInfo {
   title: string;
@@ -9,6 +10,13 @@ interface SongInfo {
   cover: Resource;
   duration: number;
   musicId: string;
+}
+
+interface MusicCloudParams {
+  musicId?: string;
+  musicTitle?: string;
+  musicArtist?: string;
+  musicDetail?: MusicDetailVO;
 }
 
 @Entry
@@ -34,9 +42,17 @@ struct CloudMusicPlayer {
     musicId: '1824045033' // 默认音乐ID，实际应该从路由参数获取
   };
 
+  @State songDetail: MusicDetailVO = {
+    musicId: '',
+    name: '',
+    artist: '',
+    duration: '00:00',
+    coverUrl: ''
+  };
+
   aboutToAppear() {
     // 获取路由参数
-    const params = router.getParams() as Record<string, string>;
+    const params = router.getParams() as MusicCloudParams;
     if (params?.musicId) {
       this.song.musicId = params.musicId;
     }
@@ -46,10 +62,13 @@ struct CloudMusicPlayer {
     if (params?.musicArtist) {
       this.song.artist = params.musicArtist;
     }
-    
+    if (params?.musicDetail) {
+      this.songDetail = params.musicDetail;
+    } else {
+      this.fetchSongDetail();
+    }
     // 设置音频播放器回调
     this.setupAudioCallbacks();
-    
     // 初始化音频播放器
     this.initAudioPlayer();
   }
@@ -96,10 +115,6 @@ struct CloudMusicPlayer {
         this.isPlaying = false;
         this.currentTime = 0;
         this.stopRotate();
-        promptAction.showToast({ 
-          message: '播放完成',
-          duration: 2000
-        });
       }
     };
     
@@ -111,33 +126,19 @@ struct CloudMusicPlayer {
     try {
       this.isLoading = true;
       this.errorMessage = '';
-      
       console.log('开始初始化音频播放器，音乐ID:', this.song.musicId);
-      
       // 调用API获取音乐播放URL
       const musicUrl = await ApiService.getMusicPlayUrl(this.song.musicId);
       console.log('获取到音乐URL:', musicUrl);
-      
       // 初始化音频播放器
       await this.audioPlayerService.initPlayer(musicUrl);
-      
       this.isInitialized = true;
       this.isLoading = false;
-      
-      promptAction.showToast({ 
-        message: '音乐加载成功',
-        duration: 2000
-      });
-      
     } catch (error) {
       console.error('初始化音频播放器失败:', error);
       this.isLoading = false;
       this.errorMessage = error instanceof Error ? error.message : '未知错误';
-      
-      promptAction.showToast({ 
-        message: '音乐加载失败: ' + this.errorMessage,
-        duration: 3000
-      });
+      // 不再弹toast
     }
   }
 
@@ -203,9 +204,21 @@ struct CloudMusicPlayer {
   }
 
   formatTime(time: number): string {
+    if (typeof time !== 'number' || isNaN(time) || time < 0) {
+      return '--:--';
+    }
     const m = Math.floor(time / 60);
     const s = Math.floor(time % 60);
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+
+  async fetchSongDetail() {
+    try {
+      const detail = await ApiService.getMusicDetail(this.song.musicId);
+      this.songDetail = detail;
+    } catch (e) {
+      // 不再弹toast
+    }
   }
 
   build() {
@@ -224,12 +237,12 @@ struct CloudMusicPlayer {
         Image($r('app.media.music_return'))
           .width(40).height(40)
           .onClick(() => router.back())
-
+          .margin({left:5})
         // 中间内容
         Column() {
-          Text(this.song.title)
+          Text(this.songDetail.name || this.song.title)
             .fontSize(18).fontWeight(FontWeight.Bold).fontColor('#fff').textAlign(TextAlign.Center)
-          Text(this.song.artist)
+          Text(this.songDetail.artist || this.song.artist)
             .fontSize(14).fontColor('#ccc').textAlign(TextAlign.Center)
         }
         .alignItems(HorizontalAlign.Center)
@@ -238,6 +251,7 @@ struct CloudMusicPlayer {
       .width('100%')
       .alignItems(VerticalAlign.Center)
       .position({ y: 0 })
+      .margin({top:20})
 
       // 黑胶转盘+专辑封面
       Stack() {
@@ -248,13 +262,13 @@ struct CloudMusicPlayer {
           .rotate({ angle: this.rotateAngle })
 
         // 专辑封面
-        Image(this.song.cover)
+        Image(this.songDetail.coverUrl || this.song.cover)
           .width(200).height(200).borderRadius(100)
           .objectFit(ImageFit.Cover)
           .rotate({ angle: this.rotateAngle })
 
         // 加载状态指示
-        if (this.isLoading) {
+        /*if (this.isLoading) {
           Column() {
             LoadingProgress()
               .width(60).height(60)
@@ -265,10 +279,10 @@ struct CloudMusicPlayer {
           }
           .position({ x: '50%', y: '50%' })
           .translate({ x: -30, y: -40 })
-        }
+        }*/
 
         // 错误状态指示
-        if (this.errorMessage && !this.isLoading) {
+        /*if (this.errorMessage && !this.isLoading) {
           Column() {
             Text('⚠️')
               .fontSize(48).fontColor('#ff6b6b')
@@ -285,19 +299,13 @@ struct CloudMusicPlayer {
           }
           .position({ x: '50%', y: '50%' })
           .translate({ x: -40, y: -60 })
-        }
+        }*/
       }
 
       // 底部控制区
       Column() {
         // 进度条区域
         Row() {
-          Text(this.formatTime(this.currentTime))
-            .fontSize(12)
-            .fontColor('#fff')
-            .width(40)
-            .textAlign(TextAlign.Center)
-          
           Slider({
             value: this.currentTime,
             min: 0,
@@ -311,7 +319,7 @@ struct CloudMusicPlayer {
               this.seekToPosition(value);
             })
           
-          Text(this.formatTime(this.duration))
+          Text(this.songDetail.duration)
             .fontSize(12)
             .fontColor('#fff')
             .width(40)

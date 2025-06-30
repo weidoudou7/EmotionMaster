@@ -10,7 +10,7 @@
     "requestPermissions": [
       {
         "name": "ohos.permission.INTERNET",
-        "reason": "$string:app_name"
+        "reason": "$string:reason_internet"
       },
       {
         "name": "ohos.permission.GET_NETWORK_INFO",

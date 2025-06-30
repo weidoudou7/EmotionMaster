@@ -295,14 +295,11 @@ struct ColumnPage {
       // 返回按钮（绝对定位悬浮最上方）
       Stack() {
         // 返回按钮
-        Button('‹')
-          .fontSize(22)
-          .fontColor('#1976D2')
-          .backgroundColor('#fff')
-          .borderRadius(18)
+        Image($r('app.media.music_return'))
           .width(36)
           .height(36)
-          .shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
+          .fillColor(Color.White)
+          //.shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
           .position({ x: 16, y: 16 })
           .onClick(() => router.back())
         // 卡片内容整体下移

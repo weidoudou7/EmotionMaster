@@ -205,6 +205,7 @@ export struct FeaturedList {
     .width('100%')
     .height('100%')
     .backgroundColor('#181818')
+    .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
     .padding({ left: 12, right: 12 })
   }
 }

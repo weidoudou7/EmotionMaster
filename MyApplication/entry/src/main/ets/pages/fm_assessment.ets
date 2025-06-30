@@ -365,14 +365,10 @@ struct FMAssessmentPage {
     Column() {
       // 顶部导航
       Row() {
-        Button('‹')
-          .fontSize(22)
-          .fontColor('#1976D2')
-          .backgroundColor('#fff')
-          .borderRadius(18)
+        Image($r('app.media.music_return'))
           .width(36)
           .height(36)
-          .shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
+          //.shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
           .onClick(() => router.back())
         Text('压力评估')
           .fontSize(20)

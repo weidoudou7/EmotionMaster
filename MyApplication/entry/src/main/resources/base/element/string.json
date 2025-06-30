@@ -18,7 +18,15 @@
     },
     {
       "name": "MainAbility_label",
+<<<<<<< HEAD
       "value": "心屿Harmony"
+=======
+      "value": "label"
+    },
+    {
+      "name": "reason_internet",
+      "value": "应用需要联网播放音乐"
+>>>>>>> 13e87cb (musicV2)
     }
   ]
 }

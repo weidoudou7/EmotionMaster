@@ -60,4 +60,12 @@ export interface ApiResponse<T> {
   message: string;
   data: T;
   timestamp: number;
+}
+
+export interface MusicDetailVO {
+  musicId: string;
+  name: string;
+  artist: string;
+  duration: string; // mm:ss
+  coverUrl: string;
 } 

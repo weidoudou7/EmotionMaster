@@ -54,13 +54,10 @@ export class AudioPlayerService {
       // 设置播放器回调
       this.setupCallbacks();
       
-      // 获取音频时长
-      this.duration = this.audioPlayer.duration;
-      
       this.currentState = AudioPlayerState.PREPARED;
       this.notifyStateChange();
       
-      console.log('音频播放器初始化成功，时长:', this.duration);
+      console.log('音频播放器初始化成功');
       
     } catch (error) {
       console.error('初始化音频播放器失败:', error);
@@ -92,6 +89,11 @@ export class AudioPlayerService {
     this.audioPlayer.on('play', () => {
       console.log('音频开始播放');
       this.currentState = AudioPlayerState.PLAYING;
+      // 这里获取真实 duration
+      if (this.audioPlayer) {
+        this.duration = this.audioPlayer.duration;
+        this.notifyProgressChange(); // 触发UI更新
+      }
       this.notifyStateChange();
       this.startProgressTimer();
     });
@@ -134,6 +136,16 @@ export class AudioPlayerService {
       this.currentTime = this.audioPlayer ? this.audioPlayer.currentTime : 0;
       this.notifyProgressChange();
     });
+
+    // 如有dataLoad事件也监听
+    if (typeof this.audioPlayer.on === 'function') {
+      this.audioPlayer.on('dataLoad', () => {
+        if (this.audioPlayer) {
+          this.duration = this.audioPlayer.duration;
+          this.notifyProgressChange();
+        }
+      });
+    }
   }
 
   /**
@@ -224,7 +236,9 @@ export class AudioPlayerService {
         throw new Error('播放器未初始化');
       }
 
-      if (position < 0 || position > this.duration) {
+      // seek校验用最新duration
+      const realDuration = this.audioPlayer.duration > 0 ? this.audioPlayer.duration : this.duration;
+      if (position < 0 || position > realDuration) {
         throw new Error('跳转位置超出范围');
       }
 

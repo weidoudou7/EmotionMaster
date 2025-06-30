@@ -1,4 +1,6 @@
 import router from '@ohos.router';
+import { MusicDetailVO } from '../common/types';
+import { ApiService } from '../service/apiservice';
 
 // 定义专栏项接口
 interface SectionItem {
@@ -230,6 +232,10 @@ export struct FMHomePage {
     }
   ];
 
+  private allMusicIds: string[] = ['1824045033', '202369', '447926071', '436346833', '33471531','186345'];
+  @State randomSongs: MusicDetailVO[] = [];
+  private musicDetailCache: Record<string, MusicDetailVO> = {};
+
   // 切换情绪卡片的方法
   private switchEmotionCard(direction: 'left' | 'right') {
     // 手动切换时暂停自动轮播
@@ -289,13 +295,34 @@ export struct FMHomePage {
 
   // 页面生命周期
   aboutToAppear() {
-    // 页面出现时开始自动轮播
-    this.startAutoPlay()
+    this.startAutoPlay();
+    this.fetchRandomSongs();
   }
 
   aboutToDisappear() {
     // 页面消失时停止自动轮播
     this.stopAutoPlay()
+  }
+
+  async fetchRandomSongs() {
+    const ids = [...this.allMusicIds].sort(() => Math.random() - 0.5).slice(0, 3);
+    const songs: MusicDetailVO[] = [];
+    for (let id of ids) {
+      try {
+        let detail: MusicDetailVO;
+        if (this.musicDetailCache[id]) {
+          detail = this.musicDetailCache[id];
+        } else {
+          detail = await ApiService.getMusicDetail(id);
+          detail.musicId = id;
+          this.musicDetailCache[id] = detail;
+        }
+        songs.push(detail);
+      } catch (e) {
+        // 错误处理
+      }
+    }
+    this.randomSongs = songs;
   }
 
   build() {
@@ -547,8 +574,52 @@ export struct FMHomePage {
 
           // 精选区
           this.BuildSection('精选推荐', this.selectedItems)
-          // 音频区
-          this.BuildSection('音乐电台', this.musicItems)
+          // 音乐电台区
+          Column() {
+            Text('音乐电台')
+              .fontColor('#0D9FFB')
+              .fontSize(18)
+              .fontWeight(FontWeight.Bold)
+              .margin({ bottom: 16, top: 24 })
+            ForEach(this.randomSongs, (song: MusicDetailVO, idx: number) => {
+              Row() {
+                Image(song.coverUrl)
+                  .width(56).height(56)
+                  .borderRadius(8)
+                  .margin({ right: 12 })
+                Column() {
+                  Text(song.name)
+                    .fontColor('#222')
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Bold)
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                  Text(song.artist)
+                    .fontColor('#888')
+                    .fontSize(13)
+                    .margin({ top: 2 })
+                }
+                .layoutWeight(1)
+              }
+              .width('100%')
+              .padding({ top: 8, bottom: 8 })
+              .backgroundColor('#fff')
+              .borderRadius(16)
+              .shadow({ radius: 4, color: 'rgba(0,0,0,0.05)', offsetX: 0, offsetY: 2 })
+              .onClick(() => {
+                const songDetail = this.musicDetailCache[song.musicId] || song;
+                router.pushUrl({
+                  url: 'pages/music_cloud_style',
+                  params: {
+                    musicId: song.musicId,
+                    musicTitle: song.name,
+                    musicArtist: song.artist,
+                    musicDetail: songDetail
+                  }
+                })
+              })
+            }, (song: MusicDetailVO) => song.name)
+          }
           // 专栏区
           this.BuildSection('专栏文章', this.columnItems)
           // 工具区

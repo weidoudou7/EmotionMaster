@@ -83,14 +83,10 @@ struct FMMeditationPage {
     Column() {
       // 顶部导航栏
       Row() {
-        Button('<')
-          .fontSize(20)
+        Image($r('app.media.music_return'))
           .width(36)
           .height(36)
-          .backgroundColor('#fff')
-          .fontColor('#1976D2')
-          .borderRadius(18)
-          .shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
+          //.shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
           .onClick(() => router.back())
         Text('冥想')
           .fontSize(20)

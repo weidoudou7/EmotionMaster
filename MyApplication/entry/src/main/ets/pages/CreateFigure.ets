@@ -240,6 +240,7 @@ export struct CreateFigurePage {
     }
     .width('100%')
     .backgroundColor('#181818')
+    .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
     .height('100%')
   }
 

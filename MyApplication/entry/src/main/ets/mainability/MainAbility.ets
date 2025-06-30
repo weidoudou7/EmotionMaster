@@ -18,11 +18,8 @@ export default class MainAbility extends UIAbility {
     // Main window is created, set main page for this ability
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
 
-<<<<<<< HEAD
+
     windowStage.loadContent('pages/BottomNavBar', (err) => {
-=======
-    windowStage.loadContent('pages/homepage', (err) => {
->>>>>>> cb81736 (music)
       // 设置键盘避免模式为OFFSET，解决键盘弹出时布局问题
       windowStage.getMainWindowSync().getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.OFFSET);
 

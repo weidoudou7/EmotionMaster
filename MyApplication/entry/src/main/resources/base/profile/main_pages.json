@@ -23,6 +23,11 @@
     "pages/fm_assessment",
     "pages/BottomNavBar",
     "pages/FeaturedList",
+<<<<<<< HEAD
     "pages/fm_message"
+=======
+    "pages/music_cloud_style",
+    "pages/music_test"
+>>>>>>> 13e87cb (musicV2)
   ]
 }

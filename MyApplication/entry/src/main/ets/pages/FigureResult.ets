@@ -178,6 +178,7 @@ struct FigureResultPage {
     .width('100%')
     .height('100%')
     .backgroundColor('#181818')
+    .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
   }
 
   /**

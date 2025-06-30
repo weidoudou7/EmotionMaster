@@ -1,11 +1,13 @@
 import { globalUserData } from '../models/userdata';
 import { Config } from '../common/config';
 import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats } from '../common/types';
+import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, MusicDetailVO } from '../common/types';
 import http from '@ohos.net.http';
 
-// API基础配置 - 从配置文件获取
-const API_BASE_URL = Config.getApiBaseUrl();
 
+// API基础配置 - 从配置文件获取
+//const API_BASE_URL = Config.getApiBaseUrl();
+const API_BASE_URL = 'http://10.128.156.25:8081/api';
 // 定义HTTP请求选项接口
 interface HttpRequestOptions {
   method?: http.RequestMethod;
@@ -63,13 +65,11 @@ export class ApiService {
       try {
         result = JSON.parse(response.result.toString());
       } catch (e) {
-        // 不是JSON，直接返回字符串内容
-        result = {
-          success: true,
-          message: 'ok',
-          data: response.result.toString() as T,
-          timestamp: Date.now()
-        };
+        // 打印原始内容，便于调试
+        console.error('API返回内容不是标准JSON，原始内容如下:');
+        console.error(response.result.toString());
+        // 直接抛出错误，提示后端返回内容异常
+        throw new Error('后端返回内容不是标准JSON，无法解析');
       }
       
       // 调试模式下的日志
@@ -80,10 +80,24 @@ export class ApiService {
       return result;
     } catch (error) {
       console.error('API请求失败:', error);
+      try {
+        if (typeof error === 'object' && error !== null) {
+          const errObj = error as Record<string, string>;
+          Object.keys(errObj).forEach((key) => {
+            console.error(`error[${key}]:`, errObj[key]);
+          });
+        } else {
+          console.error('error(原始):', error);
+        }
+      } catch (e) {
+        console.error('打印error属性失败:', e);
+      }
       if (error instanceof Error) {
         throw error;
+      } else if (typeof error === 'string') {
+        throw new Error(error);
       } else {
-        throw new Error('Unknown error occurred');
+        throw new Error('Unknown error: ' + JSON.stringify(error));
       }
     }
   }
@@ -516,6 +530,25 @@ export class ApiService {
       return response.data;
     } else {
       throw new Error(response.message || '获取音乐信息失败');
+    }
+  }
+
+  /**
+   * 获取音乐详情
+   */
+  static async getMusicDetail(musicId: string): Promise<MusicDetailVO> {
+    const url = `${API_BASE_URL}/music/${musicId}/detail`;
+    try {
+      const response = await ApiService.request<MusicDetailVO>(url);
+      console.log('获取歌曲详情返回：', response);
+      if (!response.success) {
+        throw new Error(response.message || '获取歌曲详情失败');
+      }
+      return response.data;
+    } catch (e) {
+      console.log('进入catch块，id=', musicId);
+      console.error('获取歌曲详情失败，id=', musicId, e);
+      throw new Error(e instanceof Error ? e.message : '未知错误');
     }
   }
 }
