@@ -1,5 +1,5 @@
 -- 1. 用户表：存储用户账户信息
-CREATE TABLE users IF NOT EXITE(
+CREATE TABLE users (
                        id INT AUTO_INCREMENT PRIMARY KEY COMMENT '用户唯一ID',
                        uid VARCHAR(50) NOT NULL UNIQUE COMMENT '全局唯一用户标识符',
                        username VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名(唯一)',
@@ -7,12 +7,11 @@ CREATE TABLE users IF NOT EXITE(
                        is_private BOOLEAN DEFAULT 0 COMMENT '隐私可见性(0:公开/1:隐私)',
                        signature VARCHAR(100) COMMENT '用户个性签名',
                        email VARCHAR(100) NOT NULL UNIQUE COMMENT '用户邮箱(唯一)',
-                       level INT NOT NULL DEFAULT 0 COMMENT '用户等级'
+                       level INT NOT NULL DEFAULT 0 COMMENT '用户等级',
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '账户创建时间',
                        last_login TIMESTAMP NULL COMMENT '最后登录时间',
                        profile_image VARCHAR(255) COMMENT '用户个人资料图片URL'
 );
-
 
 -- 2. AI角色表：存储系统预设和用户自定义AI角色
 CREATE TABLE ai_roles (
@@ -20,13 +19,16 @@ CREATE TABLE ai_roles (
                           user_id INT NULL COMMENT '所属用户ID(null表示系统预设)',
                           role_name VARCHAR(50) NOT NULL COMMENT '角色名称',
                           role_description TEXT COMMENT '角色详细描述',
-                          personality TEXT NOT NULL COMMENT '人格配置JSON(性格特质等)',
-                          specialty TEXT COMMENT '专长标签JSON数组',
+                          role_type VARCHAR(50) NOT NULL COMMENT '角色类型',
+                          role_author VARCHAR(100) COMMENT '角色作者',
+                          view_count INT DEFAULT 0 COMMENT '角色浏览量',
                           avatar_url VARCHAR(255) NOT NULL COMMENT '角色形象URL(用户上传或系统生成)',
                           is_template BOOLEAN DEFAULT 0 COMMENT '是否为模板角色(1=是,0=否)',
                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                          INDEX idx_ai_roles_user (user_id) COMMENT '用户ID索引'
+                          INDEX idx_ai_roles_user (user_id) COMMENT '用户ID索引',
+                          INDEX idx_ai_roles_type (role_type) COMMENT '角色类型索引',
+                          INDEX idx_ai_roles_views (view_count) COMMENT '浏览量索引'
 );
 
 -- 3. 对话会话表：存储每次对话的上下文
@@ -73,4 +75,22 @@ CREATE TABLE planets (
                          unlocked_items JSON COMMENT '已解锁物品JSON数组',
                          last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
                          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 6. 用户动态表：存储用户发布的动态内容
+CREATE TABLE user_dynamics (
+                               id INT AUTO_INCREMENT PRIMARY KEY COMMENT '动态唯一ID',
+                               user_id INT NOT NULL COMMENT '发布用户ID',
+                               content TEXT COMMENT '动态文本内容',
+                               images JSON COMMENT '图片内容JSON数组(存储图片URL列表)',
+                               topic_tags JSON COMMENT '话题标签JSON数组',
+                               visibility ENUM('public', 'private', 'friends') NOT NULL DEFAULT 'public' COMMENT '可见性(public:公开/private:私密/friends:仅好友可见)',
+                               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                               updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                               like_count INT DEFAULT 0 COMMENT '点赞数',
+                               FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                               INDEX idx_dynamics_user (user_id) COMMENT '用户ID索引',
+                               INDEX idx_dynamics_visibility (visibility) COMMENT '可见性索引',
+                               INDEX idx_dynamics_created (created_at) COMMENT '创建时间索引',
+                               INDEX idx_dynamics_likes (like_count) COMMENT '点赞数索引'
 );

@@ -5,69 +5,97 @@
     <!-- 结果映射 -->
     <resultMap id="DynamicResultMap" type="com.ai.companion.entity.Dynamic">
         <id column="id" property="id"/>
-        <result column="user_uid" property="userUID"/>
+        <result column="user_id" property="userId"/>
         <result column="content" property="content"/>
         <result column="images" property="images" typeHandler="com.ai.companion.config.JsonTypeHandler"/>
-        <result column="create_time" property="createTime"/>
-        <result column="update_time" property="updateTime"/>
+        <result column="topic_tags" property="topicTags" typeHandler="com.ai.companion.config.JsonTypeHandler"/>
+        <result column="visibility" property="visibility"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
         <result column="like_count" property="likeCount"/>
-        <result column="comment_count" property="commentCount"/>
     </resultMap>
 
     <!-- 创建新动态 -->
     <insert id="insertDynamic" parameterType="com.ai.companion.entity.Dynamic" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO dynamics (user_uid, content, images, create_time, update_time, like_count, comment_count)
-        VALUES (#{userUID}, #{content}, #{images, typeHandler=com.ai.companion.config.JsonTypeHandler}, 
-                #{createTime}, #{updateTime}, #{likeCount}, #{commentCount})
+        INSERT INTO user_dynamics (user_id, content, images, topic_tags, visibility, created_at, updated_at, like_count)
+        VALUES (#{userId}, #{content}, #{images, typeHandler=com.ai.companion.config.JsonTypeHandler}, 
+                #{topicTags, typeHandler=com.ai.companion.config.JsonTypeHandler}, #{visibility}, 
+                #{createdAt}, #{updatedAt}, #{likeCount})
     </insert>
 
     <!-- 根据ID获取动态 -->
     <select id="getDynamicById" resultMap="DynamicResultMap">
-        SELECT * FROM dynamics WHERE id = #{id}
+        SELECT * FROM user_dynamics WHERE id = #{id}
     </select>
 
     <!-- 获取用户的所有动态 -->
-    <select id="getDynamicsByUserUID" resultMap="DynamicResultMap">
-        SELECT * FROM dynamics 
-        WHERE user_uid = #{userUID}
-        ORDER BY create_time DESC
+    <select id="getDynamicsByUserId" resultMap="DynamicResultMap">
+        SELECT * FROM user_dynamics 
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
     </select>
 
     <!-- 获取用户公开的动态 -->
-    <select id="getPublicDynamicsByUserUID" resultMap="DynamicResultMap">
-        SELECT * FROM dynamics 
-        WHERE user_uid = #{userUID}
-        ORDER BY create_time DESC
+    <select id="getPublicDynamicsByUserId" resultMap="DynamicResultMap">
+        SELECT * FROM user_dynamics 
+        WHERE user_id = #{userId} AND visibility = 'public'
+        ORDER BY created_at DESC
     </select>
 
     <!-- 获取所有公开的动态 -->
     <select id="getAllPublicDynamics" resultMap="DynamicResultMap">
-        SELECT * FROM dynamics 
-        ORDER BY create_time DESC
+        SELECT * FROM user_dynamics 
+        WHERE visibility = 'public'
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据可见性获取动态 -->
+    <select id="getDynamicsByVisibility" resultMap="DynamicResultMap">
+        SELECT * FROM user_dynamics 
+        WHERE visibility = #{visibility}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 获取热门动态（按点赞数排序） -->
+    <select id="getHotDynamics" resultMap="DynamicResultMap">
+        SELECT * FROM user_dynamics 
+        WHERE visibility = 'public'
+        ORDER BY like_count DESC, created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 根据话题标签获取动态 -->
+    <select id="getDynamicsByTopicTag" resultMap="DynamicResultMap">
+        SELECT * FROM user_dynamics 
+        WHERE visibility = 'public' 
+        AND JSON_CONTAINS(topic_tags, JSON_QUOTE(#{topicTag}))
+        ORDER BY created_at DESC
     </select>
 
     <!-- 更新动态 -->
     <update id="updateDynamic" parameterType="com.ai.companion.entity.Dynamic">
-        UPDATE dynamics 
+        UPDATE user_dynamics 
         SET content = #{content}, 
             images = #{images, typeHandler=com.ai.companion.config.JsonTypeHandler},
-            update_time = #{updateTime}
-        WHERE id = #{id} AND user_uid = #{userUID}
+            topic_tags = #{topicTags, typeHandler=com.ai.companion.config.JsonTypeHandler},
+            visibility = #{visibility},
+            updated_at = #{updatedAt}
+        WHERE id = #{id} AND user_id = #{userId}
     </update>
 
     <!-- 删除动态 -->
     <delete id="deleteDynamic">
-        DELETE FROM dynamics WHERE id = #{id} AND user_uid = #{userUID}
+        DELETE FROM user_dynamics WHERE id = #{id} AND user_id = #{userId}
     </delete>
 
     <!-- 更新动态点赞数 -->
     <update id="updateLikeCount">
-        UPDATE dynamics SET like_count = #{likeCount} WHERE id = #{id}
+        UPDATE user_dynamics SET like_count = #{likeCount} WHERE id = #{id}
     </update>
 
-    <!-- 更新动态评论数 -->
-    <update id="updateCommentCount">
-        UPDATE dynamics SET comment_count = #{commentCount} WHERE id = #{id}
+    <!-- 增加动态浏览量 -->
+    <update id="incrementViewCount">
+        UPDATE user_dynamics SET view_count = view_count + 1 WHERE id = #{id}
     </update>
 
 </mapper> 

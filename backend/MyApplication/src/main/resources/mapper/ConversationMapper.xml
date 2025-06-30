@@ -23,6 +23,130 @@
         SELECT * FROM conversations WHERE user_id = #{userId}
     </select>
 
+    <select id="selectByAiRoleId" resultMap="ConversationResultMap">
+        SELECT * FROM conversations WHERE ai_role_id = #{aiRoleId}
+    </select>
+
+    <select id="selectAll" resultMap="ConversationResultMap">
+        SELECT * FROM conversations
+    </select>
+
+    <select id="selectByPage" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        ORDER BY last_active DESC 
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="selectByUserIdWithPage" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        WHERE user_id = #{userId}
+        ORDER BY last_active DESC 
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="selectLatestByUserId" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        WHERE user_id = #{userId}
+        ORDER BY start_time DESC 
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectMostActive" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        ORDER BY last_active DESC 
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectByMode" resultMap="ConversationResultMap">
+        SELECT * FROM conversations WHERE mode = #{mode}
+    </select>
+
+    <select id="selectByMoodTag" resultMap="ConversationResultMap">
+        SELECT * FROM conversations WHERE mood_tag = #{moodTag}
+    </select>
+
+    <select id="selectByTurnsRange" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        WHERE turns BETWEEN #{minTurns} AND #{maxTurns}
+    </select>
+
+    <select id="selectByPlanetGrowthRange" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        WHERE planet_growth BETWEEN #{minGrowth} AND #{maxGrowth}
+    </select>
+
+    <select id="selectByConditions" resultMap="ConversationResultMap">
+        SELECT * FROM conversations
+        <where>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="aiRoleId != null">
+                AND ai_role_id = #{aiRoleId}
+            </if>
+            <if test="mode != null and mode != ''">
+                AND mode = #{mode}
+            </if>
+            <if test="moodTag != null and moodTag != ''">
+                AND mood_tag = #{moodTag}
+            </if>
+            <if test="minTurns != null">
+                AND turns &gt;= #{minTurns}
+            </if>
+            <if test="maxTurns != null">
+                AND turns &lt;= #{maxTurns}
+            </if>
+        </where>
+        ORDER BY last_active DESC
+    </select>
+
+    <select id="selectByStartTimeRange" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        WHERE start_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY start_time DESC
+    </select>
+
+    <select id="selectByLastActiveRange" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        WHERE last_active BETWEEN #{startTime} AND #{endTime}
+        ORDER BY last_active DESC
+    </select>
+
+    <select id="selectTodayActive" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        WHERE DATE(last_active) = CURDATE()
+        ORDER BY last_active DESC
+    </select>
+
+    <select id="selectThisWeekActive" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        WHERE YEARWEEK(last_active) = YEARWEEK(NOW())
+        ORDER BY last_active DESC
+    </select>
+
+    <select id="searchConversations" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        WHERE title LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY last_active DESC 
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectByIds" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="selectByUserIds" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        WHERE user_id IN
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </select>
+
     <insert id="insertConversation" parameterType="com.ai.companion.entity.Conversation" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO conversations (user_id, ai_role_id, turns, title, start_time, last_active, mood_tag, mode, planet_growth)
         VALUES (#{userId}, #{aiRoleId}, #{turns}, #{title}, #{startTime}, #{lastActive}, #{moodTag}, #{mode}, #{planetGrowth})
@@ -30,16 +154,118 @@
 
     <update id="updateConversation" parameterType="com.ai.companion.entity.Conversation">
         UPDATE conversations
-        SET user_id=#{userId}, ai_role_id=#{aiRoleId}, turns=#{turns}, title=#{title}, start_time=#{startTime},
-            last_active=#{lastActive}, mood_tag=#{moodTag}, mode=#{mode}, planet_growth=#{planetGrowth}
-        WHERE id=#{id}
+        SET user_id = #{userId}, ai_role_id = #{aiRoleId}, turns = #{turns}, title = #{title}, 
+            start_time = #{startTime}, last_active = #{lastActive}, mood_tag = #{moodTag}, 
+            mode = #{mode}, planet_growth = #{planetGrowth}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateLastActive">
+        UPDATE conversations 
+        SET last_active = NOW() 
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateTurns">
+        UPDATE conversations 
+        SET turns = #{turns} 
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateTitle">
+        UPDATE conversations 
+        SET title = #{title} 
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateMoodTag">
+        UPDATE conversations 
+        SET mood_tag = #{moodTag} 
+        WHERE id = #{id}
+    </update>
+
+    <update id="updatePlanetGrowth">
+        UPDATE conversations 
+        SET planet_growth = #{planetGrowth} 
+        WHERE id = #{id}
     </update>
 
     <delete id="deleteConversation">
-        DELETE FROM conversations WHERE id=#{id}
+        DELETE FROM conversations WHERE id = #{id}
     </delete>
 
-    <select id="selectAll" resultMap="ConversationResultMap">
-        SELECT * FROM conversations
+    <delete id="deleteByUserId">
+        DELETE FROM conversations WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="batchDeleteConversations">
+        DELETE FROM conversations 
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="existsById" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM conversations WHERE id = #{id}
+    </select>
+
+    <select id="existsByUserIdAndAiRoleId" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM conversations 
+        WHERE user_id = #{userId} AND ai_role_id = #{aiRoleId}
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*) FROM conversations
+    </select>
+
+    <select id="countByUserId" resultType="int">
+        SELECT COUNT(*) FROM conversations WHERE user_id = #{userId}
+    </select>
+
+    <select id="countByAiRoleId" resultType="int">
+        SELECT COUNT(*) FROM conversations WHERE ai_role_id = #{aiRoleId}
+    </select>
+
+    <select id="countByMode" resultType="int">
+        SELECT COUNT(*) FROM conversations WHERE mode = #{mode}
+    </select>
+
+    <select id="countByMoodTag" resultType="int">
+        SELECT COUNT(*) FROM conversations WHERE mood_tag = #{moodTag}
+    </select>
+
+    <select id="countTodayCreated" resultType="int">
+        SELECT COUNT(*) FROM conversations 
+        WHERE DATE(start_time) = CURDATE()
+    </select>
+
+    <select id="countTodayActive" resultType="int">
+        SELECT COUNT(*) FROM conversations 
+        WHERE DATE(last_active) = CURDATE()
+    </select>
+
+    <select id="getAverageTurns" resultType="double">
+        SELECT AVG(turns) FROM conversations
+    </select>
+
+    <select id="getAveragePlanetGrowth" resultType="double">
+        SELECT AVG(planet_growth) FROM conversations
+    </select>
+
+    <select id="selectModeDistribution" resultMap="ConversationResultMap">
+        SELECT mode, COUNT(*) as count 
+        FROM conversations 
+        GROUP BY mode 
+        ORDER BY count DESC 
+        LIMIT 10
+    </select>
+
+    <select id="selectMoodTagDistribution" resultMap="ConversationResultMap">
+        SELECT mood_tag, COUNT(*) as count 
+        FROM conversations 
+        GROUP BY mood_tag 
+        ORDER BY count DESC 
+        LIMIT 20
     </select>
 </mapper> 
