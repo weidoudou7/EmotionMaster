@@ -1,0 +1,10 @@
+{
+  "module": {
+    "requestPermissions": [
+      { "name": "ohos.permission.INTERNET" }
+    ],
+    "network": {
+      "cleartextTraffic": true
+    }
+  }
+}

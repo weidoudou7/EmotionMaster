@@ -1,4 +1,4 @@
-import { BottomNavBar } from './BottomNavBar'
+
 
 interface TaskInfo {
   title: string;
@@ -65,7 +65,7 @@ struct TasksPagePhone {
       iconColor: '#3b82f6',
       topBarColor: '#3b82f6',
       btnType: 'info',
-      avatar: $r('app.media.planet1'),
+      avatar: $r('app.media.doro'),
       user: 'AI助手'
     },
     {
@@ -217,7 +217,6 @@ struct TasksPagePhone {
         .width('100%')
         .padding(8)
       }
-      BottomNavBar({ navIndex: 'planet' })
     }
     .width('100%')
     .height('100%')

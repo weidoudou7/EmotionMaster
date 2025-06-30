@@ -22,6 +22,7 @@
     "pages/fm_breathing",
     "pages/fm_assessment",
     "pages/BottomNavBar",
-    "pages/FeaturedList"
+    "pages/FeaturedList",
+    "pages/fm_message"
   ]
 }

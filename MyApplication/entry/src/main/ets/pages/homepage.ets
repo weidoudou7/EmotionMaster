@@ -107,7 +107,7 @@ export struct HomePage {
       .justifyContent(FlexAlign.Center)
       .backgroundColor(this.isDarkMode ? '#222222' : '#F5F5F5')
       .padding({ bottom: 80 })
-      
+
 
     }
   }

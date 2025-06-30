@@ -5,6 +5,7 @@ import { FMHomePage } from './fmhome';
 import { HomePage } from './homepage';
 import { YourPage } from './yourpage';
 import {FeaturedList} from './FeaturedList';
+import { MessagePage } from './fm_message';
 
 @Entry
 @Component
@@ -17,9 +18,6 @@ export struct BottomNavBar {
       barPosition: BarPosition.End,
       index: this.currentIndex
     }) {
-      TabContent() {
-        HomePage()
-      }.tabBar('首页')
 
       TabContent() {
         // ====== 顶部标签栏+内容 ======
@@ -55,6 +53,32 @@ export struct BottomNavBar {
             TabContent() {
               FeaturedList()
             }.tabBar('综合')
+          }
+          .onChange((idx: number) => {
+            this.chatTopTabIndex = idx
+          })
+          .barMode(BarMode.Fixed)
+          .barHeight(40)
+          .backgroundColor('transparent')
+          .barBackgroundColor('rgba(255,255,255,0.8)')
+          .barWidth('100%')
+        }
+      }.tabBar('首页')
+
+      TabContent() {
+        Column() {
+          Tabs({
+            index: this.chatTopTabIndex,
+            barPosition: BarPosition.Start
+          }) {
+            TabContent() {
+              MessagePage()
+            }.tabBar('消息')
+
+            TabContent() {
+              HomePage()
+            }.tabBar('贴吧')
+
           }
           .onChange((idx: number) => {
             this.chatTopTabIndex = idx
