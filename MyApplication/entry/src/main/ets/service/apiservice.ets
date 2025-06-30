@@ -1,6 +1,6 @@
 import { globalUserData } from '../models/userdata';
 import { Config } from '../common/config';
-import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest } from '../common/types';
+import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats } from '../common/types';
 import http from '@ohos.net.http';
 
 // API基础配置 - 从配置文件获取
@@ -104,6 +104,18 @@ export class ApiService {
       return response.data;
     } else {
       throw new Error(response.message || 'Failed to get user info');
+    }
+  }
+
+  /**
+   * 获取用户统计信息
+   */
+  static async getUserStats(userUID: string): Promise<UserStats> {
+    const response = await ApiService.request<UserStats>(`${API_BASE_URL}/user/${userUID}/stats`);
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to get user stats');
     }
   }
 

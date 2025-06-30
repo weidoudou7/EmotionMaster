@@ -2,6 +2,7 @@ package com.ai.companion.controller;
 
 import com.ai.companion.entity.Dynamic;
 import com.ai.companion.entity.vo.ApiResponse;
+import com.ai.companion.entity.vo.CreateDynamicRequest;
 import com.ai.companion.service.DynamicService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -9,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/dynamic")
+@RequestMapping("/dynamic")
 @CrossOrigin(origins = "*")
 public class DynamicController {
 
@@ -17,7 +18,31 @@ public class DynamicController {
     private DynamicService dynamicService;
 
     /**
-     * 创建新动态
+     * 创建新动态（使用CreateDynamicRequest）
+     */
+    @PostMapping("/create/{userUID}")
+    public ApiResponse<Dynamic> createDynamic(@PathVariable String userUID,
+            @RequestBody CreateDynamicRequest request) {
+        try {
+            // 设置默认值
+            String visibility = request.getVisibility() != null ? request.getVisibility() : "public";
+            List<String> images = request.getImages() != null ? request.getImages() : List.of();
+            List<String> topicTags = request.getTopicTags() != null ? request.getTopicTags() : List.of();
+            
+            // 如果isPrivate为true，设置可见性为private
+            if (request.getIsPrivate() != null && request.getIsPrivate()) {
+                visibility = "private";
+            }
+            
+            Dynamic dynamic = dynamicService.createDynamic(userUID, request.getContent(), images, topicTags, visibility);
+            return ApiResponse.success("动态创建成功", dynamic);
+        } catch (Exception e) {
+            return ApiResponse.error("创建动态失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 创建新动态（兼容旧接口）
      */
     @PostMapping("/create")
     public ApiResponse<Dynamic> createDynamic(@RequestParam String userUID,
@@ -198,5 +223,14 @@ public class DynamicController {
         } catch (Exception e) {
             return ApiResponse.error("取消点赞失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 健康检查接口
+     * @return 服务状态
+     */
+    @GetMapping("/health")
+    public ApiResponse<String> health() {
+        return ApiResponse.success("动态服务运行正常", "OK");
     }
 }

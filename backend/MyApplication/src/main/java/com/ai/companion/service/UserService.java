@@ -3,6 +3,7 @@ package com.ai.companion.service;
 import com.ai.companion.entity.User;
 import com.ai.companion.entity.vo.UserInfoVO;
 import com.ai.companion.entity.vo.UpdateUserRequest;
+import com.ai.companion.entity.vo.UserStatsVO;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
@@ -44,4 +45,11 @@ public interface UserService {
      * @return 用户信息
      */
     UserInfoVO createUserIfNotExists(String userUID, String userName);
+    
+    /**
+     * 获取用户统计信息
+     * @param userUID 用户UID
+     * @return 用户统计信息
+     */
+    UserStatsVO getUserStats(String userUID);
 } 

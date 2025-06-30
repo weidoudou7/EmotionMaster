@@ -14,6 +14,8 @@ public class AiRole {
     private Integer userId; // 所属用户ID(null表示系统预设)
     private String roleName; // 角色名称
     private String roleDescription; // 角色详细描述
+    private String personality; // 角色性格特征(JSON格式)
+    private String specialty; // 角色专长领域(JSON数组格式)
     private String roleType; // 角色类型(custom:自定义/system:系统预设/community:社区分享)
     private String roleAuthor; // 角色作者
     private Integer viewCount; // 角色浏览量

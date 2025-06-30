@@ -3,7 +3,7 @@
 import { BusinessError } from '@kit.BasicServicesKit';
 import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
-import { UserInfo } from '../common/types';
+import { UserInfo, UserStats } from '../common/types';
 import promptAction from '@ohos.promptAction';
 //导入图片模块
 
@@ -18,6 +18,7 @@ export struct YourPage {
   @State avatarScale: number = 1.0; // 头像缩放动画
   @State isLoading: boolean = false; // 加载状态
   @State userInfo: UserInfo | null = null; // 用户信息
+  @State userStats: UserStats | null = null; // 用户统计信息
   @State selectedTab: string = 'dynamic' // 当前选中的标签页：dynamic 或 attic
   @State selectedAtticTab: string = '智能体' // 当前选中的阁楼标签页
   @State cardScale: number = 1.0; // 卡片缩放动画
@@ -25,6 +26,7 @@ export struct YourPage {
   // 页面生命周期
   aboutToAppear() {
     this.loadUserInfo();
+    this.loadUserStats();
   }
 
   // 加载用户信息
@@ -41,6 +43,17 @@ export struct YourPage {
       promptAction.showToast({ message: '加载用户信息失败' });
     } finally {
       this.isLoading = false;
+    }
+  }
+
+  // 加载用户统计信息
+  async loadUserStats() {
+    try {
+      const userStats = await ApiService.getUserStats(this.UID);
+      this.userStats = userStats;
+    } catch (error) {
+      console.error('加载用户统计信息失败:', error);
+      // 不显示错误提示，因为统计信息不是核心功能
     }
   }
 
@@ -249,7 +262,11 @@ export struct YourPage {
                   
                   // 社交信息按钮
                   Row() {
-                    ForEach(["关注:xx", "粉丝:xx", "好友:xx"], (label: string, index: number) => {
+                    ForEach([
+                      `关注:${this.userStats?.followingCount || 0}`,
+                      `粉丝:${this.userStats?.followerCount || 0}`,
+                      `好友:${this.userStats?.friendCount || 0}`
+                    ], (label: string, index: number) => {
                       Button(label)
                         .width(70)
                         .height(28)

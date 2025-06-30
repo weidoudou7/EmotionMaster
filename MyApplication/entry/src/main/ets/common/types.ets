@@ -14,6 +14,17 @@ export interface UserInfo {
   updateTime: string;
 }
 
+// 用户统计信息接口
+export interface UserStats {
+  userUID: string;
+  dynamicCount: number;
+  followingCount: number;
+  followerCount: number;
+  friendCount: number;
+  totalLikes: number;
+  totalViews: number;
+}
+
 // 更新用户请求接口
 export interface UpdateUserRequest {
   userName?: string;

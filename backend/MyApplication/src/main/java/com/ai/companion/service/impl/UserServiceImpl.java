@@ -3,7 +3,11 @@ package com.ai.companion.service.impl;
 import com.ai.companion.entity.User;
 import com.ai.companion.entity.vo.UserInfoVO;
 import com.ai.companion.entity.vo.UpdateUserRequest;
+import com.ai.companion.entity.vo.UserStatsVO;
 import com.ai.companion.service.UserService;
+import com.ai.companion.service.DynamicService;
+import com.ai.companion.service.UserRelationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,9 +20,16 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
+
+    @Autowired
+    private DynamicService dynamicService;
+    
+    @Autowired
+    private UserRelationService userRelationService;
 
     // 内存存储用户数据（实际项目中应该使用数据库）
     private static final Map<String, User> userStorage = new HashMap<>();
@@ -142,6 +153,43 @@ public class UserServiceImpl implements UserService {
             userStorage.put(userUID, user);
         }
         return convertToVO(user);
+    }
+
+    @Override
+    public UserStatsVO getUserStats(String userUID) {
+        // 确保用户存在
+        if (!userStorage.containsKey(userUID)) {
+            createUserIfNotExists(userUID, "用户");
+        }
+        
+        // 获取用户动态数量
+        List<com.ai.companion.entity.Dynamic> userDynamics = dynamicService.getUserDynamics(userUID);
+        int dynamicCount = userDynamics.size();
+        
+        // 计算总获赞数
+        int totalLikes = userDynamics.stream()
+                .mapToInt(dynamic -> dynamic.getLikeCount() != null ? dynamic.getLikeCount() : 0)
+                .sum();
+        
+        // 获取真实的社交数据
+        int followingCount = userRelationService.getFollowingCount(userUID);
+        int followerCount = userRelationService.getFollowerCount(userUID);
+        int friendCount = userRelationService.getFriendCount(userUID);
+        
+        // 计算总浏览量（模拟数据，实际项目中应该从数据库获取）
+        int totalViews = userDynamics.stream()
+                .mapToInt(dynamic -> (int) (Math.random() * 1000) + 100)
+                .sum();
+        
+        return new UserStatsVO(
+            userUID,
+            dynamicCount,
+            followingCount,
+            followerCount,
+            friendCount,
+            totalLikes,
+            totalViews
+        );
     }
 
     /**

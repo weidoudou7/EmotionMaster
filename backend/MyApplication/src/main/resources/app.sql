@@ -19,6 +19,8 @@ CREATE TABLE ai_roles (
                           user_id INT NULL COMMENT '所属用户ID(null表示系统预设)',
                           role_name VARCHAR(50) NOT NULL COMMENT '角色名称',
                           role_description TEXT COMMENT '角色详细描述',
+                          personality TEXT COMMENT '角色性格特征(JSON格式)',
+                          specialty TEXT COMMENT '角色专长领域(JSON数组格式)',
                           role_type VARCHAR(50) NOT NULL COMMENT '角色类型',
                           role_author VARCHAR(100) COMMENT '角色作者',
                           view_count INT DEFAULT 0 COMMENT '角色浏览量',

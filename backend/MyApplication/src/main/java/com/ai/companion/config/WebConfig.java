@@ -16,6 +16,14 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/avatars/**")
                 .addResourceLocations("file:uploads/avatars/");
+        
+        // 映射图片文件访问路径
+        registry.addResourceHandler("/images/**")
+                .addResourceLocations("file:uploads/images/");
+        
+        // 映射其他静态资源
+        registry.addResourceHandler("/static/**")
+                .addResourceLocations("classpath:/static/");
     }
 
     /**

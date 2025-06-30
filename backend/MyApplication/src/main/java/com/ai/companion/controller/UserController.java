@@ -3,6 +3,7 @@ package com.ai.companion.controller;
 import com.ai.companion.entity.vo.ApiResponse;
 import com.ai.companion.entity.vo.UserInfoVO;
 import com.ai.companion.entity.vo.UpdateUserRequest;
+import com.ai.companion.entity.vo.UserStatsVO;
 import com.ai.companion.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,21 @@ public class UserController {
             return ApiResponse.success("获取用户信息成功", userInfo);
         } catch (Exception e) {
             return ApiResponse.error("获取用户信息失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取用户统计信息
+     * @param userUID 用户UID
+     * @return 用户统计信息
+     */
+    @GetMapping("/{userUID}/stats")
+    public ApiResponse<UserStatsVO> getUserStats(@PathVariable String userUID) {
+        try {
+            UserStatsVO userStats = userService.getUserStats(userUID);
+            return ApiResponse.success("获取用户统计信息成功", userStats);
+        } catch (Exception e) {
+            return ApiResponse.error("获取用户统计信息失败: " + e.getMessage());
         }
     }
 
