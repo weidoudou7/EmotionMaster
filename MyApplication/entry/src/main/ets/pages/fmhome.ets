@@ -7,12 +7,18 @@ interface SectionItem {
   tag: string;
   author: string;
   image?: Resource; // 添加可选的图片字段
+  icon?: string; // 添加可选的图标字段
+  iconColor?: string; // 添加图标颜色字段
+  bgColor?: string; // 添加背景颜色字段
 }
 
 interface ToolItem {
   icon?: string;
   title: string;
   desc: string;
+  color: string;
+  bgColor: string;
+  route?: string;
 }
 
 interface AIRecommend {
@@ -109,9 +115,33 @@ export struct FMHomePage {
 
   // 定义各分类的数据
   private selectedItems: SectionItem[] = [
-    { title: 'Vol.01 《热门推荐》', subtitle: '精选内容推荐', tag: '热门', author: '推荐官' },
-    { title: 'Vol.02 《今日精选》', subtitle: '今日最佳内容', tag: '精选', author: '编辑' },
-    { title: 'Vol.03 《热门话题》', subtitle: '热门话题讨论', tag: '话题', author: '话题君' }
+    { 
+      title: 'Vol.01 《热门推荐》', 
+      subtitle: '精选内容推荐', 
+      tag: '热门', 
+      author: '推荐官',
+      icon: '🔥',
+      iconColor: '#FF5722',
+      bgColor: '#FFEBEE'
+    },
+    { 
+      title: 'Vol.02 《今日精选》', 
+      subtitle: '今日最佳内容', 
+      tag: '精选', 
+      author: '编辑',
+      icon: '⭐',
+      iconColor: '#FFC107',
+      bgColor: '#FFF8E1'
+    },
+    { 
+      title: 'Vol.03 《热门话题》', 
+      subtitle: '热门话题讨论', 
+      tag: '话题', 
+      author: '话题君',
+      icon: '💬',
+      iconColor: '#2196F3',
+      bgColor: '#E3F2FD'
+    }
   ];
 
   private musicItems: SectionItem[] = [
@@ -139,9 +169,33 @@ export struct FMHomePage {
   ];
 
   private columnItems: SectionItem[] = [
-    { title: 'Vol.01 《深度解析》', subtitle: '深度文章分析', tag: '深度', author: '分析师' },
-    { title: 'Vol.02 《技术分享》', subtitle: '技术经验分享', tag: '技术', author: '技术员' },
-    { title: 'Vol.03 《行业观察》', subtitle: '行业趋势观察', tag: '观察', author: '观察者' }
+    { 
+      title: 'Vol.01 《深度解析》', 
+      subtitle: '深度文章分析', 
+      tag: '深度', 
+      author: '分析师',
+      icon: '🔍',
+      iconColor: '#1976D2',
+      bgColor: '#E3F2FD'
+    },
+    { 
+      title: 'Vol.02 《技术分享》', 
+      subtitle: '技术经验分享', 
+      tag: '技术', 
+      author: '技术员',
+      icon: '💻',
+      iconColor: '#4CAF50',
+      bgColor: '#E8F5E8'
+    },
+    { 
+      title: 'Vol.03 《行业观察》', 
+      subtitle: '行业趋势观察', 
+      tag: '观察', 
+      author: '观察者',
+      icon: '📊',
+      iconColor: '#FF9800',
+      bgColor: '#FFF3E0'
+    }
   ];
 
 
@@ -151,13 +205,29 @@ export struct FMHomePage {
     desc: '放松身心，缓解压力，开启美好一天',
     tag: 'AI推荐'
   };
-  // 工具区内容
+  // 工具区内容 - 仅包含冥想练习、呼吸训练、压力评估
   private toolList: ToolItem[] = [
-    { title: '情绪日记', desc: '记录每日心情' },
-    { title: '压力测试', desc: '了解你的压力指数' },
-    { title: 'AI陪聊', desc: '随时与AI聊聊' },
-    { title: '呼吸训练', desc: '缓解焦虑，放松身心' },
-    { title: '正念打卡', desc: '每日正念练习' }
+    { 
+      title: '冥想练习', 
+      desc: '正念冥想，放松身心', 
+      color: '#4CAF50',
+      bgColor: '#E8F5E8',
+      route: 'pages/fm_meditation'
+    },
+    { 
+      title: '呼吸训练', 
+      desc: '科学呼吸，缓解焦虑', 
+      color: '#00BCD4',
+      bgColor: '#E0F2F1',
+      route: 'pages/fm_breathing'
+    },
+    { 
+      title: '压力评估', 
+      desc: '评估压力指数，科学调节', 
+      color: '#FF9800',
+      bgColor: '#FFF3E0',
+      route: 'pages/fm_assessment'
+    }
   ];
 
   // 切换情绪卡片的方法
@@ -483,33 +553,60 @@ export struct FMHomePage {
           this.BuildSection('专栏文章', this.columnItems)
           // 工具区
           Column() {
-            Text('实用工具')
+            Text('心理健康工具')
               .fontColor('#0D9FFB')
               .fontSize(18)
               .fontWeight(FontWeight.Bold)
               .margin({ bottom: 16, top: 24 })
+            // 工具区纵向列表展示
             ForEach(this.toolList, (tool: ToolItem, idx: number) => {
               Row() {
-                Blank().width(40).height(40).backgroundColor('#E3F2FD').borderRadius(8)
+                // 工具图标区域
+                Row() {
+                  Text(this.getToolIcon(tool.title))
+                    .fontSize(28)
+                    .fontColor(tool.color)
+                }
+                .width(56)
+                .height(56)
+                .backgroundColor(tool.bgColor)
+                .borderRadius(8)
+                .justifyContent(FlexAlign.Center)
+                .alignItems(VerticalAlign.Center)
+                .margin({ right: 12 })
+                // 工具信息
                 Column() {
                   Text(tool.title)
                     .fontColor('#222')
                     .fontSize(16)
                     .fontWeight(FontWeight.Bold)
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
                   Text(tool.desc)
                     .fontColor('#888')
                     .fontSize(13)
                     .margin({ top: 2 })
                 }
-                .margin({ left: 12 })
                 .layoutWeight(1)
               }
               .width('100%')
               .padding({ top: 8, bottom: 8 })
+              .backgroundColor('#fff')
+              .borderRadius(16)
+              .shadow({ radius: 4, color: 'rgba(0,0,0,0.05)', offsetX: 0, offsetY: 2 })
               .onClick(() => {
-                // TODO: 跳转到对应工具页面
+                console.log('点击了工具:', tool.title)
+                if (tool.route) {
+                  router.pushUrl({
+                    url: tool.route,
+                    params: {
+                      toolName: tool.title,
+                      toolType: this.getToolType(tool.title)
+                    }
+                  })
+                }
               })
-            }, (tool: ToolItem, idx: number) => tool.title + idx)
+            }, (tool: ToolItem) => tool.title)
           }
           .width('100%')
           .margin({ bottom: 40 })
@@ -546,13 +643,26 @@ export struct FMHomePage {
         .margin({ bottom: 16, top: 24 })
       ForEach(items, (item: SectionItem, idx: number) => {
         Row() {
-          // 如果有图片就显示图片，否则显示默认占位符
+          // 如果有图片就显示图片，否则显示图标或默认占位符
           if (item.image) {
             Image(item.image)
               .width(56)
               .height(56)
               .borderRadius(8)
               .objectFit(ImageFit.Cover)
+          } else if (item.icon) {
+            // 显示图标
+            Row() {
+              Text(item.icon)
+                .fontSize(24)
+                .fontColor(item.iconColor || '#666')
+            }
+            .width(56)
+            .height(56)
+            .backgroundColor(item.bgColor || '#F5F5F5')
+            .borderRadius(8)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(VerticalAlign.Center)
           } else {
             Blank().width(56).height(56).backgroundColor('#E3F2FD').borderRadius(8)
           }
@@ -631,5 +741,33 @@ export struct FMHomePage {
     }
     .width('100%')
     .margin({ bottom: 40 })
+  }
+
+  // 获取工具图标的方法
+  private getToolIcon(title: string): string {
+    switch (title) {
+      case '冥想练习':
+        return '🧘‍♀️'
+      case '呼吸训练':
+        return '💨'
+      case '压力评估':
+        return '📊'
+      default:
+        return '🔧'
+    }
+  }
+
+  // 获取工具类型的方法
+  private getToolType(title: string): string {
+    switch (title) {
+      case '冥想练习':
+        return 'meditation'
+      case '呼吸训练':
+        return 'breathing'
+      case '压力评估':
+        return 'assessment'
+      default:
+        return 'tool'
+    }
   }
 } 
