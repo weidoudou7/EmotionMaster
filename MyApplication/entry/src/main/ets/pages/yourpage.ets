@@ -75,7 +75,7 @@ export struct YourPage {
             .position({ x: 300, y: -30 })
         }
         .width('100%')
-        .height(100)
+        .height(60)
         
         Blank().layoutWeight(1)
         
@@ -93,7 +93,7 @@ export struct YourPage {
             .position({ x: 320, y: 40 })
         }
         .width('100%')
-        .height(100)
+        .height(80)
       }
       .width('100%')
       .height('100%')
@@ -126,7 +126,7 @@ export struct YourPage {
                       .width(80)
                       .height(80)
                       .borderRadius(40)
-                      .margin({ top: 2 })
+                      .margin({ top: 2, right: 20 })
                       .backgroundColor('rgba(255,255,255,0.1)')
                       .border({ width: 2, color: 'rgba(255,255,255,0.3)' })
                       .scale({ x: this.avatarScale, y: this.avatarScale })
@@ -161,14 +161,9 @@ export struct YourPage {
                         .fontColor('rgba(255,255,255,0.6)')
                         .textAlign(TextAlign.Start)
                     }
-                    .margin({ left: 16 })
                     .alignItems(HorizontalAlign.Start)
                     .width('70%')
                   }
-                  .padding(20)
-                  .backgroundColor('rgba(255,255,255,0.12)')
-                  .borderRadius(20)
-                  .backdropBlur(10)
                   .width('100%')
                   .scale({ x: this.cardScale, y: this.cardScale })
                   .animation({
@@ -183,6 +178,7 @@ export struct YourPage {
                   })
                 }
                 .width('70%')
+                .padding({ left: 16 })
                 
                 // 右侧小卡片
                 Column() {
@@ -194,10 +190,10 @@ export struct YourPage {
                       .fillColor('#fff')
                   }
                   .width(48)
-                  .height(48)
-                  .backgroundColor('rgba(255,255,255,0.15)')
+                  .height(23)
+                  .backgroundColor('rgba(128,128,128,0)')
                   .borderRadius(24)
-                  .margin({ bottom: 12 })
+                  .margin({ bottom: 4 })
                   .onClick(() => {
                     let uiContext: UIContext = this.getUIContext();
                     let router = uiContext.getRouter();
@@ -213,8 +209,9 @@ export struct YourPage {
                   }
                   .width(48)
                   .height(48)
-                  .backgroundColor('rgba(255,255,255,0.15)')
+                  .backgroundColor('rgba(128,128,128,0)')
                   .borderRadius(24)
+                  .margin({ bottom: 4 })
                   .onClick(() => {
                     let uiContext: UIContext = this.getUIContext();
                     let router = uiContext.getRouter();
@@ -223,103 +220,147 @@ export struct YourPage {
                 }
                 .width('20%')
                 .height('100%')
-                .justifyContent(FlexAlign.Center)
+                .justifyContent(FlexAlign.End)
                 .alignItems(HorizontalAlign.Center)
               }
               .width('90%')
-              .height(120)
-              .margin({ top: 32, bottom: 16 })
+              .height(100)
+              .margin({ top: 12, bottom: 2 })
               
-              // 2. 个性签名卡片
+              // 2. 个性签名和社交信息
               Row() {
-                Text('个性签名')
-                  .fontSize(15)
-                  .fontColor('#fff')
-                  .margin({ right: 8 })
-                Text(this.userInfo?.signature || '这个人很懒，什么都没留下~')
-                  .fontSize(15)
-                  .fontColor('rgba(255,255,255,0.8)')
-                  .textAlign(TextAlign.Start)
-              }
-              .padding(20)
-              .backgroundColor('rgba(255,255,255,0.12)')
-              .borderRadius(20)
-              .backdropBlur(10)
-              .width('90%')
-              .margin({ bottom: 16 })
-              
-              // 3. 三个小按钮卡片
-              Row() {
-                ForEach(["关注:xx", "粉丝:xx", "好友:xx"], (label: string) =>
-                  Button(label)
-                    .width(90)
-                    .height(36)
-                    .fontSize(14)
-                    .backgroundColor('rgba(255,255,255,0.15)')
-                    .fontColor('#fff')
-                    .borderRadius(18)
-                    .margin({ right: 12 })
-                    .onClick(() => {
-                      promptAction.showToast({ message: '好友功能正在开发中' });
+                // 左侧：个性签名
+                Column() {
+                  // 个性签名
+                  Column() {
+                    Text('个性签名')
+                      .fontSize(15)
+                      .fontColor('#fff')
+                      .margin({ bottom: 8 })
+                    Text(this.userInfo?.signature || '这个人很懒，什么都没留下~')
+                      .fontSize(14)
+                      .fontColor('rgba(255,255,255,0.8)')
+                      .textAlign(TextAlign.Start)
+                      .maxLines(2)
+                      .textOverflow({ overflow: TextOverflow.Ellipsis })
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .margin({ bottom: 4 })
+                  
+                  // 社交信息按钮
+                  Row() {
+                    ForEach(["关注:xx", "粉丝:xx", "好友:xx"], (label: string, index: number) => {
+                      Button(label)
+                        .width(70)
+                        .height(28)
+                        .fontSize(12)
+                        .backgroundColor('rgba(128,128,128,0)')
+                        .fontColor('#fff')
+                        .borderRadius(14)
+                        .margin({ right: 6 })
+                        .onClick(() => {
+                          promptAction.showToast({ message: '好友功能正在开发中' });
+                        })
                     })
-              )
+                  }
+                  .justifyContent(FlexAlign.Start)
+                }
+                .width('70%')
+                .padding({ left: 16 })
+                
+                // 右侧空白区域，保持与头像卡片布局一致
+                Blank()
+                  .width('20%')
               }
-              .padding(20)
-              .backgroundColor('rgba(255,255,255,0.12)')
-              .borderRadius(20)
-              .backdropBlur(10)
               .width('90%')
-              .margin({ bottom: 20 })
+              .margin({ bottom: 2 })
               
-              // 4. 底部两个按钮（移动到阁楼卡片上方）
+              // 3. 底部两个按钮
               Row() {
-                Button('我的阁楼')
-                  .fontSize(15)
-                  .backgroundColor(this.selectedTab === 'attic' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.15)')
-                  .fontColor('#fff')
-                  .borderRadius(20)
+                // 左侧：按钮区域
+                Row() {
+                  Column() {
+                    Button('我的阁楼')
+                      .fontSize(15)
+                      .backgroundColor('rgba(128,128,128,0)')
+                      .fontColor('#fff')
+                      .borderRadius(20)
+                      .onClick(() => {
+                        this.selectedTab = 'attic';
+                      })
+                    if (this.selectedTab === 'attic') {
+                      Divider()
+                        .width(80)
+                        .height(2)
+                        .color('#fff')
+                        .margin({ top: 2 })
+                    }
+                  }
                   .margin({ right: 12 })
-                  .onClick(() => {
-                    this.selectedTab = 'attic';
-                  })
-                Button('我的动态')
-                  .fontSize(15)
-                  .backgroundColor(this.selectedTab === 'dynamic' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.15)')
-                  .fontColor('#fff')
-                  .borderRadius(20)
-                  .onClick(() => {
-                    this.selectedTab = 'dynamic';
-                  })
+                  
+                  Column() {
+                    Button('我的动态')
+                      .fontSize(15)
+                      .backgroundColor('rgba(128,128,128,0)')
+                      .fontColor('#fff')
+                      .borderRadius(20)
+                      .onClick(() => {
+                        this.selectedTab = 'dynamic';
+                      })
+                    if (this.selectedTab === 'dynamic') {
+                      Divider()
+                        .width(80)
+                        .height(2)
+                        .color('#fff')
+                        .margin({ top: 2 })
+                    }
+                  }
+                }
+                .width('70%')
+                .padding({ left: 16 })
+                .justifyContent(FlexAlign.Start)
+                
+                // 右侧空白区域
+                Blank()
+                  .width('20%')
               }
               .width('90%')
-              .justifyContent(FlexAlign.Start)
-              .margin({ bottom: 16 })
+              .margin({ bottom: 2 })
               
-              // 5. 阁楼内容显示卡片
+              // 4. 阁楼内容显示
               Column() {
                 if (this.selectedTab === 'attic') {
                   // 阁楼五个标签页导航栏（支持滑动）
                   Scroll() {
                     Row() {
-                      ForEach(["智能体", "故事", "时刻", "群聊", "记忆簿"], (tab: string) =>
-                        Button(tab)
-                          .fontSize(12)
-                          .backgroundColor(this.selectedAtticTab === tab ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)')
-                          .fontColor('#fff')
-                          .borderRadius(12)
-                          .margin({ right: 12 })
-                          .padding({ left: 12, right: 12, top: 8, bottom: 8 })
-                          .onClick(() => {
-                            this.selectedAtticTab = tab;
-                          })
-                      )
+                      ForEach(["智能体", "故事", "时刻", "群聊", "记忆簿"], (tab: string, index: number) => {
+                        Column() {
+                          Button(tab)
+                            .fontSize(12)
+                            .backgroundColor('rgba(128,128,128,0)')
+                            .fontColor('#fff')
+                            .borderRadius(12)
+                            .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+                            .onClick(() => {
+                              this.selectedAtticTab = tab;
+                            })
+                          if (this.selectedAtticTab === tab) {
+                            Divider()
+                              .width(40)
+                              .height(2)
+                              .color('#fff')
+                              .margin({ top: 2 })
+                          }
+                        }
+                        .margin({ right: 12 })
+                      })
                     }
                     .width('100%')
                   }
                   .scrollable(ScrollDirection.Horizontal)
                   .scrollBar(BarState.Off)
                   .width('100%')
-                  .margin({ bottom: 16 })
+                  .margin({ bottom: 8 })
                   
                   // 阁楼内容显示区域
                   Column() {
@@ -369,20 +410,14 @@ export struct YourPage {
                   .width('100%')
                 }
               }
-              .padding(20)
-              .backgroundColor('rgba(255,255,255,0.12)')
-              .borderRadius(20)
-              .backdropBlur(10)
               .width('90%')
               .height('50%')
-              .margin({ bottom: 20 })
+              .margin({ bottom: 4 })
             }
             .width('100%')
-            
-            // 移除下半部分阁楼预览区域，因为已整合到第五个卡片中
           }
           .width('100%')
-          .padding({ top: 10 })
+          .padding({ top: 0 })
         }
         .scrollable(ScrollDirection.Vertical)
         .scrollBar(BarState.Off)
@@ -390,8 +425,6 @@ export struct YourPage {
         .height('100%')
         .zIndex(2)
       }
-      // 底部导航栏
-
     }
   }
 } 

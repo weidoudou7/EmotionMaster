@@ -218,6 +218,17 @@ export class ApiService {
   }
 
   /**
+   * 特色聊天接口 - 使用自定义描述词
+   */
+  static async featuredChat(prompt: string, chatId: string, desc: string): Promise<string> {
+    const url = `${API_BASE_URL}/ai/featured_chat?prompt=${encodeURIComponent(prompt)}&chatId=${encodeURIComponent(chatId)}&desc=${encodeURIComponent(desc)}`;
+    const response = await ApiService.request<string>(url, {
+      method: http.RequestMethod.POST
+    });
+    return response.data;
+  }
+
+  /**
    * 生成形象描述接口
    */
   static async generateDescription(userInput: string): Promise<string> {

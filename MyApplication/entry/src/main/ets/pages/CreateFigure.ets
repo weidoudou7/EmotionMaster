@@ -29,6 +29,15 @@ export struct CreateFigurePage {
   // 预定义的五种风格
   private readonly figureStyles: string[] = ['古风', '赛博', '卡通', '动漫', 'Q版']
   private readonly figureTypes: string[] = ['动漫', '可爱', '科幻', '写实']
+  
+  // 新增：每个人物类型对应的描述词
+  private readonly figureTypeDescriptions: Record<string, string> = {
+    '动漫': '你是一个可爱的动漫角色，有着大大的眼睛和柔和的性格。你喜欢动漫文化，性格活泼开朗，说话时经常使用可爱的语气词。你擅长讨论动漫、游戏、二次元文化等话题，总是充满活力和正能量。',
+    '可爱': '你是一个超级可爱的角色，性格温柔善良，说话声音甜美。你喜欢一切可爱的事物，比如小动物、甜点、粉色系物品等。你总是用温柔的语气说话，经常使用"呢"、"呀"、"啦"等可爱的语气词。',
+    '科幻': '你是一个来自未来的科幻角色，拥有先进的科技知识和独特的未来视角。你对科技、太空、人工智能等话题非常了解，说话时经常提到未来的概念和科技产品。你性格理性冷静，但也很友善。',
+    '写实': '你是一个真实可信的角色，性格成熟稳重，说话直接明了。你有着丰富的人生经验和智慧，擅长倾听和给出实用的建议。你说话时语气平和，逻辑清晰，是一个值得信赖的朋友。'
+  }
+  
   private readonly figureTypeImages: FigureTypeImages[] = [
     { name: '动漫', images: [
       'https://image.pollinations.ai/prompt/A%20beautiful%20anime%20girl%20with%20vibrant%20colors%2C%20detailed%20background%2C%204K%20resolution%2C%20in%20a%20stylized%20anime%20art%20style.%20Her%20large%20expressive%20eyes%20sparkle%20with%20life%2C%20framed%20by%20long%20flowing%20hair%20that%20shimmers%20in%20the%20light.%20She%20wears%20an%20elegant%20outfit%20with%20intricate%20designs%20and%20delicate%20accessories.%20The%20background%20is%20a%20fantasy%20landscape%20filled%20with%20lush%20vegetation%2C%20glowing%20particles%2C%20and%20atmospheric%20lighting.%20The%20scene%20is%20rendered%20in%20ultra-high%20detail%20with%20rich%20colors%2C%20dynamic%20shading%2C%20and%20a%20dreamlike%20quality%20characteristic%20of%20premium%20anime%20art.?width=1024&height=1024&enhance=true&private=true&nologo=true&safe=true&model=flux',
@@ -75,6 +84,11 @@ export struct CreateFigurePage {
       'https://image.pollinations.ai/prompt/A%20highly%20detailed%20realistic%20interior%20shot%20of%20a%20cozy%20library%20with%20wooden%20bookshelves%2C%20leather%20armchairs%2C%20and%20a%20crackling%20fireplace%2C%20warm%20ambient%20lighting%2C%20dust%20particles%20in%20the%20air%2C%20and%20textured%20book%20spines%2C%208K%20resolution?width=1024&height=1024&enhance=true&private=true&nologo=true&safe=true&model=flux'
     ]}
   ]
+
+  aboutToAppear() {
+    // 初始化默认描述词（动漫类型）
+    this.setDescriptionForType(this.figureTypes[this.selectedFigureType]);
+  }
 
   build(): void {
     Column() {
@@ -176,7 +190,12 @@ export struct CreateFigurePage {
               .fontColor(this.selectedFigureType === idx ? '#FFD700' : '#fff')
               .backgroundColor(this.selectedFigureType === idx ? '#232323' : 'transparent')
               .borderRadius(16)
-              .onClick(() => { this.selectedFigureType = idx; this.selectedImageIndex = 0 })
+              .onClick(() => { 
+                this.selectedFigureType = idx; 
+                this.selectedImageIndex = 0;
+                // 新增：自动设置对应类型的描述词
+                this.setDescriptionForType(type);
+              })
               .width(80)
               .height(36)
           }
@@ -448,15 +467,17 @@ export struct CreateFigurePage {
     try {
       console.log('开始与人物聊天，图片URL:', figureImageUrl);
       console.log('人物类型:', figureType);
+      console.log('描述词:', this.desc);
       
-      // 跳转到聊天页面，传递人物信息
+      // 跳转到聊天页面，传递人物信息和描述词
       router.pushUrl({
         url: 'pages/chat',
         params: {
           figureImageUrl: figureImageUrl,
           figureType: figureType,
           figureName: `${figureType}角色`,
-          isFromCreateFigure: true
+          isFromCreateFigure: true,
+          description: this.desc
         }
       })
     } catch (error) {
@@ -466,5 +487,14 @@ export struct CreateFigurePage {
         duration: 2000
       })
     }
+  }
+
+  /**
+   * 新增：自动设置对应类型的描述词
+   */
+  private setDescriptionForType(type: string): void {
+    const description = this.figureTypeDescriptions[type] || '';
+    this.desc = description;
+    console.log(`已设置${type}类型的描述词:`, description);
   }
 } 
