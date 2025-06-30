@@ -2,6 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ai.companion.mapper.MessageMapper">
+    <!-- ========== 结果映射 ========== -->
     <resultMap id="MessageResultMap" type="com.ai.companion.entity.Message">
         <id property="id" column="id"/>
         <result property="conversationId" column="conversation_id"/>
@@ -13,31 +14,130 @@
         <result property="timestamp" column="timestamp"/>
     </resultMap>
 
+    <!-- ========== 基础查询方法 ========== -->
     <select id="selectById" resultMap="MessageResultMap">
         SELECT * FROM messages WHERE id = #{id}
     </select>
-
     <select id="selectByConversationId" resultMap="MessageResultMap">
         SELECT * FROM messages WHERE conversation_id = #{conversationId}
     </select>
+    <select id="selectAll" resultMap="MessageResultMap">
+        SELECT * FROM messages
+    </select>
 
+    <!-- ========== 分页与排序查询方法 ========== -->
+    <select id="selectByPage" resultMap="MessageResultMap">
+        SELECT * FROM messages ORDER BY timestamp DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+    <select id="selectByConversationIdWithPage" resultMap="MessageResultMap">
+        SELECT * FROM messages WHERE conversation_id = #{conversationId} ORDER BY timestamp DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- ========== 条件与模糊查询方法 ========== -->
+    <select id="selectBySenderType" resultMap="MessageResultMap">
+        SELECT * FROM messages WHERE sender_type = #{senderType}
+    </select>
+    <select id="selectBySentimentScoreRange" resultMap="MessageResultMap">
+        SELECT * FROM messages WHERE sentiment_score BETWEEN #{minScore} AND #{maxScore}
+    </select>
+    <select id="selectByTopicTagLike" resultMap="MessageResultMap">
+        SELECT * FROM messages WHERE topic_tag LIKE CONCAT('%', #{topicTag}, '%')
+    </select>
+    <select id="selectByContentLike" resultMap="MessageResultMap">
+        SELECT * FROM messages WHERE content LIKE CONCAT('%', #{keyword}, '%')
+    </select>
+    <select id="selectByTimeRange" resultMap="MessageResultMap">
+        SELECT * FROM messages WHERE timestamp BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- ========== 批量操作 ========== -->
+    <select id="selectByIds" resultMap="MessageResultMap">
+        SELECT * FROM messages WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+    <insert id="batchInsertMessages">
+        INSERT INTO messages (conversation_id, sender_type, content, audio_url, sentiment_score, topic_tag, timestamp)
+        VALUES
+        <foreach collection="messages" item="msg" separator=",">
+            (#{msg.conversationId}, #{msg.senderType}, #{msg.content}, #{msg.audioUrl}, #{msg.sentimentScore}, #{msg.topicTag}, #{msg.timestamp})
+        </foreach>
+    </insert>
+    <delete id="batchDeleteMessages">
+        DELETE FROM messages WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- ========== 插入与更新方法 ========== -->
     <insert id="insertMessage" parameterType="com.ai.companion.entity.Message" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO messages (conversation_id, sender_type, content, audio_url, sentiment_score, topic_tag, timestamp)
         VALUES (#{conversationId}, #{senderType}, #{content}, #{audioUrl}, #{sentimentScore}, #{topicTag}, #{timestamp})
     </insert>
-
     <update id="updateMessage" parameterType="com.ai.companion.entity.Message">
         UPDATE messages
         SET conversation_id=#{conversationId}, sender_type=#{senderType}, content=#{content}, audio_url=#{audioUrl},
             sentiment_score=#{sentimentScore}, topic_tag=#{topicTag}, timestamp=#{timestamp}
         WHERE id=#{id}
     </update>
+    <update id="batchUpdateSentimentScore">
+        UPDATE messages SET sentiment_score = #{sentimentScore} WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
 
+    <!-- ========== 删除方法 ========== -->
     <delete id="deleteMessage">
         DELETE FROM messages WHERE id=#{id}
     </delete>
 
-    <select id="selectAll" resultMap="MessageResultMap">
-        SELECT * FROM messages
+    <!-- ========== 统计方法 ========== -->
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*) FROM messages
+    </select>
+    <select id="countByConversationId" resultType="int">
+        SELECT COUNT(*) FROM messages WHERE conversation_id = #{conversationId}
+    </select>
+    <select id="countBySenderType" resultType="int">
+        SELECT COUNT(*) FROM messages WHERE sender_type = #{senderType}
+    </select>
+    <select id="countBySentimentScoreRange" resultType="int">
+        SELECT COUNT(*) FROM messages WHERE sentiment_score BETWEEN #{minScore} AND #{maxScore}
+    </select>
+    <select id="selectTopicTagDistribution" resultType="string">
+        SELECT topic_tag FROM messages GROUP BY topic_tag ORDER BY COUNT(*) DESC LIMIT #{limit}
+    </select>
+
+    <!-- 获取某会话下最后一条消息 -->
+    <select id="selectLastMessageByConversationId" resultMap="MessageResultMap">
+        SELECT * FROM messages WHERE conversation_id = #{conversationId} ORDER BY timestamp DESC LIMIT 1
+    </select>
+
+    <!-- 获取某会话下指定发送者类型的最后一条消息 -->
+    <select id="selectLastMessageByConversationIdAndSenderType" resultMap="MessageResultMap">
+        SELECT * FROM messages WHERE conversation_id = #{conversationId} AND sender_type = #{senderType} ORDER BY timestamp DESC LIMIT 1
+    </select>
+
+    <!-- 获取某条消息的上下文窗口（前后N条） -->
+    <select id="selectContextWindow" resultMap="MessageResultMap">
+        SELECT * FROM (
+            SELECT * FROM messages
+            WHERE conversation_id = #{conversationId} AND id &lt;= #{messageId}
+            ORDER BY id DESC LIMIT #{windowSize}
+        ) t
+        ORDER BY t.id ASC
+    </select>
+
+    <!-- 按会话ID和时间区间查询消息 -->
+    <select id="selectByConversationIdAndTimeRange" resultMap="MessageResultMap">
+        SELECT * FROM messages WHERE conversation_id = #{conversationId} AND timestamp BETWEEN #{startTime} AND #{endTime} ORDER BY timestamp ASC
+    </select>
+
+    <!-- 按会话ID和发送者类型查询消息 -->
+    <select id="selectByConversationIdAndSenderType" resultMap="MessageResultMap">
+        SELECT * FROM messages WHERE conversation_id = #{conversationId} AND sender_type = #{senderType} ORDER BY timestamp ASC
     </select>
 </mapper> 
