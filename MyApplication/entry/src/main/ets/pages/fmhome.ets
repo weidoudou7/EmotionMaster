@@ -700,20 +700,20 @@ export struct FMHomePage {
           console.log('点击了:', item.title)
           // 如果是音乐电台模块，跳转到音乐播放界面
           if (title === '音乐电台') {
-            let musicType = 'fashion'; // 默认流行音乐
+            // 根据音乐类型设置不同的音乐ID
+            let musicId = '1824045033'; // 默认音乐ID
             if (item.tag === '古典') {
-              musicType = 'classic';
+              musicId = '1824045034'; // 古典音乐ID
             } else if (item.tag === '轻音') {
-              musicType = 'soft';
+              musicId = '1824045035'; // 轻音乐ID
             }
             
             router.pushUrl({
-              url: 'pages/fm_musicBegin',
+              url: 'pages/music_cloud_style',
               params: {
-                musicId: (idx + 1).toString(),
+                musicId: musicId,
                 musicTitle: item.title,
-                musicArtist: item.author,
-                musicType: musicType
+                musicArtist: item.author
               }
             });
           }

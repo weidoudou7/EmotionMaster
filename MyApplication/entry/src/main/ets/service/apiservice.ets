@@ -494,4 +494,28 @@ export class ApiService {
     const response = await ApiService.request<string>(url, { method: http.RequestMethod.GET });
     return response.data;
   }
+
+  /**
+   * 获取音乐播放URL
+   */
+  static async getMusicPlayUrl(musicId: string): Promise<string> {
+    const response = await ApiService.request<string>(`${API_BASE_URL}/music/${musicId}/play-url`);
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '获取音乐播放链接失败');
+    }
+  }
+
+  /**
+   * 获取音乐信息
+   */
+  static async getMusicInfo(musicId: string): Promise<Record<string, string | number | boolean>> {
+    const response = await ApiService.request<Record<string, string | number | boolean>>(`${API_BASE_URL}/music/${musicId}/info`);
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '获取音乐信息失败');
+    }
+  }
 }

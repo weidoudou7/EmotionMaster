@@ -344,10 +344,6 @@ export struct Chat {
         .expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
         .scrollBar(BarState.Off) // 隐藏滚动条
         .edgeEffect(EdgeEffect.Spring) // 添加边缘弹性效果
-        .onScroll((offsetX: number, offsetY: number) => {
-          // 监听滚动事件，可以用于实现下拉刷新等功能
-          console.log('聊天列表滚动位置:', offsetX, offsetY);
-        })
         .onReachEnd(() => {
           // 滚动到底部时的回调，可以用于加载更多历史消息
           console.log('已滚动到聊天列表底部');

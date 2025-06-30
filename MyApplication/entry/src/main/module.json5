@@ -19,6 +19,22 @@
       {
         "name": "ohos.permission.GET_WIFI_INFO",
         "reason": "$string:app_name"
+      },
+      {
+        "name": "ohos.permission.MICROPHONE",
+        "reason": "$string:app_name",
+        "usedScene": {
+          "abilities": ["MainAbility"],
+          "when": "always"
+        }
+      },
+      {
+        "name": "ohos.permission.MEDIA_LOCATION",
+        "reason": "$string:app_name",
+        "usedScene": {
+          "abilities": ["MainAbility"],
+          "when": "always"
+        }
       }
     ],
     "abilities": [
