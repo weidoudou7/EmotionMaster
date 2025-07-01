@@ -41,8 +41,6 @@ CREATE TABLE conversations (
                                start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '开始时间',
                                last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后活跃时间',
                                mood_tag VARCHAR(50) COMMENT '情绪标签(自动分析)',
-                               mode ENUM('text', 'voice') NOT NULL DEFAULT 'text' COMMENT '对话模式',
-                               planet_growth INT DEFAULT 0 COMMENT '对星球的成长值贡献',
                                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                                FOREIGN KEY (ai_role_id) REFERENCES ai_roles(id) ON DELETE CASCADE,
                                INDEX idx_conversations_user (user_id) COMMENT '用户ID索引'

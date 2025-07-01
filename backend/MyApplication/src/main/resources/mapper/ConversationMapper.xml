@@ -11,8 +11,6 @@
         <result property="startTime" column="start_time"/>
         <result property="lastActive" column="last_active"/>
         <result property="moodTag" column="mood_tag"/>
-        <result property="mode" column="mode"/>
-        <result property="planetGrowth" column="planet_growth"/>
     </resultMap>
 
     <select id="selectById" resultMap="ConversationResultMap">
@@ -57,10 +55,6 @@
         LIMIT #{limit}
     </select>
 
-    <select id="selectByMode" resultMap="ConversationResultMap">
-        SELECT * FROM conversations WHERE mode = #{mode}
-    </select>
-
     <select id="selectByMoodTag" resultMap="ConversationResultMap">
         SELECT * FROM conversations WHERE mood_tag = #{moodTag}
     </select>
@@ -68,11 +62,6 @@
     <select id="selectByTurnsRange" resultMap="ConversationResultMap">
         SELECT * FROM conversations 
         WHERE turns BETWEEN #{minTurns} AND #{maxTurns}
-    </select>
-
-    <select id="selectByPlanetGrowthRange" resultMap="ConversationResultMap">
-        SELECT * FROM conversations 
-        WHERE planet_growth BETWEEN #{minGrowth} AND #{maxGrowth}
     </select>
 
     <select id="selectByConditions" resultMap="ConversationResultMap">
@@ -83,9 +72,6 @@
             </if>
             <if test="aiRoleId != null">
                 AND ai_role_id = #{aiRoleId}
-            </if>
-            <if test="mode != null and mode != ''">
-                AND mode = #{mode}
             </if>
             <if test="moodTag != null and moodTag != ''">
                 AND mood_tag = #{moodTag}
@@ -148,15 +134,14 @@
     </select>
 
     <insert id="insertConversation" parameterType="com.ai.companion.entity.Conversation" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO conversations (user_id, ai_role_id, turns, title, start_time, last_active, mood_tag, mode, planet_growth)
-        VALUES (#{userId}, #{aiRoleId}, #{turns}, #{title}, #{startTime}, #{lastActive}, #{moodTag}, #{mode}, #{planetGrowth})
+        INSERT INTO conversations (user_id, ai_role_id, turns, title, start_time, last_active, mood_tag)
+        VALUES (#{userId}, #{aiRoleId}, #{turns}, #{title}, #{startTime}, #{lastActive}, #{moodTag})
     </insert>
 
     <update id="updateConversation" parameterType="com.ai.companion.entity.Conversation">
         UPDATE conversations
         SET user_id = #{userId}, ai_role_id = #{aiRoleId}, turns = #{turns}, title = #{title}, 
-            start_time = #{startTime}, last_active = #{lastActive}, mood_tag = #{moodTag}, 
-            mode = #{mode}, planet_growth = #{planetGrowth}
+            start_time = #{startTime}, last_active = #{lastActive}, mood_tag = #{moodTag}
         WHERE id = #{id}
     </update>
 
@@ -181,12 +166,6 @@
     <update id="updateMoodTag">
         UPDATE conversations 
         SET mood_tag = #{moodTag} 
-        WHERE id = #{id}
-    </update>
-
-    <update id="updatePlanetGrowth">
-        UPDATE conversations 
-        SET planet_growth = #{planetGrowth} 
         WHERE id = #{id}
     </update>
 
@@ -227,14 +206,6 @@
         SELECT COUNT(*) FROM conversations WHERE ai_role_id = #{aiRoleId}
     </select>
 
-    <select id="countByMode" resultType="int">
-        SELECT COUNT(*) FROM conversations WHERE mode = #{mode}
-    </select>
-
-    <select id="countByMoodTag" resultType="int">
-        SELECT COUNT(*) FROM conversations WHERE mood_tag = #{moodTag}
-    </select>
-
     <select id="countTodayCreated" resultType="int">
         SELECT COUNT(*) FROM conversations 
         WHERE DATE(start_time) = CURDATE()
@@ -247,18 +218,6 @@
 
     <select id="getAverageTurns" resultType="double">
         SELECT AVG(turns) FROM conversations
-    </select>
-
-    <select id="getAveragePlanetGrowth" resultType="double">
-        SELECT AVG(planet_growth) FROM conversations
-    </select>
-
-    <select id="selectModeDistribution" resultMap="ConversationResultMap">
-        SELECT mode, COUNT(*) as count 
-        FROM conversations 
-        GROUP BY mode 
-        ORDER BY count DESC 
-        LIMIT 10
     </select>
 
     <select id="selectMoodTagDistribution" resultMap="ConversationResultMap">

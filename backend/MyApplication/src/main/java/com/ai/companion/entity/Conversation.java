@@ -18,6 +18,4 @@ public class Conversation {
     private LocalDateTime startTime; // 开始时间
     private LocalDateTime lastActive; // 最后活跃时间
     private String moodTag; // 情绪标签
-    private String mode; // 对话模式（text/voice）
-    private Integer planetGrowth; // 对星球的成长值贡献
 }
