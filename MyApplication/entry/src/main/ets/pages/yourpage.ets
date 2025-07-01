@@ -268,7 +268,7 @@ export struct YourPage {
                       `好友:${this.userStats?.friendCount || 0}`
                     ], (label: string, index: number) => {
                       Button(label)
-                        .width(70)
+                        .width(68)
                         .height(28)
                         .fontSize(12)
                         .backgroundColor('rgba(128,128,128,0)')
@@ -279,6 +279,22 @@ export struct YourPage {
                           promptAction.showToast({ message: '好友功能正在开发中' });
                         })
                     })
+                    
+                    // 查找按钮
+                    Button('查找')
+                      .width(60)
+                      .height(28)
+                      .fontSize(12)
+                      .backgroundColor('rgba(128,128,128,0)')
+                      .fontColor('#fff')
+                      .borderRadius(14)
+                      .margin({ left: 6 })
+                      .onClick(() => {
+                        console.log('查找按钮被点击');
+                        let uiContext: UIContext = this.getUIContext();
+                        let router = uiContext.getRouter();
+                        router.pushUrl({ url: 'pages/searchpage' });
+                      })
                   }
                   .justifyContent(FlexAlign.Start)
                 }

@@ -68,4 +68,11 @@ export interface MusicDetailVO {
   artist: string;
   duration: string; // mm:ss
   coverUrl: string;
+}
+
+// 搜索结果用户信息接口
+export interface SearchUserResult {
+  userUID: string;
+  userName: string;
+  userAvatar: string;
 } 

@@ -1,7 +1,6 @@
 import { globalUserData } from '../models/userdata';
 import { Config } from '../common/config';
-import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats } from '../common/types';
-import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, MusicDetailVO } from '../common/types';
+import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult } from '../common/types';
 import http from '@ohos.net.http';
 
 
@@ -549,6 +548,23 @@ export class ApiService {
       console.log('进入catch块，id=', musicId);
       console.error('获取歌曲详情失败，id=', musicId, e);
       throw new Error(e instanceof Error ? e.message : '未知错误');
+    }
+  }
+
+  /**
+   * 搜索用户
+   */
+  static async searchUser(userUID: string): Promise<SearchUserResult | null> {
+    try {
+      const response = await ApiService.request<SearchUserResult>(`${API_BASE_URL}/user/search/${userUID}`);
+      if (response.success) {
+        return response.data;
+      } else {
+        return null; // 用户不存在
+      }
+    } catch (error) {
+      console.error('搜索用户失败:', error);
+      return null; // 搜索失败时返回null
     }
   }
 }

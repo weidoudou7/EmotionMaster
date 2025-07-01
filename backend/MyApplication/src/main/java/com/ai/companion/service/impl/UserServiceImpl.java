@@ -7,6 +7,7 @@ import com.ai.companion.entity.vo.UserStatsVO;
 import com.ai.companion.service.UserService;
 import com.ai.companion.service.DynamicService;
 import com.ai.companion.service.UserRelationService;
+import com.ai.companion.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,35 +31,30 @@ public class UserServiceImpl implements UserService {
     
     @Autowired
     private UserRelationService userRelationService;
-
-    // 内存存储用户数据（实际项目中应该使用数据库）
-    private static final Map<String, User> userStorage = new HashMap<>();
     
+    @Autowired
+    private UserMapper userMapper;
+
     // 头像存储路径
     private static final String AVATAR_UPLOAD_PATH = "uploads/avatars/";
 
     static {
-        // 创建默认用户
-        User defaultUser = new User("100000000", "用户");
-        userStorage.put("100000000", defaultUser);
-        
         // 确保头像目录存在
         createAvatarDirectory();
     }
 
     @Override
     public UserInfoVO getUserInfo(String userUID) {
-        User user = userStorage.get(userUID);
+        User user = userMapper.selectByUID(userUID);
         if (user == null) {
-            // 如果用户不存在，创建默认用户
-            return createUserIfNotExists(userUID, "用户");
+            throw new RuntimeException("用户不存在");
         }
         return convertToVO(user);
     }
 
     @Override
     public UserInfoVO updateUserInfo(String userUID, UpdateUserRequest request) {
-        User user = userStorage.get(userUID);
+        User user = userMapper.selectByUID(userUID);
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
@@ -80,8 +76,8 @@ public class UserServiceImpl implements UserService {
         user.setPrivacyVisible(request.isPrivacyVisible());
         user.setUpdateTime(LocalDateTime.now());
 
-        // 保存更新
-        userStorage.put(userUID, user);
+        // 保存更新到数据库
+        userMapper.updateUser(user);
         
         return convertToVO(user);
     }
@@ -118,11 +114,11 @@ public class UserServiceImpl implements UserService {
 
             // 更新用户头像信息
             String avatarUrl = "/avatars/" + filename;
-            User user = userStorage.get(userUID);
+            User user = userMapper.selectByUID(userUID);
             if (user != null) {
                 user.setUserAvatar(avatarUrl);
                 user.setUpdateTime(LocalDateTime.now());
-                userStorage.put(userUID, user);
+                userMapper.updateUser(user);
             }
 
             return avatarUrl;
@@ -133,24 +129,24 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean togglePrivacy(String userUID) {
-        User user = userStorage.get(userUID);
+        User user = userMapper.selectByUID(userUID);
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
 
         user.setPrivacyVisible(!user.isPrivacyVisible());
         user.setUpdateTime(LocalDateTime.now());
-        userStorage.put(userUID, user);
+        userMapper.updateUser(user);
 
         return user.isPrivacyVisible();
     }
 
     @Override
     public UserInfoVO createUserIfNotExists(String userUID, String userName) {
-        User user = userStorage.get(userUID);
+        User user = userMapper.selectByUID(userUID);
         if (user == null) {
             user = new User(userUID, userName);
-            userStorage.put(userUID, user);
+            userMapper.insertUser(user);
         }
         return convertToVO(user);
     }
@@ -158,8 +154,9 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserStatsVO getUserStats(String userUID) {
         // 确保用户存在
-        if (!userStorage.containsKey(userUID)) {
-            createUserIfNotExists(userUID, "用户");
+        User user = userMapper.selectByUID(userUID);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
         }
         
         // 获取用户动态数量

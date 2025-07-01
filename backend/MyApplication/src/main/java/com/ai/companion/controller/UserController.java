@@ -118,6 +118,22 @@ public class UserController {
     }
 
     /**
+     * 搜索用户
+     * @param userUID 要搜索的用户UID
+     * @return 用户信息（如果存在）
+     */
+    @GetMapping("/search/{userUID}")
+    public ApiResponse<UserInfoVO> searchUser(@PathVariable String userUID) {
+        try {
+            UserInfoVO userInfo = userService.getUserInfo(userUID);
+            return ApiResponse.success("用户查找成功", userInfo);
+        } catch (Exception e) {
+            // 用户不存在时返回失败响应
+            return ApiResponse.error("用户不存在");
+        }
+    }
+
+    /**
      * 健康检查接口
      * @return 服务状态
      */
