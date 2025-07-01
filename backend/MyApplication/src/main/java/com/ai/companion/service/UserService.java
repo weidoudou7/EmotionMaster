@@ -6,6 +6,8 @@ import com.ai.companion.entity.vo.UpdateUserRequest;
 import com.ai.companion.entity.vo.UserStatsVO;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 public interface UserService {
     
     /**
@@ -60,4 +62,18 @@ public interface UserService {
      * @return 用户统计信息
      */
     UserStatsVO getUserStats(String userUID);
+    
+    /**
+     * 通过用户名关键词模糊搜索用户
+     * @param keyword 用户名关键词
+     * @return 匹配的用户信息列表
+     */
+    List<UserInfoVO> searchUsersByName(String keyword);
+    
+    /**
+     * 插入新用户
+     * @param user 用户实体
+     * @return 影响的行数
+     */
+    int insertUser(User user);
 } 

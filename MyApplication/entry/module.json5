@@ -6,5 +6,11 @@
     "network": {
       "cleartextTraffic": true
     }
-  }
+  },
+  "pages": [
+    "pages/yourpage",
+    "pages/searchpage",
+    "pages/infopage",
+    "pages/DynamicList"
+  ]
 }

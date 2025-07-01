@@ -18,10 +18,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -243,6 +244,21 @@ public class UserServiceImpl implements UserService {
             totalLikes,
             totalViews
         );
+    }
+
+    @Override
+    public List<UserInfoVO> searchUsersByName(String keyword) {
+        List<User> users = userMapper.searchUsers(keyword, 50); // 限制最多返回50个
+        List<UserInfoVO> result = new ArrayList<>();
+        for (User user : users) {
+            result.add(convertToVO(user));
+        }
+        return result;
+    }
+
+    @Override
+    public int insertUser(User user) {
+        return userMapper.insertUser(user);
     }
 
     /**

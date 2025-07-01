@@ -10,7 +10,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/relation")
-@CrossOrigin(origins = "*") // 允许跨域请求
+@CrossOrigin(origins = "http://localhost:8080", allowCredentials = "true") // 允许跨域请求
 public class UserRelationController {
 
     private final UserRelationService userRelationService;

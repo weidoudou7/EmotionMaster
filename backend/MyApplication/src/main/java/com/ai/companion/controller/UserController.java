@@ -9,11 +9,14 @@ import com.ai.companion.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.ai.companion.entity.User;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/user")
-@CrossOrigin(origins = "*") // 允许跨域请求
+@CrossOrigin(origins = "http://localhost:8080", allowCredentials = "true") // 允许跨域请求
 public class UserController {
 
     private final UserService userService;
@@ -153,11 +156,61 @@ public class UserController {
     }
 
     /**
+     * 通过用户名模糊搜索用户
+     * @param keyword 用户名关键词
+     * @return 匹配的用户信息列表
+     */
+    @GetMapping("/searchByName")
+    public ApiResponse<List<UserInfoVO>> searchUsersByName(@RequestParam String keyword) {
+        try {
+            List<UserInfoVO> users = userService.searchUsersByName(keyword);
+            return ApiResponse.success("搜索用户成功", users);
+        } catch (Exception e) {
+            return ApiResponse.error("搜索用户失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 健康检查接口
      * @return 服务状态
      */
     @GetMapping("/health")
     public ApiResponse<String> health() {
         return ApiResponse.success("用户服务运行正常", "OK");
+    }
+
+    /**
+     * 插入两个测试用户（开发测试用）
+     */
+    @PostMapping("/insertTestUsers")
+    public ApiResponse<String> insertTestUsers() {
+        try {
+            User user1 = new User();
+            user1.setUserUID("test-uid-101");
+            user1.setUserName("测试用户101");
+            user1.setGender("男");
+            user1.setPrivacyVisible(false);
+            user1.setSignature("我是测试用户101");
+            user1.setEmail("testuser101@example.com");
+            user1.setLevel(1);
+            user1.setRegisterTime(java.time.LocalDateTime.now());
+            user1.setUserAvatar("/static/avatars/default.png");
+
+            User user2 = new User();
+            user2.setUserUID("test-uid-102");
+            user2.setUserName("测试用户102");
+            user2.setGender("女");
+            user2.setPrivacyVisible(false);
+            user2.setSignature("我是测试用户102");
+            user2.setEmail("testuser102@example.com");
+            user2.setLevel(1);
+            user2.setRegisterTime(java.time.LocalDateTime.now());
+            user2.setUserAvatar("/static/avatars/default.png");
+
+            int count = userService.insertUser(user1) + userService.insertUser(user2);
+            return ApiResponse.success("成功插入测试用户数量: " + count);
+        } catch (Exception e) {
+            return ApiResponse.error("插入测试用户失败: " + e.getMessage());
+        }
     }
 } 

@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/dynamic")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:8080", allowCredentials = "true")
 public class DynamicController {
 
     @Autowired

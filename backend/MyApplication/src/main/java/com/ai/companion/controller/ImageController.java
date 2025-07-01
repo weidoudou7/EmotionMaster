@@ -12,7 +12,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/image")
-@CrossOrigin(origins = "*") // 允许跨域请求
+@CrossOrigin(origins = "http://localhost:8080", allowCredentials = "true") // 允许跨域请求
 public class ImageController {
 
     private final ImageService imageService;

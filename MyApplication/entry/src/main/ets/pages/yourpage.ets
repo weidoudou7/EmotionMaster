@@ -279,18 +279,16 @@ export struct YourPage {
                           promptAction.showToast({ message: '好友功能正在开发中' });
                         })
                     })
-                    
-                    // 查找按钮
+                    // 单独放置查找按钮，避免ForEach影响事件绑定
                     Button('查找')
                       .width(60)
                       .height(28)
                       .fontSize(12)
-                      .backgroundColor('rgba(128,128,128,0)')
+                       .backgroundColor('rgba(0,128,255,0.3)')// 调试用浅蓝色背景
                       .fontColor('#fff')
                       .borderRadius(14)
-                      .margin({ left: 6 })
+                      .margin({ left: 3 })
                       .onClick(() => {
-                        console.log('查找按钮被点击');
                         let uiContext: UIContext = this.getUIContext();
                         let router = uiContext.getRouter();
                         router.pushUrl({ url: 'pages/searchpage' });

@@ -18,7 +18,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/test")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:8080", allowCredentials = "true")
 public class TestController {
 
     private final UserMapper userMapper;
