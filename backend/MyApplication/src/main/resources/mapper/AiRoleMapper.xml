@@ -7,8 +7,6 @@
         <result property="userId" column="user_id"/>
         <result property="roleName" column="role_name"/>
         <result property="roleDescription" column="role_description"/>
-        <result property="personality" column="personality"/>
-        <result property="specialty" column="specialty"/>
         <result property="roleType" column="role_type"/>
         <result property="roleAuthor" column="role_author"/>
         <result property="viewCount" column="view_count"/>
@@ -40,15 +38,14 @@
     </select>
 
     <insert id="insertAiRole" parameterType="com.ai.companion.entity.AiRole" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO ai_roles (user_id, role_name, role_description, personality, specialty, role_type, role_author, view_count, avatar_url, is_template, created_at)
-        VALUES (#{userId}, #{roleName}, #{roleDescription}, #{personality}, #{specialty}, #{roleType}, #{roleAuthor}, #{viewCount}, #{avatarUrl}, #{isTemplate}, #{createdAt})
+        INSERT INTO ai_roles (user_id, role_name, role_description, role_type, role_author, view_count, avatar_url, is_template, created_at)
+        VALUES (#{userId}, #{roleName}, #{roleDescription}, #{roleType}, #{roleAuthor}, #{viewCount}, #{avatarUrl}, #{isTemplate}, #{createdAt})
     </insert>
 
     <update id="updateAiRole" parameterType="com.ai.companion.entity.AiRole">
         UPDATE ai_roles
         SET user_id=#{userId}, role_name=#{roleName}, role_description=#{roleDescription}, 
-            personality=#{personality}, specialty=#{specialty}, role_type=#{roleType}, 
-            role_author=#{roleAuthor}, view_count=#{viewCount},
+            role_type=#{roleType}, role_author=#{roleAuthor}, view_count=#{viewCount},
             avatar_url=#{avatarUrl}, is_template=#{isTemplate}, created_at=#{createdAt}
         WHERE id=#{id}
     </update>
@@ -201,6 +198,8 @@
                 WHEN role_description LIKE CONCAT('%', #{keyword}, '%') THEN 2
                 ELSE 3
             END,
+            view_count DESC,
             created_at DESC
+        LIMIT #{limit}
     </select>
 </mapper> 
