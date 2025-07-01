@@ -24,7 +24,7 @@ CREATE TABLE ai_roles (
                           role_type VARCHAR(50) NOT NULL COMMENT '角色类型',
                           role_author VARCHAR(100) COMMENT '角色作者',
                           view_count INT DEFAULT 0 COMMENT '角色浏览量',
-                          avatar_url VARCHAR(255) NOT NULL COMMENT '角色形象URL(用户上传或系统生成)',
+                          avatar_url TEXT NOT NULL COMMENT '角色形象URL(用户上传或系统生成)',
                           is_template BOOLEAN DEFAULT 0 COMMENT '是否为模板角色(1=是,0=否)',
                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

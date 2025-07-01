@@ -75,4 +75,18 @@ export interface SearchUserResult {
   userUID: string;
   userName: string;
   userAvatar: string;
-} 
+}
+
+// AI角色接口
+export interface AiRole {
+  id: number | null;
+  userId: number | null;
+  roleName: string;
+  roleDescription: string;
+  roleType: string;
+  roleAuthor: string;
+  viewCount: number;
+  avatarUrl: string;
+  isTemplate: boolean;
+  createdAt: string; // ISO字符串
+}

@@ -101,6 +101,19 @@ export struct HomePage {
           .onClick(() => {
             this.navigateToServerConfig()
           })
+
+        // 添加图片到相册按钮
+        Button('📷 添加图片到相册')
+          .width(200)
+          .height(40)
+          .margin({ top: 10 })
+          .backgroundColor('#27AE60')
+          .fontColor('#FFFFFF')
+          .onClick(() => {
+            let uiContext: UIContext = this.getUIContext();
+            let router = uiContext.getRouter();
+            router.pushUrl({ url: 'pages/AddToAlbum' });
+          })
       }
       .width('100%')
       .height('100%')

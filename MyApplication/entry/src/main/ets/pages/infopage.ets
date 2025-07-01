@@ -40,7 +40,7 @@ export struct InfoPage {
       this.userInfo = userInfo;
       this.userName = userInfo.userName;
       this.isPrivacyVisible = userInfo.isPrivacyVisible;
-      
+
       // 处理头像显示
       if (userInfo.userAvatar && userInfo.userAvatar !== '/avatars/default.png') {
         // 如果有后端头像，使用后端头像
@@ -68,28 +68,28 @@ export struct InfoPage {
         MIMEType: picker.PhotoViewMIMETypes.IMAGE_TYPE,
         maxSelectNumber: 1
       };
-      
+
       console.log('打开图片选择器...');
       let photoViewPicker = await photoPicker.select(photoSelectOptions);
-      
+
       if (photoViewPicker && photoViewPicker.photoUris && photoViewPicker.photoUris.length > 0) {
         console.log('用户选择了图片:', photoViewPicker.photoUris[0]);
         this.selectedImageUri = photoViewPicker.photoUris[0];
-        
+
         // 显示加载状态
         promptAction.showToast({ message: '正在处理图片...' });
-        
+
         // 本地处理图片，转换为base64格式用于显示
         const base64Data = await this.uriToBase64(this.selectedImageUri);
         if (base64Data) {
           console.log('图片处理成功，大小:', base64Data.length, '字符');
-          
+
           // 直接更新本地显示，不调用后端
           this.userAvatar = this.selectedImageUri;
-          
+
           // 更新全局用户数据
           globalUserData.updateUserAvatar(base64Data);
-          
+
           promptAction.showToast({ message: '头像更新成功' });
         } else {
           promptAction.showToast({ message: '图片处理失败' });
@@ -128,17 +128,17 @@ export struct InfoPage {
       const buffer = new ArrayBuffer(stat.size);
       await fs.read(fd.fd, buffer, { offset: 0 });
       await fs.close(fd);
-      
+
       // 转换为base64
       const base64 = this.arrayBufferToBase64(buffer);
-      
+
       // 获取mimeType
       const extension = uri.split('.').pop()?.toLowerCase() || 'jpeg';
       let mimeType = 'image/jpeg';
       if (extension === 'png') mimeType = 'image/png';
       else if (extension === 'gif') mimeType = 'image/gif';
       else if (extension === 'webp') mimeType = 'image/webp';
-      
+
       const result = `data:${mimeType};base64,${base64}`;
       console.log('图片转换完成，大小:', stat.size, '字节');
       return result;
@@ -293,10 +293,10 @@ export struct InfoPage {
   async testLocalImageProcessing() {
     try {
       console.log('开始测试本地图片处理...');
-      
+
       // 创建一个测试图片URI（这里使用一个示例URI）
       const testUri = 'file:///data/storage/el2/base/haps/entry/files/test.jpg';
-      
+
       // 测试图片转换
       const base64Data = await this.uriToBase64(testUri);
       if (base64Data) {
@@ -324,7 +324,7 @@ export struct InfoPage {
       }
       .width('100%')
       .height('100%')
-      
+
       if (this.isLoading) {
         Column() {
           LoadingProgress().width(50).height(50)
@@ -355,7 +355,7 @@ export struct InfoPage {
                 let router = uiContext.getRouter();
                 router.back();
               })
-              
+
               Text('个人信息')
                 .fontSize(24)
                 .fontWeight(FontWeight.Bold)
@@ -556,7 +556,7 @@ export struct InfoPage {
           }
           .width('100%')
           .height('100%')
-          
+
           // 弹窗内容
           Column() {
             // 标题
@@ -565,7 +565,7 @@ export struct InfoPage {
               .fontWeight(FontWeight.Bold)
               .fontColor('#fff')
               .margin({ bottom: 20 })
-            
+
             // 输入框
             TextInput({
               text: this.tempSignature,
@@ -586,7 +586,7 @@ export struct InfoPage {
               .onSubmit((enterKey: EnterKeyType, event: SubmitEvent) => {
                 this.confirmEditSignature();
               })
-            
+
             // 按钮区域
             Row() {
               Button('取消')
@@ -596,7 +596,7 @@ export struct InfoPage {
                 .fontColor('#fff')
                 .borderRadius(22)
                 .onClick(() => this.cancelEditSignature())
-              
+
               Button('确定')
                 .width(100)
                 .height(44)
@@ -620,7 +620,7 @@ export struct InfoPage {
         .position({ x: 0, y: 0 })
         .zIndex(999)
       }
-      
+
       // 名称编辑弹窗
       if (this.showNameDialog) {
         Stack({ alignContent: Alignment.Center }) {
@@ -635,7 +635,7 @@ export struct InfoPage {
           }
           .width('100%')
           .height('100%')
-          
+
           // 弹窗内容
           Column() {
             // 标题
@@ -644,7 +644,7 @@ export struct InfoPage {
               .fontWeight(FontWeight.Bold)
               .fontColor('#fff')
               .margin({ bottom: 20 })
-            
+
             // 输入框
             TextInput({
               text: this.tempName,
@@ -665,7 +665,7 @@ export struct InfoPage {
               .onSubmit((enterKey: EnterKeyType, event: SubmitEvent) => {
                 this.confirmEditName();
               })
-            
+
             // 按钮区域
             Row() {
               Button('取消')
@@ -675,7 +675,7 @@ export struct InfoPage {
                 .fontColor('#fff')
                 .borderRadius(22)
                 .onClick(() => this.cancelEditName())
-              
+
               Button('确定')
                 .width(100)
                 .height(44)
@@ -699,7 +699,7 @@ export struct InfoPage {
         .position({ x: 0, y: 0 })
         .zIndex(999)
       }
-      
+
       // 性别选择弹窗
       if (this.showGenderDialog) {
         Stack({ alignContent: Alignment.Center }) {
@@ -714,7 +714,7 @@ export struct InfoPage {
           }
           .width('100%')
           .height('100%')
-          
+
           // 弹窗内容
           Column() {
             // 标题
@@ -723,7 +723,7 @@ export struct InfoPage {
               .fontWeight(FontWeight.Bold)
               .fontColor('#fff')
               .margin({ bottom: 20 })
-            
+
             // 性别选项
             Column({ space: 12 }) {
               // 男
@@ -732,7 +732,7 @@ export struct InfoPage {
                   .fontSize(16)
                   .fontColor(this.tempGender === '男' ? '#fff' : 'rgba(255,255,255,0.7)')
                   .fontWeight(this.tempGender === '男' ? FontWeight.Bold : FontWeight.Normal)
-                
+
                 if (this.tempGender === '男') {
                   Image($r('app.media.selectNext'))
                     .width(20)
@@ -748,14 +748,14 @@ export struct InfoPage {
               .onClick(() => {
                 this.tempGender = '男';
               })
-              
+
               // 女
               Row() {
                 Text('女')
                   .fontSize(16)
                   .fontColor(this.tempGender === '女' ? '#fff' : 'rgba(255,255,255,0.7)')
                   .fontWeight(this.tempGender === '女' ? FontWeight.Bold : FontWeight.Normal)
-                
+
                 if (this.tempGender === '女') {
                   Image($r('app.media.selectNext'))
                     .width(20)
@@ -771,14 +771,14 @@ export struct InfoPage {
               .onClick(() => {
                 this.tempGender = '女';
               })
-              
+
               // 其他
               Row() {
                 Text('其他')
                   .fontSize(16)
                   .fontColor(this.tempGender === '其他' ? '#fff' : 'rgba(255,255,255,0.7)')
                   .fontWeight(this.tempGender === '其他' ? FontWeight.Bold : FontWeight.Normal)
-                
+
                 if (this.tempGender === '其他') {
                   Image($r('app.media.selectNext'))
                     .width(20)
@@ -796,7 +796,7 @@ export struct InfoPage {
               })
             }
             .margin({ bottom: 20 })
-            
+
             // 按钮区域
             Row() {
               Button('取消')
@@ -806,7 +806,7 @@ export struct InfoPage {
                 .fontColor('#fff')
                 .borderRadius(22)
                 .onClick(() => this.cancelEditGender())
-              
+
               Button('确定')
                 .width(100)
                 .height(44)

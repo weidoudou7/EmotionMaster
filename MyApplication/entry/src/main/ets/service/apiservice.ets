@@ -1,6 +1,7 @@
 import { globalUserData } from '../models/userdata';
 import { Config } from '../common/config';
 import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult } from '../common/types';
+import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, AiRole } from '../common/types';
 import http from '@ohos.net.http';
 
 
@@ -509,6 +510,21 @@ export class ApiService {
   }
 
   /**
+   * 获取“动漫”、“可爱”、“科幻”、“写实”四种类型，每种类型9个AI角色
+   * 后端返回 ApiResponse<Record<string, AiRole[]>>，前端直接取 data 字段。
+   */
+  static async getFeatured4Types(): Promise<Record<string, AiRole[]>> {
+    const response = await ApiService.request<Record<string, AiRole[]>>(`${API_BASE_URL}/ai/role/featured4types`);
+    if (response.success !== false && response.data) {
+      return response.data;
+    } else if (response.data) {
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to get featured roles');
+    }
+  }
+
+  /**
    * 获取音乐播放URL
    */
   static async getMusicPlayUrl(musicId: string): Promise<string> {
@@ -568,3 +584,5 @@ export class ApiService {
     }
   }
 }
+
+

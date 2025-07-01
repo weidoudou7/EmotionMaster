@@ -27,5 +27,7 @@
     "pages/fm_message",
     "pages/music_cloud_style",
     "pages/music_test"
+    "pages/LoadingPage"
+
   ]
 }

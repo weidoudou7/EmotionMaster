@@ -14,11 +14,13 @@ public class AIComConfig {
 
     @Bean
     public ChatMemory chatMemory() {
-        return MessageWindowChatMemory.builder().build();
+        return MessageWindowChatMemory.builder()
+                .maxMessages(5)
+                .build();
     }
 
     /**
-     * 创建基础的ChatClient，不设置固定的系统提示
+     * 创建优化的ChatClient，提升生成速度
      * 系统提示将在运行时根据不同的身份动态设置
      *
      * @param model      引入模型，springai自动引入
@@ -30,7 +32,6 @@ public class AIComConfig {
         return ChatClient
                 .builder(model)
                 .defaultAdvisors(
-                        new SimpleLoggerAdvisor(),
                         MessageChatMemoryAdvisor.builder(chatMemory).build())
                 .build();
     }
