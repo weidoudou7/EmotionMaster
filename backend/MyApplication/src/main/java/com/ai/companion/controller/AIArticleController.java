@@ -1,18 +1,31 @@
 package com.ai.companion.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/ai/article")
 public class AIArticleController {
 
+        private static final Logger log = LoggerFactory.getLogger(AIArticleController.class);
+
         private final ChatController chatController;
+
+        // 简单内存缓存
+        private final Map<String, String> deepCache = new ConcurrentHashMap<>();
+        private final Map<String, String> techCache = new ConcurrentHashMap<>();
+        private final Map<String, String> industryCache = new ConcurrentHashMap<>();
 
         private final String strongPrompt = "**网络搜索指令：**\n" +
                         "\n" +
@@ -213,32 +226,135 @@ public class AIArticleController {
                         "请以这个身份撰写行业观察类的心理健康行业分析文章，确保分析的专业性、前瞻性和实用性。";
         private final ChatClient chatClient;
 
-        @RequestMapping(value = "/deep-analysis")
-        public String deepAnalysis(@RequestParam String prompt) {
-                return chatClient.prompt()
-                                .system(deep_analysis_prompt + strongPrompt)
-                                .user("请以" + prompt + "为题写一篇文章，最终只返回文章")
-                                .call()
-                                .content();
+        // 定义标准API响应结构
+        class ApiResponse<T> {
+                private boolean success;
+                private String message;
+                private T data;
 
+                public ApiResponse(boolean success, String message, T data) {
+                        this.success = success;
+                        this.message = message;
+                        this.data = data;
+                }
+
+                public boolean isSuccess() {
+                        return success;
+                }
+
+                public String getMessage() {
+                        return message;
+                }
+
+                public T getData() {
+                        return data;
+                }
+        }
+
+        @RequestMapping(value = "/deep-analysis")
+        public ApiResponse<Map<String, String>> deepAnalysis(@RequestParam String prompt) {
+                log.info("收到AI文章生成请求 /deep-analysis，prompt={}", prompt);
+                if (deepCache.containsKey(prompt)) {
+                        String cached = deepCache.get(prompt);
+                        if (cached != null && !cached.isEmpty()) {
+                                log.info("命中deepCache缓存，直接返回");
+                                Map<String, String> data = new HashMap<>();
+                                data.put("content", cached);
+                                return new ApiResponse<>(true, "ok", data);
+                        } else {
+                                log.info("命中缓存但内容为空，重新生成");
+                        }
+                }
+                try {
+                        long start = System.currentTimeMillis();
+                        String content = chatClient.prompt()
+                                        .system(deep_analysis_prompt + strongPrompt)
+                                        .user("请以" + prompt + "为题写一篇文章，最终只返回文章，控制在1500字以内")
+                                        .call()
+                                        .content();
+                        long cost = System.currentTimeMillis() - start;
+                        log.info("AI生成内容长度: {}, 耗时: {}ms", content != null ? content.length() : 0, cost);
+                        Map<String, String> data = new HashMap<>();
+                        data.put("content", content);
+                        if (content != null && !content.isEmpty()) {
+                                deepCache.put(prompt, content);
+                        }
+                        return new ApiResponse<>(true, "ok", data);
+                } catch (Exception e) {
+                        log.error("AI生成文章失败 /deep-analysis，prompt={}", prompt, e);
+                        return new ApiResponse<>(false, "AI生成失败: " + e.getMessage(), null);
+                }
         }
 
         @RequestMapping(value = "/tech-enjoy")
-        public String techEnjoy(@RequestParam String prompt) {
-                return chatClient.prompt()
-                                .system(tech_enjoy_prompt + strongPrompt)
-                                .user("请以" + prompt + "为题写一篇文章，最终只返回文章")
-                                .call()
-                                .content();
+        public ApiResponse<Map<String, String>> techEnjoy(@RequestParam String prompt) {
+                log.info("收到AI文章生成请求 /tech-enjoy，prompt={}", prompt);
+                if (techCache.containsKey(prompt)) {
+                        String cached = techCache.get(prompt);
+                        if (cached != null && !cached.isEmpty()) {
+                                log.info("命中techCache缓存，直接返回:" + cached);
+                                Map<String, String> data = new HashMap<>();
+                                data.put("content", cached);
+                                return new ApiResponse<>(true, "ok", data);
+                        } else {
+                                log.info("命中缓存但内容为空，重新生成");
+                        }
+                }
+                try {
+                        long start = System.currentTimeMillis();
+                        String content = chatClient.prompt()
+                                        .system(tech_enjoy_prompt + strongPrompt)
+                                        .user("请以" + prompt + "为题写一篇文章，最终只返回文章，控制在1500字以内")
+                                        .call()
+                                        .content();
+                        long cost = System.currentTimeMillis() - start;
+                        log.info("AI生成内容长度: {}, 耗时: {}ms", content != null ? content.length() : 0, cost);
+                        log.info(content);
+                        Map<String, String> data = new HashMap<>();
+                        data.put("content", content);
+                        if (content != null && !content.isEmpty()) {
+                                techCache.put(prompt, content);
+                        }
+                        return new ApiResponse<>(true, "ok", data);
+                } catch (Exception e) {
+                        log.error("AI生成文章失败 /tech-enjoy，prompt={}", prompt, e);
+                        return new ApiResponse<>(false, "AI生成失败: " + e.getMessage(), null);
+                }
         }
 
         @RequestMapping(value = "/industry-observation")
-        public String industryObservation(@RequestParam String prompt) {
-                return chatClient.prompt()
-                                .system(industry_observation_prompt + strongPrompt)
-                                .user("请以" + prompt + "为题写一篇文章，最终只返回文章")
-                                .call()
-                                .content();
+        public ApiResponse<Map<String, String>> industryObservation(@RequestParam String prompt) {
+                log.info("收到AI文章生成请求 /industry-observation，prompt={}", prompt);
+                if (industryCache.containsKey(prompt)) {
+                        String cached = industryCache.get(prompt);
+                        if (cached != null && !cached.isEmpty()) {
+                                log.info("命中industryCache缓存，直接返回");
+                                Map<String, String> data = new HashMap<>();
+                                data.put("content", cached);
+                                return new ApiResponse<>(true, "ok", data);
+                        } else {
+                                log.info("命中缓存但内容为空，重新生成");
+                        }
+                }
+                try {
+                        long start = System.currentTimeMillis();
+                        String content = chatClient.prompt()
+                                        .system(industry_observation_prompt + strongPrompt)
+                                        .user("请以" + prompt + "为题写一篇文章，最终只返回文章，控制在1500字以内")
+                                        .call()
+                                        .content();
+                        long cost = System.currentTimeMillis() - start;
+                        log.info("AI生成内容长度: {}, 耗时: {}ms", content != null ? content.length() : 0, cost);
+                        Map<String, String> data = new HashMap<>();
+                        data.put("content", content);
+                        if (content != null && !content.isEmpty()) {
+                                industryCache.put(prompt, content);
+                        }
+                        return new ApiResponse<>(true, "ok", data);
+                } catch (Exception e) {
+                        log.error("AI生成文章失败 /industry-observation，prompt={}", prompt, e);
+                        return new ApiResponse<>(false, "AI生成失败: " + e.getMessage(), null);
+                }
         }
 
 }

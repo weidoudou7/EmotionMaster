@@ -6,13 +6,18 @@ import http from '@ohos.net.http';
 
 
 // API基础配置 - 从配置文件获取
-const API_BASE_URL = Config.getApiBaseUrl();
-//const API_BASE_URL = 'http://10.128.156.25:8081/api';
+//const API_BASE_URL = Config.getApiBaseUrl();
+const API_BASE_URL = 'http://10.255.10.135:8081/api';
 // 定义HTTP请求选项接口
 interface HttpRequestOptions {
   method?: http.RequestMethod;
   header?: Record<string, string>;
   body?: string;
+}
+
+// AI专栏文章接口返回类型
+interface AIArticleResponse {
+  content: string;
 }
 
 /**
@@ -80,6 +85,14 @@ export class ApiService {
       return result;
     } catch (error) {
       console.error('API请求失败:', error);
+      if (error instanceof Error) {
+        console.error('error.message:', error.message);
+        if (error.stack) {
+          console.error('error.stack:', error.stack);
+        }
+      } else {
+        console.error('error(非Error类型):', JSON.stringify(error));
+      }
       try {
         if (typeof error === 'object' && error !== null) {
           const errObj = error as Record<string, string>;
@@ -505,12 +518,12 @@ export class ApiService {
     if (type === 'deep') url = `${API_BASE_URL}/ai/article/deep-analysis?prompt=${encodeURIComponent(prompt)}`;
     if (type === 'tech') url = `${API_BASE_URL}/ai/article/tech-enjoy?prompt=${encodeURIComponent(prompt)}`;
     if (type === 'industry') url = `${API_BASE_URL}/ai/article/industry-observation?prompt=${encodeURIComponent(prompt)}`;
-    const response = await ApiService.request<string>(url, { method: http.RequestMethod.GET });
-    return response.data;
+    const response = await ApiService.request<AIArticleResponse>(url, { method: http.RequestMethod.GET });
+    return response.data.content;
   }
 
   /**
-   * 获取“动漫”、“可爱”、“科幻”、“写实”四种类型，每种类型9个AI角色
+   * 获取"动漫"、"可爱"、"科幻"、"写实"四种类型，每种类型9个AI角色
    * 后端返回 ApiResponse<Record<string, AiRole[]>>，前端直接取 data 字段。
    */
   static async getFeatured4Types(): Promise<Record<string, AiRole[]>> {
