@@ -32,6 +32,14 @@ public interface UserService {
     String uploadAvatar(String userUID, MultipartFile file);
     
     /**
+     * 上传用户头像（base64格式）
+     * @param userUID 用户UID
+     * @param imageData base64格式的图片数据
+     * @return 头像URL
+     */
+    String uploadAvatarBase64(String userUID, String imageData);
+    
+    /**
      * 切换用户隐私可见性
      * @param userUID 用户UID
      * @return 更新后的隐私状态

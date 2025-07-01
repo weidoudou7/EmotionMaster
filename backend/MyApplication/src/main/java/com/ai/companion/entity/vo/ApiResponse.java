@@ -13,6 +13,7 @@ public class ApiResponse<T> {
     private T data;              // 响应数据
     private long timestamp;       // 时间戳
 
+    // 静态工厂方法
     public static <T> ApiResponse<T> success(T data) {
         return new ApiResponse<>(true, "操作成功", data, System.currentTimeMillis());
     }

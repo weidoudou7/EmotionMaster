@@ -378,8 +378,11 @@ export struct CreateFigurePage {
           console.error('错误详情:', JSON.stringify(error));
           
           // 检查是否是超时错误
-          if (error && typeof error === 'object' && error.hasOwnProperty('code') && error.code === 2300028) {
-            console.error(`生成${style}风格图片失败: Error: 生成图片超时，请稍后重试。AI生成需要较长时间，请耐心等待。`)
+          if (error && typeof error === 'object') {
+            const errorObj = error as Record<string, number>;
+            if (errorObj.code === 2300028) {
+              console.error(`生成${style}风格图片失败: Error: 生成图片超时，请稍后重试。AI生成需要较长时间，请耐心等待。`)
+            }
           }
           
           imageUrls.push('') // 添加空字符串作为占位符

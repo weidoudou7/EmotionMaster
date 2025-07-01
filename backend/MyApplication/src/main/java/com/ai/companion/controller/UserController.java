@@ -4,6 +4,7 @@ import com.ai.companion.entity.vo.ApiResponse;
 import com.ai.companion.entity.vo.UserInfoVO;
 import com.ai.companion.entity.vo.UpdateUserRequest;
 import com.ai.companion.entity.vo.UserStatsVO;
+import com.ai.companion.entity.vo.AvatarUploadRequest;
 import com.ai.companion.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -77,6 +78,24 @@ public class UserController {
             @RequestParam("file") MultipartFile file) {
         try {
             String avatarUrl = userService.uploadAvatar(userUID, file);
+            return ApiResponse.success("头像上传成功", avatarUrl);
+        } catch (Exception e) {
+            return ApiResponse.error("头像上传失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 上传用户头像（base64格式）
+     * @param userUID 用户UID
+     * @param request 包含base64图片数据的请求
+     * @return 头像URL
+     */
+    @PostMapping("/{userUID}/avatar/base64")
+    public ApiResponse<String> uploadAvatarBase64(
+            @PathVariable String userUID,
+            @RequestBody AvatarUploadRequest request) {
+        try {
+            String avatarUrl = userService.uploadAvatarBase64(userUID, request.getImageData());
             return ApiResponse.success("头像上传成功", avatarUrl);
         } catch (Exception e) {
             return ApiResponse.error("头像上传失败: " + e.getMessage());

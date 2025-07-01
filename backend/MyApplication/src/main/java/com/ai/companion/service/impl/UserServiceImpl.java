@@ -128,6 +128,62 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public String uploadAvatarBase64(String userUID, String imageData) {
+        if (imageData == null || imageData.trim().isEmpty()) {
+            throw new RuntimeException("图片数据为空");
+        }
+
+        try {
+            // 解析base64数据
+            String[] parts = imageData.split(",");
+            if (parts.length != 2) {
+                throw new RuntimeException("无效的base64图片数据格式");
+            }
+
+            String header = parts[0];
+            String base64Data = parts[1];
+
+            // 确定文件扩展名
+            String extension = ".jpg"; // 默认扩展名
+            if (header.contains("image/png")) {
+                extension = ".png";
+            } else if (header.contains("image/gif")) {
+                extension = ".gif";
+            } else if (header.contains("image/webp")) {
+                extension = ".webp";
+            }
+
+            // 生成唯一文件名
+            String filename = userUID + "_" + UUID.randomUUID().toString() + extension;
+
+            // 解码base64数据
+            byte[] imageBytes = java.util.Base64.getDecoder().decode(base64Data);
+
+            // 保存文件
+            Path uploadPath = Paths.get(AVATAR_UPLOAD_PATH);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            Path filePath = uploadPath.resolve(filename);
+            Files.write(filePath, imageBytes);
+
+            // 更新用户头像信息
+            String avatarUrl = "/avatars/" + filename;
+            User user = userMapper.selectByUID(userUID);
+            if (user != null) {
+                user.setUserAvatar(avatarUrl);
+                user.setUpdateTime(LocalDateTime.now());
+                userMapper.updateUser(user);
+            }
+
+            return avatarUrl;
+        } catch (Exception e) {
+            throw new RuntimeException("头像上传失败: " + e.getMessage());
+        }
+    }
+
+    @Override
     public boolean togglePrivacy(String userUID) {
         User user = userMapper.selectByUID(userUID);
         if (user == null) {

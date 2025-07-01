@@ -160,7 +160,7 @@ export class ApiService {
    */
   static async uploadAvatar(userUID: string, imageData: string): Promise<string> {
     try {
-      const response = await ApiService.request<string>(`${API_BASE_URL}/user/${userUID}/avatar`, {
+      const response = await ApiService.request<string>(`${API_BASE_URL}/user/${userUID}/avatar/base64`, {
         method: http.RequestMethod.POST,
         body: JSON.stringify({ imageData: imageData })
       });

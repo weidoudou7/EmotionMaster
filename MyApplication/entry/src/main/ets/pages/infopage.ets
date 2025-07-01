@@ -3,6 +3,7 @@
 import { BusinessError } from '@kit.BasicServicesKit';
 import promptAction from '@ohos.promptAction';
 import picker from '@ohos.file.picker';
+import fs from '@ohos.file.fs';
 import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
 import { UserInfo } from '../common/types';
@@ -11,7 +12,8 @@ import { BottomNavBar } from './BottomNavBar';
 @Entry
 @Component
 export struct InfoPage {
-  @State userAvatar: Resource = $r("app.media.image"); // 用户头像
+  @State userAvatar: Resource | string = $r("app.media.image"); // 用户头像
+  @State selectedImageUri: string = ''; // 选择的图片URI
   @State userName: string = globalUserData.userName; // 用户名称
   @State userUID: string = globalUserData.userUID; // 用户UID
   @State isPrivacyVisible: boolean = globalUserData.isPrivacyVisible; // 用户隐私是否可见
@@ -22,7 +24,7 @@ export struct InfoPage {
   @State showGenderDialog: boolean = false; // 显示性别选择对话框
   @State tempGender: string = ''; // 临时存储选择的性别
   @State isLoading: boolean = false; // 加载状态
-  @State userInfo: UserInfo | null = null; // 用户信息
+  @State userInfo: UserInfo | null = null; // 用户详细信息
   @State avatarScale: number = 1.0; // 头像缩放动画
 
   // 页面生命周期
@@ -37,13 +39,17 @@ export struct InfoPage {
       const userInfo = await ApiService.getUserInfo(this.userUID);
       this.userInfo = userInfo;
       this.userName = userInfo.userName;
-      this.userUID = userInfo.userUID;
       this.isPrivacyVisible = userInfo.isPrivacyVisible;
-      // 如果有头像URL，更新头像显示
+      
+      // 处理头像显示
       if (userInfo.userAvatar && userInfo.userAvatar !== '/avatars/default.png') {
-        // 注意：这里需要处理字符串到Resource的转换
-        // 暂时保持使用默认图片，实际项目中需要根据URL加载图片
+        // 如果有后端头像，使用后端头像
+        this.userAvatar = userInfo.userAvatar;
+        this.selectedImageUri = ''; // 清空本地选择的图片
+      } else {
+        // 使用默认头像
         this.userAvatar = $r("app.media.image");
+        this.selectedImageUri = ''; // 清空本地选择的图片
       }
     } catch (error) {
       console.error('加载用户信息失败:', error);
@@ -56,26 +62,115 @@ export struct InfoPage {
   // 头像选择器
   async selectAvatar() {
     try {
+      console.log('开始选择头像...');
       let photoPicker = new picker.PhotoViewPicker();
       let photoSelectOptions: picker.PhotoSelectOptions = {
         MIMEType: picker.PhotoViewMIMETypes.IMAGE_TYPE,
         maxSelectNumber: 1
       };
+      
+      console.log('打开图片选择器...');
       let photoViewPicker = await photoPicker.select(photoSelectOptions);
+      
       if (photoViewPicker && photoViewPicker.photoUris && photoViewPicker.photoUris.length > 0) {
-        // 这里应该上传到后端，暂时使用默认图片
-        this.userAvatar = $r("app.media.image");
-        promptAction.showToast({ message: '头像更新成功' });
-
-        // 更新后端用户信息
-        await ApiService.updateUserInfo(this.userUID, {
-          userAvatar: this.userAvatar.toString()
-        });
+        console.log('用户选择了图片:', photoViewPicker.photoUris[0]);
+        this.selectedImageUri = photoViewPicker.photoUris[0];
+        
+        // 显示加载状态
+        promptAction.showToast({ message: '正在处理图片...' });
+        
+        // 本地处理图片，转换为base64格式用于显示
+        const base64Data = await this.uriToBase64(this.selectedImageUri);
+        if (base64Data) {
+          console.log('图片处理成功，大小:', base64Data.length, '字符');
+          
+          // 直接更新本地显示，不调用后端
+          this.userAvatar = this.selectedImageUri;
+          
+          // 更新全局用户数据
+          globalUserData.updateUserAvatar(base64Data);
+          
+          promptAction.showToast({ message: '头像更新成功' });
+        } else {
+          promptAction.showToast({ message: '图片处理失败' });
+        }
+      } else {
+        console.log('用户取消了图片选择');
       }
     } catch (error) {
       console.error('选择头像失败:', error);
-      promptAction.showToast({ message: '选择头像失败' });
+      // 检查错误对象是否有code属性
+      if (error && typeof error === 'object') {
+        const errorObj = error as Record<string, number>;
+        const errorCode = errorObj.code;
+        if (errorCode === 201) {
+          promptAction.showToast({ message: '用户取消了图片选择' });
+        } else if (errorCode === 2018203) {
+          promptAction.showToast({ message: '权限不足，请在设置中授予相册访问权限' });
+        } else if (errorCode !== undefined) {
+          promptAction.showToast({ message: `选择图片失败，错误代码: ${errorCode}` });
+        } else {
+          promptAction.showToast({ message: '选择头像失败' });
+        }
+      } else {
+        promptAction.showToast({ message: '选择头像失败' });
+      }
     }
+  }
+
+  // 将图片URI转换为base64格式
+  async uriToBase64(uri: string): Promise<string> {
+    try {
+      console.log('开始转换图片为base64:', uri);
+      // 打开文件
+      const fd = await fs.open(uri, fs.OpenMode.READ_ONLY);
+      const stat = await fs.stat(uri);
+      const buffer = new ArrayBuffer(stat.size);
+      await fs.read(fd.fd, buffer, { offset: 0 });
+      await fs.close(fd);
+      
+      // 转换为base64
+      const base64 = this.arrayBufferToBase64(buffer);
+      
+      // 获取mimeType
+      const extension = uri.split('.').pop()?.toLowerCase() || 'jpeg';
+      let mimeType = 'image/jpeg';
+      if (extension === 'png') mimeType = 'image/png';
+      else if (extension === 'gif') mimeType = 'image/gif';
+      else if (extension === 'webp') mimeType = 'image/webp';
+      
+      const result = `data:${mimeType};base64,${base64}`;
+      console.log('图片转换完成，大小:', stat.size, '字节');
+      return result;
+    } catch (error) {
+      console.error('转换图片失败:', error);
+      return '';
+    }
+  }
+
+  // ArrayBuffer转base64的辅助方法
+  private arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const uint8Array = new Uint8Array(buffer);
+    const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    let result = '';
+
+    for (let i = 0; i < uint8Array.length; i += 3) {
+      const byte1 = uint8Array[i];
+      const byte2 = i + 1 < uint8Array.length ? uint8Array[i + 1] : 0;
+      const byte3 = i + 2 < uint8Array.length ? uint8Array[i + 2] : 0;
+
+      const chunk1 = byte1 >> 2;
+      const chunk2 = ((byte1 & 3) << 4) | (byte2 >> 4);
+      const chunk3 = ((byte2 & 15) << 2) | (byte3 >> 6);
+      const chunk4 = byte3 & 63;
+
+      result += base64Chars.charAt(chunk1);
+      result += base64Chars.charAt(chunk2);
+      result += i + 1 < uint8Array.length ? base64Chars.charAt(chunk3) : '=';
+      result += i + 2 < uint8Array.length ? base64Chars.charAt(chunk4) : '=';
+    }
+
+    return result;
   }
 
   // 编辑用户名称
@@ -194,6 +289,29 @@ export struct InfoPage {
     this.showGenderDialog = false;
   }
 
+  // 测试本地图片处理功能
+  async testLocalImageProcessing() {
+    try {
+      console.log('开始测试本地图片处理...');
+      
+      // 创建一个测试图片URI（这里使用一个示例URI）
+      const testUri = 'file:///data/storage/el2/base/haps/entry/files/test.jpg';
+      
+      // 测试图片转换
+      const base64Data = await this.uriToBase64(testUri);
+      if (base64Data) {
+        console.log('测试图片转换成功，大小:', base64Data.length, '字符');
+        promptAction.showToast({ message: '本地图片处理测试成功' });
+      } else {
+        console.log('测试图片转换失败');
+        promptAction.showToast({ message: '本地图片处理测试失败' });
+      }
+    } catch (error) {
+      console.error('测试本地图片处理失败:', error);
+      promptAction.showToast({ message: '测试失败: ' + (error instanceof Error ? error.message : '未知错误') });
+    }
+  }
+
   build() {
     Stack() {
       // 渐变背景
@@ -251,16 +369,32 @@ export struct InfoPage {
             // 头像卡片
             Column() {
               Stack({ alignContent: Alignment.BottomEnd }) {
-                Image(this.userAvatar)
-                  .width(120)
-                  .height(120)
-                  .borderRadius(60)
-                  .border({ width: 3, color: 'rgba(255,255,255,0.3)' })
-                  .scale({ x: this.avatarScale, y: this.avatarScale })
-                  .animation({
-                    duration: 120,
-                    curve: Curve.EaseInOut
-                  })
+                // 根据是否有选择的图片来决定显示方式
+                if (this.selectedImageUri) {
+                  // 显示本地选择的图片
+                  Image(this.selectedImageUri)
+                    .width(120)
+                    .height(120)
+                    .borderRadius(60)
+                    .border({ width: 3, color: 'rgba(255,255,255,0.3)' })
+                    .scale({ x: this.avatarScale, y: this.avatarScale })
+                    .animation({
+                      duration: 120,
+                      curve: Curve.EaseInOut
+                    })
+                } else {
+                  // 显示默认头像或后端头像
+                  Image(this.userAvatar)
+                    .width(120)
+                    .height(120)
+                    .borderRadius(60)
+                    .border({ width: 3, color: 'rgba(255,255,255,0.3)' })
+                    .scale({ x: this.avatarScale, y: this.avatarScale })
+                    .animation({
+                      duration: 120,
+                      curve: Curve.EaseInOut
+                    })
+                }
 
                 // 相机图标
                 Image($r('app.media.camera'))
