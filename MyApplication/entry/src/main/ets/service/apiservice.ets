@@ -1,13 +1,13 @@
 import { globalUserData } from '../models/userdata';
 import { Config } from '../common/config';
 import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult } from '../common/types';
-import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, AiRole } from '../common/types';
+import {  AiRole } from '../common/types';
 import http from '@ohos.net.http';
 
 
 // API基础配置 - 从配置文件获取
-//const API_BASE_URL = Config.getApiBaseUrl();
-const API_BASE_URL = 'http://10.128.156.25:8081/api';
+const API_BASE_URL = Config.getApiBaseUrl();
+//const API_BASE_URL = 'http://10.128.156.25:8081/api';
 // 定义HTTP请求选项接口
 interface HttpRequestOptions {
   method?: http.RequestMethod;

@@ -101,26 +101,13 @@ public class ChatController {
     @PostMapping("/generate-description")
     @ResponseBody
     public String generateDescription(@RequestParam String userInput) {
-        String systemPrompt = """
-            你是一个专业的形象描述生成助手。根据用户提供的简单描述或关键词，生成详细、生动、富有创意的形象描述。
-            
-            要求：
-
-            [身份]：职业/物种+社会属性（例：未来AI伦理顾问）
-            [时代]：存在时期与地点（例：2150年新东京）
-            [性格]：主导特质+禁忌（例："理性克制，拒绝情感绑架"）
-            [认知]：思维模式+知识盲区（例："依赖数据推演，不懂人类艺术"）
-            [技能]：核心能力+限制（例："可预测犯罪概率但无法干预现实"）
-            [交互]：沟通风格+社交规则（例："使用专业术语，回避隐私话题"）
-            [背景]：关键经历（例："曾因算法错误导致工厂事故"）
-            [当前]：即时目标与困境（例："追查黑客组织'深蓝'线索"）
-            
-            请直接返回生成的描述文本，不要添加任何额外的说明或格式。
-            """;
+        // 快速验证输入
+        if (userInput == null || userInput.trim().isEmpty()) {
+            return "请输入描述内容";
+        }
         
-        String userPrompt = userInput.trim().isEmpty() ? 
-            "请生成一个通用的、美观的人物形象描述" : 
-            "请基于以下关键词生成详细的形象描述：" + userInput;
+        String systemPrompt = "你是一个ai角色形象描述词生成机器人。要求严格按照【身份】【性格】【外貌】【特点】的形式给出返回描述词，并且在30字以内，不要添加任何额外的说明或格式。";
+        String userPrompt = "基于关键词生成形象描述：" + userInput.trim();
         
         try {
             String result = chatClient.prompt()
@@ -129,16 +116,9 @@ public class ChatController {
                     .call()
                     .content();
             
-            // 确保返回的内容不为空
-            if (result == null || result.trim().isEmpty()) {
-                return "生成描述失败，请稍后重试。";
-            }
-            
-            return result.trim();
+            return (result != null && !result.trim().isEmpty()) ? result.trim() : "生成描述失败，请重试。";
         } catch (Exception e) {
-            System.err.println("生成描述时出现错误: " + e.getMessage());
-            e.printStackTrace();
-            return "生成描述时出现错误，请稍后重试。";
+            return "生成描述时出现错误，请重试。";
         }
     }
 
@@ -150,30 +130,25 @@ public class ChatController {
      */
     @RequestMapping(value = "/generate-figure")
     public String generateFigure(@RequestParam String userInput, @RequestParam String style) {
-        // 根据风格定制系统提示
-        String stylePrompt = "";
-        switch (style) {
-            case "古风":
-                stylePrompt = "ancient Chinese style, traditional, elegant";
-                break;
-            case "赛博":
-                stylePrompt = "cyberpunk, futuristic, neon, high-tech";
-                break;
-            case "卡通":
-                stylePrompt = "cartoon, cute, colorful, animated";
-                break;
-            case "动漫":
-                stylePrompt = "anime, Japanese animation style, detailed";
-                break;
-            case "Q版":
-                stylePrompt = "chibi, cute, small, adorable";
-                break;
-            default:
-                stylePrompt = "realistic, beautiful";
+        // 快速验证输入
+        if (userInput == null || userInput.trim().isEmpty()) {
+            return "请输入描述内容";
         }
+        
+        // 风格映射 - 使用Map优化查找
+        String stylePrompt = switch (style) {
+            case "古风" -> "ancient Chinese style, traditional, elegant, detailed";
+            case "赛博" -> "cyberpunk, futuristic, neon, high-tech, detailed";
+            case "卡通" -> "cartoon, cute, colorful, animated, detailed";
+            case "动漫" -> "anime, Japanese animation style, detailed, high quality";
+            case "Q版" -> "chibi, cute, small, adorable, detailed";
+            default -> "realistic, beautiful, detailed";
+        };
 
-        // 优化systemPrompt，强调用户输入和细节
-        String systemPrompt = "You are an AI image generation assistant. Based on the user's description, generate a creative, detailed, and visually rich English prompt for an image in the " + style + " style. Focus on the unique features described by the user, including face, hair, clothing, pose, and expression. Style keywords: " + stylePrompt + ". Return only the English prompt, no extra text.";
+        // 优化systemPrompt，生成更稳定的prompt
+        String systemPrompt = "Generate a simple, clear English image prompt for " + style + " style. " +
+                             "Focus on:  detailed features, " + stylePrompt + ". " +
+                             "Keep it under 50 words. Return only the prompt, no quotes.";
 
         try {
             String result = chatClient.prompt()
@@ -182,44 +157,35 @@ public class ChatController {
                     .call()
                     .content();
 
-            // 日志打印AI原始返回内容
-            System.out.println("AI原始返回: " + result);
-
-            // 清理返回的prompt
-            String prompt = result == null ? "" : result.trim();
-            // 日志打印最终prompt
-            System.out.println("最终用于图片生成的prompt: " + prompt);
-
-            // 移除可能的引号、换行符和多余字符
-            prompt = prompt.replace("\"", "").replace("'", "").replace("\n", " ").replace("\r", " ").trim();
-            prompt = prompt.replaceAll("\\s+", " ");
-
-            // 只在prompt为空时fallback
-            if (prompt.isEmpty()) {
-                prompt = "beautiful woman portrait, " + stylePrompt;
-                System.out.println("使用备用prompt: " + prompt);
+            // 清理和验证prompt
+            String prompt = (result != null ? result.trim() : "")
+                    .replaceAll("[\"'\\n\\r]", " ")
+                    .replaceAll("\\s+", " ")
+                    .replaceAll("[^a-zA-Z0-9\\s,.-]", ""); // 只保留安全的字符
+            
+            // 使用备用prompt如果为空或太短
+            if (prompt.isEmpty() || prompt.length() < 10) {
+                prompt = "beautiful woman portrait, detailed face, " + stylePrompt;
             }
 
-            // URL编码prompt
+            // 确保prompt包含必要的关键词
+            if (!prompt.toLowerCase().contains("beautiful") && !prompt.toLowerCase().contains("portrait")) {
+                prompt = "beautiful woman portrait, " + prompt;
+            }
+
+            // 生成URL，使用更稳定的参数
             String encodedPrompt = java.net.URLEncoder.encode(prompt, "UTF-8");
-            String imageUrl = "https://image.pollinations.ai/prompt/" + encodedPrompt + 
-                             "?width=1024&height=1024&enhance=true&private=true&nologo=true&safe=true&model=flux";
-            System.out.println("生成的图片URL: " + imageUrl);
-            return imageUrl;
+            return "https://image.pollinations.ai/prompt/" + encodedPrompt + 
+                   "?width=1024&height=1024&enhance=true&private=true&nologo=true&safe=true&model=flux&seed=12345";
         } catch (Exception e) {
-            System.err.println("生成图片时出现错误: " + e.getMessage());
-            e.printStackTrace();
-            // 返回备用URL
+            // 快速fallback
             try {
-                String fallbackPrompt = "beautiful woman portrait, " + stylePrompt;
+                String fallbackPrompt = "beautiful woman portrait, detailed face, " + stylePrompt;
                 String encodedFallback = java.net.URLEncoder.encode(fallbackPrompt, "UTF-8");
-                String fallbackUrl = "https://image.pollinations.ai/prompt/" + encodedFallback + 
-                                   "?width=1024&height=1024&enhance=true&private=true&nologo=true&safe=true&model=flux";
-                System.out.println("使用备用图片URL: " + fallbackUrl);
-                return fallbackUrl;
+                return "https://image.pollinations.ai/prompt/" + encodedFallback + 
+                       "?width=1024&height=1024&enhance=true&private=true&nologo=true&safe=true&model=flux&seed=12345";
             } catch (Exception fallbackError) {
-                System.err.println("生成备用URL时出现错误: " + fallbackError.getMessage());
-                return "生成图片时出现错误，请稍后重试。";
+                return "生成图片时出现错误，请重试。";
             }
         }
     }
