@@ -41,6 +41,10 @@ function loadCharacterPersonalities() {
 const CHARACTER_PERSONALITIES = loadCharacterPersonalities();
 const chatHistories = new Map(); // 聊天历史存储
 
+// AI角色存储（实际项目中应该使用数据库）
+const aiRoles = new Map(); // 存储AI角色数据
+let nextRoleId = 1; // 角色ID计数器
+
 /**
  * 调用AI服务
  * 这里使用模拟的AI服务，你可以替换为实际的AI API
@@ -185,6 +189,139 @@ app.get('/api/ai/identities', (req, res) => {
             success: false,
             message: `获取身份列表失败: ${error.message}`,
             data: []
+        });
+    }
+});
+
+/**
+ * 创建AI角色
+ * POST /api/ai/role/create
+ */
+app.post('/api/ai/role/create', (req, res) => {
+    try {
+        const { roleName, roleDescription, roleType, roleAuthor, avatarUrl, isTemplate = false } = req.body;
+        
+        // 验证必填字段
+        if (!roleName || !roleDescription || !roleType || !roleAuthor || !avatarUrl) {
+            return res.status(400).json({
+                success: false,
+                message: '缺少必填字段',
+                data: null
+            });
+        }
+        
+        // 创建新的AI角色
+        const newRole = {
+            id: nextRoleId++,
+            userId: null, // 暂时设为null，实际项目中应该关联用户ID
+            roleName: roleName,
+            roleDescription: roleDescription,
+            roleType: roleType,
+            roleAuthor: roleAuthor,
+            viewCount: 0,
+            avatarUrl: avatarUrl,
+            isTemplate: isTemplate,
+            createdAt: new Date().toISOString()
+        };
+        
+        // 保存到内存中（实际项目中应该保存到数据库）
+        aiRoles.set(newRole.id, newRole);
+        
+        console.log('创建AI角色成功:', newRole);
+        
+        res.json({
+            success: true,
+            message: 'AI角色创建成功',
+            data: newRole
+        });
+        
+    } catch (error) {
+        console.error('创建AI角色失败:', error);
+        res.status(500).json({
+            success: false,
+            message: `创建AI角色失败: ${error.message}`,
+            data: null
+        });
+    }
+});
+
+/**
+ * 获取特色AI角色（四种类型）
+ * GET /api/ai/role/featured4types
+ */
+app.get('/api/ai/role/featured4types', (req, res) => {
+    try {
+        // 模拟返回四种类型的AI角色数据
+        const featuredRoles = {
+            '动漫': [
+                {
+                    id: 1,
+                    userId: null,
+                    roleName: '动漫少女',
+                    roleDescription: '可爱的动漫少女角色',
+                    roleType: '动漫',
+                    roleAuthor: '系统',
+                    viewCount: 100,
+                    avatarUrl: 'https://example.com/anime1.jpg',
+                    isTemplate: true,
+                    createdAt: '2024-01-01T00:00:00.000Z'
+                }
+            ],
+            '可爱': [
+                {
+                    id: 2,
+                    userId: null,
+                    roleName: '可爱宠物',
+                    roleDescription: '超级可爱的宠物角色',
+                    roleType: '可爱',
+                    roleAuthor: '系统',
+                    viewCount: 150,
+                    avatarUrl: 'https://example.com/cute1.jpg',
+                    isTemplate: true,
+                    createdAt: '2024-01-01T00:00:00.000Z'
+                }
+            ],
+            '科幻': [
+                {
+                    id: 3,
+                    userId: null,
+                    roleName: '未来战士',
+                    roleDescription: '来自未来的科幻战士',
+                    roleType: '科幻',
+                    roleAuthor: '系统',
+                    viewCount: 80,
+                    avatarUrl: 'https://example.com/scifi1.jpg',
+                    isTemplate: true,
+                    createdAt: '2024-01-01T00:00:00.000Z'
+                }
+            ],
+            '写实': [
+                {
+                    id: 4,
+                    userId: null,
+                    roleName: '写实人物',
+                    roleDescription: '真实可信的人物角色',
+                    roleType: '写实',
+                    roleAuthor: '系统',
+                    viewCount: 120,
+                    avatarUrl: 'https://example.com/realistic1.jpg',
+                    isTemplate: true,
+                    createdAt: '2024-01-01T00:00:00.000Z'
+                }
+            ]
+        };
+        
+        res.json({
+            success: true,
+            message: 'success',
+            data: featuredRoles
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: `获取特色角色失败: ${error.message}`,
+            data: {}
         });
     }
 });

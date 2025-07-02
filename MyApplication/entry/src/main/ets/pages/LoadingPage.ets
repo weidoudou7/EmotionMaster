@@ -90,6 +90,12 @@ export struct LoadingPage {
 
   build() {
     Stack() {
+      // 背景GIF
+      Image($r('app.media.doro'))
+        .width('100%')
+        .height('100%')
+        .objectFit(ImageFit.Cover)
+      
       // 方案A：隐藏Image组件预加载所有图片
       ForEach(this.generatedUrls, (url: string, idx: number) => {
         Image(url)
@@ -105,49 +111,10 @@ export struct LoadingPage {
           .opacity(0.3)
       }
       Column() {
-        // 顶部栏
-        Row() {
-          Button('<')
-            .backgroundColor('transparent')
-            .fontColor('#fff')
-            .fontSize(24)
-            .onClick(() => {
-              if (!this.isGenerating) router.back()
-            })
-          Blank().width(10)
-          Text('生成中...')
-            .fontSize(20)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#fff')
-          Blank()
-        }
-        .width('100%')
-        .height(56)
-        .backgroundColor('#222')
-        .alignItems(VerticalAlign.Center)
-        .padding({ left: 10 })
+
 
         // 加载内容
         Column() {
-          // 旋转图标
-          Stack() {
-            Image($r('app.media.disc'))
-              .width(100)
-              .height(100)
-              .opacity(0.8)
-              .animation({
-                duration: 2000,
-                iterations: -1,
-                curve: Curve.Linear
-              })
-              .rotate({ angle: 360, centerX: '50%', centerY: '50%' })
-            
-            Image($r('app.media.logo'))
-              .width(50)
-              .height(50)
-              .borderRadius(25)
-          }
-          .margin({ top: 100, bottom: 40 })
 
           // 状态文本
           Text(this.isGenerating ? `正在生成${this.currentStyle}风格...` : '生成完成！')

@@ -11,19 +11,18 @@ struct Splash {
   build() {
     Column()
     {
-      Image($r('app.media.splash'))
+      Image($r('app.media.Xinyu_logo'))
         .width(180)
         .height(180)
         .margin({ bottom: 32 })
-      Text('心屿')
-        .fontSize(32)
-        .fontWeight(FontWeight.Bold)//文字加粗
-        .fontColor('#222')
-        .fontFamily('SimHei')//更改字体
+      Image($r('app.media.word'))
+        .width(120)
     }
     .width('100%')
     .height('100%')
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
+    .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
+    .backgroundColor('#121114')
   }
 }

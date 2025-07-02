@@ -1,6 +1,6 @@
 package com.ai.companion.entity.vo;
 
-import lombok.Data;
+import    lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 

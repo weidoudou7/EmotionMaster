@@ -1,12 +1,16 @@
 import { globalUserData } from '../models/userdata';
 import { Config } from '../common/config';
-import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult } from '../common/types';
+import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult, CreateAiRoleRequest, GenerateRoleNameRequest, CreateConversationRequest, Conversation } from '../common/types';
 import {  AiRole } from '../common/types';
 import http from '@ohos.net.http';
 
 
 // API基础配置 - 从配置文件获取
 const API_BASE_URL = Config.getApiBaseUrl();
+
+
+//const API_BASE_URL = 'http://10.128.156.25:8081/api';
+
 // 定义HTTP请求选项接口
 interface HttpRequestOptions {
   method?: http.RequestMethod;
@@ -260,22 +264,98 @@ export class ApiService {
    * AI聊天接口
    */
   static async chatWithAI(prompt: string, chatId: string, identity: string = 'default'): Promise<string> {
-    const url = `${API_BASE_URL}/ai/chat/${identity}?prompt=${encodeURIComponent(prompt)}&chatId=${encodeURIComponent(chatId)}`;
-    const response = await ApiService.request<string>(url, {
-      method: http.RequestMethod.POST
-    });
-    return response.data;
+    try {
+      const url = `${API_BASE_URL}/ai/chat/${identity}?prompt=${encodeURIComponent(prompt)}&chatId=${encodeURIComponent(chatId)}`;
+      
+      console.log('发送AI聊天请求到:', url);
+      console.log('用户输入:', prompt);
+      console.log('聊天ID:', chatId);
+      console.log('身份:', identity);
+      
+      const httpRequest = http.createHttp();
+      const requestOptions: http.HttpRequestOptions = {
+        method: http.RequestMethod.POST,
+        header: {
+          'Content-Type': 'application/json'
+        },
+        readTimeout: Config.getTimeout(),
+        connectTimeout: Config.getTimeout()
+      };
+
+      const response = await httpRequest.request(url, requestOptions);
+      httpRequest.destroy();
+
+      console.log('AI聊天响应状态码:', response.responseCode);
+      console.log('AI聊天响应内容:', response.result.toString());
+
+      if (response.responseCode !== 200) {
+        throw new Error(`HTTP error! status: ${response.responseCode}, message: ${response.result.toString()}`);
+      }
+
+      // 直接返回响应内容，因为后端返回的是纯文本
+      const result = response.result.toString();
+      console.log('AI回复:', result);
+      return result;
+    } catch (error) {
+      console.error('AI聊天失败:', error);
+      console.error('错误类型:', typeof error);
+      console.error('错误详情:', JSON.stringify(error));
+      
+      if (error instanceof Error) {
+        throw new Error(`AI聊天失败: ${error.message}`);
+      } else {
+        throw new Error('AI聊天失败: 未知错误');
+      }
+    }
   }
 
   /**
    * 特色聊天接口 - 使用自定义描述词
    */
   static async featuredChat(prompt: string, chatId: string, desc: string): Promise<string> {
-    const url = `${API_BASE_URL}/ai/featured_chat?prompt=${encodeURIComponent(prompt)}&chatId=${encodeURIComponent(chatId)}&desc=${encodeURIComponent(desc)}`;
-    const response = await ApiService.request<string>(url, {
-      method: http.RequestMethod.POST
-    });
-    return response.data;
+    try {
+      const url = `${API_BASE_URL}/ai/featured_chat?prompt=${encodeURIComponent(prompt)}&chatId=${encodeURIComponent(chatId)}&desc=${encodeURIComponent(desc)}`;
+      
+      console.log('发送特色聊天请求到:', url);
+      console.log('用户输入:', prompt);
+      console.log('聊天ID:', chatId);
+      console.log('描述词:', desc);
+      
+      const httpRequest = http.createHttp();
+      const requestOptions: http.HttpRequestOptions = {
+        method: http.RequestMethod.POST,
+        header: {
+          'Content-Type': 'application/json'
+        },
+        readTimeout: Config.getTimeout(),
+        connectTimeout: Config.getTimeout()
+      };
+
+      const response = await httpRequest.request(url, requestOptions);
+      httpRequest.destroy();
+
+      console.log('特色聊天响应状态码:', response.responseCode);
+      console.log('特色聊天响应内容:', response.result.toString());
+
+      if (response.responseCode !== 200) {
+        throw new Error(`HTTP error! status: ${response.responseCode}, message: ${response.result.toString()}`);
+      }
+
+      // 直接返回响应内容，因为后端返回的是纯文本
+      const result = response.result.toString();
+      console.log('AI回复:', result);
+      return result;
+    } catch (error) {
+      console.error('特色聊天失败:', error);
+      console.error('错误类型:', typeof error);
+      console.error('错误详情:', JSON.stringify(error));
+      
+      if (error instanceof Error) {
+        throw new Error(`特色聊天失败: ${error.message}`);
+      } else {
+        throw new Error('特色聊天失败: 未知错误');
+      }
+    }
   }
 
   /**
@@ -649,6 +729,179 @@ export class ApiService {
         console.error('❌ 错误堆栈:', error.stack);
       }
       return null; // 搜索失败时返回null
+    }
+  }
+
+  /**
+   * 创建AI角色
+   */
+  static async createAiRole(aiRoleData: CreateAiRoleRequest): Promise<AiRole> {
+    try {
+      console.log('🤖 ApiService.createAiRole 开始创建AI角色:', aiRoleData);
+      console.log('🤖 API_BASE_URL:', API_BASE_URL);
+      
+      const url = `${API_BASE_URL}/ai/role/create`;
+      console.log('🤖 请求URL:', url);
+      
+      const requestBody: CreateAiRoleRequest = {
+        roleName: aiRoleData.roleName,
+        roleDescription: aiRoleData.roleDescription,
+        roleType: aiRoleData.roleType,
+        roleAuthor: aiRoleData.roleAuthor,
+        avatarUrl: aiRoleData.avatarUrl,
+        isTemplate: aiRoleData.isTemplate || false
+      };
+      
+      console.log('🤖 请求体:', JSON.stringify(requestBody));
+      
+      const response = await ApiService.request<AiRole>(url, {
+        method: http.RequestMethod.POST,
+        body: JSON.stringify(requestBody)
+      });
+      
+      console.log('🤖 API响应:', response);
+      
+      if (response.success) {
+        console.log('✅ AI角色创建成功，返回数据:', response.data);
+        return response.data;
+      } else {
+        console.log('❌ AI角色创建失败，API返回错误:', response.message);
+        throw new Error(response.message || 'Failed to create AI role');
+      }
+    } catch (error) {
+      console.error('❌ 创建AI角色失败:', error);
+      console.error('❌ 错误类型:', typeof error);
+      console.error('❌ 错误详情:', JSON.stringify(error));
+      
+      if (error instanceof Error) {
+        console.error('❌ 错误消息:', error.message);
+        console.error('❌ 错误堆栈:', error.stack);
+        throw error;
+      } else {
+        throw new Error('创建AI角色失败: 未知错误');
+      }
+    }
+  }
+
+  /**
+   * 根据描述词生成AI角色名称
+   */
+  static async generateRoleName(description: string): Promise<string> {
+    try {
+      console.log('🎯 ApiService.generateRoleName 开始生成角色名称');
+      console.log('🎯 描述词:', description);
+      console.log('🎯 API_BASE_URL:', API_BASE_URL);
+      
+      const url = `${API_BASE_URL}/ai/role/generate-name`;
+      console.log('🎯 请求URL:', url);
+      
+      const requestBody: GenerateRoleNameRequest = {
+        description: description
+      };
+      
+      console.log('🎯 请求体:', JSON.stringify(requestBody));
+      
+      const response = await ApiService.request<string>(url, {
+        method: http.RequestMethod.POST,
+        body: JSON.stringify(requestBody)
+      });
+      
+      console.log('🎯 API响应:', response);
+      
+      if (response.success) {
+        console.log('✅ 角色名称生成成功，返回数据:', response.data);
+        return response.data;
+      } else {
+        console.log('❌ 角色名称生成失败，API返回错误:', response.message);
+        throw new Error(response.message || 'Failed to generate role name');
+      }
+    } catch (error) {
+      console.error('❌ 生成角色名称失败:', error);
+      console.error('❌ 错误类型:', typeof error);
+      console.error('❌ 错误详情:', JSON.stringify(error));
+      
+      if (error instanceof Error) {
+        console.error('❌ 错误消息:', error.message);
+        console.error('❌ 错误堆栈:', error.stack);
+        throw error;
+      } else {
+        throw new Error('生成角色名称失败: 未知错误');
+      }
+    }
+  }
+
+  /**
+   * 创建对话
+   */
+  static async createConversation(conversationData: CreateConversationRequest): Promise<Conversation> {
+    try {
+      console.log('💬 ApiService.createConversation 开始创建对话:', conversationData);
+      console.log('💬 API_BASE_URL:', API_BASE_URL);
+      
+      const url = `${API_BASE_URL}/ai/history/conversation/create`;
+      console.log('💬 请求URL:', url);
+      
+      const requestBody: CreateConversationRequest = {
+        userId: conversationData.userId,
+        aiRoleId: conversationData.aiRoleId,
+        title: conversationData.title,
+        moodTag: conversationData.moodTag
+      };
+      
+      console.log('💬 请求体:', JSON.stringify(requestBody));
+      
+      const response = await ApiService.request<Conversation>(url, {
+        method: http.RequestMethod.POST,
+        body: JSON.stringify(requestBody)
+      });
+      
+      console.log('💬 API响应:', response);
+      
+      if (response.success) {
+        console.log('✅ 对话创建成功，返回数据:', response.data);
+        return response.data;
+      } else {
+        console.log('❌ 对话创建失败，API返回错误:', response.message);
+        throw new Error(response.message || 'Failed to create conversation');
+      }
+    } catch (error) {
+      console.error('❌ 创建对话失败:', error);
+      console.error('❌ 错误类型:', typeof error);
+      console.error('❌ 错误详情:', JSON.stringify(error));
+      
+      if (error instanceof Error) {
+        console.error('❌ 错误消息:', error.message);
+        console.error('❌ 错误堆栈:', error.stack);
+        throw error;
+      } else {
+        throw new Error('创建对话失败: 未知错误');
+      }
+    }
+  }
+
+  /**
+   * 根据userId查找全部对话
+   */
+  static async getConversationsByUserId(userId: number = 405): Promise<Conversation[]> {
+    const url = `${API_BASE_URL}/ai/history/conversation/list?userId=${userId}`;
+    const response = await ApiService.request<Conversation[]>(url);
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to get conversations');
+    }
+  }
+
+  /**
+   * 根据aiRoleId获取AI角色详情
+   */
+  static async getAiRoleById(aiRoleId: number): Promise<AiRole> {
+    const url = `${API_BASE_URL}/ai/role/${aiRoleId}`;
+    const response = await ApiService.request<AiRole>(url);
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to get ai role');
     }
   }
 }

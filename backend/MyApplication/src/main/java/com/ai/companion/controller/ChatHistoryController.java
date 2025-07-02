@@ -1,24 +1,31 @@
 package com.ai.companion.controller;
 
+import com.ai.companion.entity.Conversation;
+import com.ai.companion.entity.vo.ApiResponse;
 import com.ai.companion.entity.vo.MessageVO;
+import com.ai.companion.mapper.ConversationMapper;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping(value="ai/history")
+@RequestMapping(value="/ai/history")
 public class ChatHistoryController {
 
-    private ChatMemory chatMemory;
+    private final ChatMemory chatMemory;
+    private final ConversationMapper conversationMapper;
+
+    @Autowired
+    public ChatHistoryController(ChatMemory chatMemory, ConversationMapper conversationMapper) {
+        this.chatMemory = chatMemory;
+        this.conversationMapper = conversationMapper;
+    }
 
     /**
-     *
      * @param type 传入AI对话类型
      * @return 返回对话ID列表
      */
@@ -29,17 +36,118 @@ public class ChatHistoryController {
     }
 
     /**
-     *
-     * @param type 传入AI对话类型
+     * @param type   传入AI对话类型
      * @param chatId 传入AI对话ID
      * @return 返回消息（角色+内容）列表
      */
     @GetMapping(value = "{type}/{chatId}")
     public List<MessageVO> getHistory(@PathVariable("type") String type, @PathVariable("chatId") String chatId) {
-        List<Message> history = chatMemory.get(chatId+"_"+type);
-        if(history == null) {
+        List<Message> history = chatMemory.get(chatId + "_" + type);
+        if (history == null) {
             return List.of();
         }
-        return history.stream().map(m->new MessageVO(m)).toList();
+        return history.stream().map(m -> new MessageVO(m)).toList();
+    }
+
+    /**
+     * 创建对话
+     * POST /ai/history/conversation/create
+     */
+    @PostMapping("/conversation/create")
+    public ApiResponse<Conversation> createConversation(@RequestBody CreateConversationRequest request) {
+        try {
+            // 验证必填字段
+            if (request.getUserId() == null) {
+                return ApiResponse.error("用户ID不能为空");
+            }
+            if (request.getAiRoleId() == null) {
+                return ApiResponse.error("AI角色ID不能为空");
+            }
+            if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+                return ApiResponse.error("对话标题不能为空");
+            }
+
+            // 创建新的对话
+            Conversation newConversation = new Conversation();
+            newConversation.setUserId(request.getUserId());
+            newConversation.setAiRoleId(request.getAiRoleId());
+            newConversation.setTitle(request.getTitle().trim());
+            newConversation.setTurns(0); // 初始对话轮数为0
+            newConversation.setStartTime(LocalDateTime.now());
+            newConversation.setLastActive(LocalDateTime.now());
+            newConversation.setMoodTag(request.getMoodTag()); // 可以为null
+
+            // 保存到数据库
+            int result = conversationMapper.insertConversation(newConversation);
+            if (result > 0) {
+                return ApiResponse.success("对话创建成功", newConversation);
+            } else {
+                return ApiResponse.error("对话创建失败");
+            }
+
+        } catch (Exception e) {
+            return ApiResponse.error("创建对话时发生错误: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 创建对话的请求体
+     */
+    public static class CreateConversationRequest {
+        private Integer userId;
+        private Integer aiRoleId;
+        private String title;
+        private String moodTag;
+
+        // Getters and Setters
+        public Integer getUserId() {
+            return userId;
+        }
+
+        public void setUserId(Integer userId) {
+            this.userId = userId;
+        }
+
+        public Integer getAiRoleId() {
+            return aiRoleId;
+        }
+
+        public void setAiRoleId(Integer aiRoleId) {
+            this.aiRoleId = aiRoleId;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
+        }
+
+        public String getMoodTag() {
+            return moodTag;
+        }
+
+        public void setMoodTag(String moodTag) {
+            this.moodTag = moodTag;
+        }
+    }
+
+    /**
+     * 根据userId查询全部对话
+     * GET /ai/history/conversation/list?userId=372
+     */
+    @GetMapping("/conversation/list")
+    public ApiResponse<List<Conversation>> getConversationsByUserId(@RequestParam Integer userId) {
+        try {
+            if (userId == null) {
+                return ApiResponse.error("用户ID不能为空");
+            }
+            List<Conversation> conversations = conversationMapper.selectByUserId(userId);
+            return ApiResponse.success("查询成功", conversations);
+        } catch (Exception e) {
+            return ApiResponse.error("查询对话时发生错误: " + e.getMessage());
+        }
     }
 }
+

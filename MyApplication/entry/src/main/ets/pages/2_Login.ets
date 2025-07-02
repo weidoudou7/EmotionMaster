@@ -7,7 +7,7 @@ struct LoginPage {
     Column()
     {
       // Logo
-      Image($r('app.media.splash'))
+      Image($r('app.media.Xinyu_logo'))
         .width(120)
         .height(120)
         .margin({ bottom: 48 })
@@ -16,18 +16,13 @@ struct LoginPage {
       Text('Welcome to')
         .fontSize(32)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#222')
+        .fontColor(Color.White)
         .margin({ bottom: 8 })
 
       // ChattyAI 👋
       Row() {
-        Text('心屿')
-          .fontSize(36)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#14DCA0')
-        Text(' 👋')
-          .fontSize(36)
-          .margin({ left: 4 })
+        Image($r('app.media.word'))
+          .width(120)
       }
       .margin({ bottom: 48 })
 
@@ -36,9 +31,8 @@ struct LoginPage {
         .width('80%')
         .height(56)
         .fontSize(20)
-        .fontWeight(FontWeight.Bold)
-        .fontColor('#fff')
-        .backgroundColor('#14DCA0')
+        .fontColor('#121114')
+        .backgroundColor('#ffda7f')
         .borderRadius(28)
         .margin({ bottom: 20 })
         .onClick(() => {
@@ -49,5 +43,7 @@ struct LoginPage {
     .height('100%')
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
+    .backgroundColor('#121114')
+    .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
   }
 } 
