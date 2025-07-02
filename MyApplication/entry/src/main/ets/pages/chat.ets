@@ -1,6 +1,9 @@
 import router from '@ohos.router';
 import { inputMethod } from '@kit.IMEKit';
 import { ApiService } from '../service/apiservice';
+import { ReadStateCode, TextReader, TextReaderIcon } from '@kit.SpeechKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { Context } from '@ohos.arkui.UIContext';
 
 interface ChatMessage {
   id: number;
@@ -58,6 +61,10 @@ export struct Chat {
   // 新增：聊天相关状态
   @State private isSending: boolean = false; // 是否正在发送消息
   private chatId: string = Date.now().toString(); // 聊天会话ID
+
+  @State readStateMap: Map<number, ReadStateCode> = new Map(); // 存储每条消息的朗读状态（key为消息id）
+  @State isReaderInit: boolean = false; // 朗读控件初始化状态
+  @State readState: ReadStateCode = ReadStateCode.WAITING;
   
   // 新增：用于控制滚动的Scroller
   private scrollController: Scroller = new Scroller();
@@ -141,6 +148,53 @@ export struct Chat {
     setTimeout(() => {
       this.scrollToBottom();
     }, 200); // 延迟200ms确保页面完全加载
+
+    // 初始化朗读控件
+    this.initTextReader();
+    // 为现有消息初始化朗读状态
+    this.chatData.forEach(item => {
+      this.readStateMap.set(item.id, ReadStateCode.WAITING);
+    });
+
+  }
+
+  // 新增：初始化朗读控件的方法
+  private async initTextReader() {
+    const context: Context | undefined = this.getUIContext().getHostContext();
+    if (!context) {
+      console.error(`context is undefined, failed to init TextReader`);
+      return;
+    }
+
+    // 设置朗读参数（隐藏品牌信息，适配聊天场景）
+    const readerParams: TextReader.ReaderParam = {
+      isVoiceBrandVisible: false, // 聊天场景无需显示品牌
+      businessBrandInfo: {
+        panelName: '消息朗读',
+        panelIcon: $r('app.media.startIcon')
+      }
+    };
+
+    // 初始化朗读控件
+    TextReader.init(context, readerParams).then(() => {
+      console.info(`TextReader succeeded in initializing.`);
+      this.isReaderInit = true;
+    }).catch((e: BusinessError) => {
+      console.error(`TextReader failed to initialize. Code: ${e.code}, message: ${e.message}`);
+    })
+
+    // 监听朗读结束事件
+    TextReader.on('requestMore', (id: string) => {
+      // 根据朗读id找到对应的消息，更新状态为完成
+      const msgId = parseInt(id);
+      this.readStateMap.set(msgId, ReadStateCode.COMPLETED);
+    });
+
+    // // 监听朗读错误事件
+    // TextReader.on('error', (e: BusinessError) => {
+    //   console.error(`TextReader error: ${e.code}, ${e.message}`);
+    // });
+
   }
 
   private async sendMessage() {
@@ -158,6 +212,8 @@ export struct Chat {
       time: new Date().toLocaleTimeString().slice(0, 5) // 获取当前时间（如 "14:20"）
     };
 
+    // 添加新消息时初始化朗读状态
+    this.readStateMap.set(newMessage.id, ReadStateCode.WAITING);
     this.chatData = [...this.chatData, newMessage];
     this.inputText = ''; // 清空输入框
     
@@ -186,6 +242,8 @@ export struct Chat {
         time: new Date().toLocaleTimeString().slice(0, 5)
       };
 
+      // 为AI消息初始化朗读状态
+      this.readStateMap.set(aiMessage.id, ReadStateCode.WAITING);
       this.chatData = [...this.chatData, aiMessage];
       
       // 新增：滚动到AI回复消息
@@ -202,6 +260,7 @@ export struct Chat {
         time: new Date().toLocaleTimeString().slice(0, 5)
       };
 
+      this.readStateMap.set(errorMessage.id, ReadStateCode.WAITING);
       this.chatData = [...this.chatData, errorMessage];
       
       // 新增：滚动到错误消息
@@ -210,6 +269,8 @@ export struct Chat {
       this.isSending = false;
     }
   }
+
+
 
   /**
    * 新增：滚动到聊天列表底部
@@ -474,7 +535,10 @@ export struct Chat {
               .fontSize(16)
               .fontColor('#eaeaea')
               .padding({ left: 12, right: 12, top: 12, bottom: 12 }) // 调整内容文本的padding
+
+            this.buildReaderIcon(item)// 朗读图标（位于文字末尾）
           }
+          .padding({ left: 12, right: 8, top: 12, bottom: 12 }) // 右侧内边距减小，避免图标太靠外
           .backgroundColor('rgba(26, 26, 26, 0.6)') // 消息气泡背景色调整为半透明
           .borderRadius(8)
           .alignItems(HorizontalAlign.Start) // 气泡内内容左对齐
@@ -518,7 +582,10 @@ export struct Chat {
               .fontSize(16)
               .fontColor(Color.Black)
               .padding({ left: 12, right: 12, top: 12, bottom: 12 }) // 调整内容文本的padding
+
+            this.buildReaderIcon(item)
           }
+          .padding({ left: 12, right: 8, top: 12, bottom: 12 })
           .backgroundColor('rgba(232, 200, 56, 0.7)') // 消息气泡背景色调整为半透明
           .borderRadius(8)
           .alignItems(HorizontalAlign.End) // 气泡内内容右对齐
@@ -532,4 +599,53 @@ export struct Chat {
     .alignItems(VerticalAlign.Top) // 顶部对齐
     .padding({ left: 10, right: 10 })
   }
+
+  @Builder
+  buildReaderIcon(item: ChatMessage) {
+
+      TextReaderIcon({
+        readState: this.readState
+        //readState: (this.readStateMap.get(item.id) || ReadStateCode.WAITING) as ReadStateCode
+      })
+        .width(18)// 缩小图标尺寸，避免突兀
+        .height(18)
+        .margin({ left: 6 })// 与文本保持左侧间距
+        .onClick(async () => {
+
+          const currentState = this.readStateMap.get(item.id) || ReadStateCode.WAITING;
+          const readInfo: TextReader.ReadInfo = {
+            id: item.id.toString(),
+            title: { text: '消息朗读', isClickable: false },
+            author: { text: item.isMe ? '自己' : this.agentName, isClickable: false },
+            date: { text: item.time, isClickable: false },
+            bodyInfo: item.content
+          };
+
+          try {
+            if (currentState === ReadStateCode.PLAYING) {
+              // 正在播放时，点击暂停
+              await TextReader.pause();
+              this.readStateMap.set(item.id, ReadStateCode.PAUSED);
+            } else if (currentState === ReadStateCode.PAUSED) {
+              // 暂停时，点击继续
+              await TextReader.resume();
+              this.readStateMap.set(item.id, ReadStateCode.PLAYING);
+            } else {
+              // 停止其他消息的朗读
+              await TextReader.stop();
+              // 开始朗读当前消息
+              await TextReader.start([readInfo], readInfo.id);
+              // 更新所有消息状态，只保留当前消息为播放中
+              this.chatData.forEach(msg => {
+                this.readStateMap.set(
+                  msg.id,
+                  msg.id === item.id ? ReadStateCode.PLAYING : ReadStateCode.WAITING
+                );
+              });
+            }
+          } catch (e) {
+            console.error(`TextReader error: ${e.code}, ${e.message}`);
+          }
+        })
+     }
 }

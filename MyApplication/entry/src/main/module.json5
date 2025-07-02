@@ -13,6 +13,10 @@
         "reason": "$string:reason_internet"
       },
       {
+        "name": "ohos.permission.KEEP_BACKGROUND_RUNNING",
+        "reason":"$string:reason_radioplaying"
+      },
+      {
         "name": "ohos.permission.GET_NETWORK_INFO",
         "reason": "$string:app_name"
       },
