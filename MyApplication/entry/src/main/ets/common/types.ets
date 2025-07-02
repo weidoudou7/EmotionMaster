@@ -96,3 +96,38 @@ export interface AiRole {
   isTemplate: boolean;
   createdAt: string; // ISO字符串
 }
+
+// 创建AI角色请求接口
+export interface CreateAiRoleRequest {
+  roleName: string;
+  roleDescription: string;
+  roleType: string;
+  roleAuthor: string;
+  avatarUrl: string;
+  isTemplate?: boolean;
+}
+
+// 生成角色名称请求接口
+export interface GenerateRoleNameRequest {
+  description: string;
+}
+
+// 创建对话请求接口
+export interface CreateConversationRequest {
+  userId: number;
+  aiRoleId: number;
+  title: string;
+  moodTag?: string;
+}
+
+// 对话接口
+export interface Conversation {
+  id: number;
+  userId: number;
+  aiRoleId: number;
+  turns: number;
+  title: string;
+  startTime: string;
+  lastActive: string;
+  moodTag: string;
+}

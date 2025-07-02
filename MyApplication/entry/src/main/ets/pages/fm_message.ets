@@ -1,4 +1,6 @@
 import { fetchWeather } from '../model/WeatherService';
+import { ApiService } from '../service/apiservice';
+import { Conversation, AiRole } from '../common/types';
 
 class WeatherInfo {
   city: string = '加载中';
@@ -23,21 +25,17 @@ export struct MessagePage {
   @State weatherInfo: WeatherInfo = new WeatherInfo();
   @State currentTime: string = '';
   @State currentDate: string = '';
-  private messages: MessageItem[] = [
-    (() => { let m = new MessageItem(); m.avatar = $r('app.media.splash'); m.name = '谢厌之'; m.desc = '（胃里一阵绞痛，额上渗出细汗，咬着牙说道）...'; m.time = '星期四'; m.followed = true; m.unread = 0; return m; })(),
-    (() => { let m = new MessageItem(); m.avatar = $r('app.media.splash'); m.name = '能猜出你坦/推'; m.desc = '[系统消息]解锁"微笑"时刻，可在详情查看 去查看'; m.time = '星期四'; m.followed = false; m.unread = 0; return m; })(),
-    (() => { let m = new MessageItem(); m.avatar = $r('app.media.splash'); m.name = '星若（AI助手）'; m.desc = '根据搜索材料，以下是武汉市2025年6月27日的...'; m.time = '星期四'; m.followed = false; m.unread = 0; m.isOfficial = true; return m; })(),
-    (() => { let m = new MessageItem(); m.avatar = $r('app.media.splash'); m.name = '系统通知'; m.desc = '📻欢迎新人主播「武媛娘」入驻星野！'; m.time = '星期一'; m.followed = false; m.unread = 0; m.isSystem = true; return m; })(),
-  ];
+  @State private conversations: Conversation[] = [];
+  @State private aiRoleMap: Record<number, AiRole> = {};
   private timerId: number = -1;
 
   aboutToAppear() {
     this.getWeatherByLocation();
     this.updateDateTime();
-    // 启动定时器，每分钟更新一次时间
+    this.loadConversations();
     this.timerId = setInterval(() => {
       this.updateDateTime();
-    }, 1000); //
+    }, 1000);
   }
 
   aboutToDisappear() {
@@ -93,6 +91,26 @@ export struct MessagePage {
       case '雪': return '❄️';
       case '雾': return '🌫️';
       default: return '❓';
+    }
+  }
+
+  async loadConversations() {
+    try {
+      const conversations = await ApiService.getConversationsByUserId();
+      this.conversations = conversations;
+      // 批量获取AI角色信息
+      const aiRoleIds = Array.from(new Set(conversations.map(c => c.aiRoleId)));
+      const aiRoleMap: Record<number, AiRole> = {};
+      for (const id of aiRoleIds) {
+        try {
+          aiRoleMap[id] = await ApiService.getAiRoleById(id);
+        } catch (e) {
+          // 失败则跳过
+        }
+      }
+      this.aiRoleMap = aiRoleMap;
+    } catch (e) {
+      console.error('加载会话失败', e);
     }
   }
 
@@ -155,37 +173,20 @@ export struct MessagePage {
       }
       // 消息列表
       List() {
-        ForEach(this.messages, (msg: MessageItem, idx: number) => {
+        ForEach(this.conversations, (conv: Conversation, idx: number) => {
           ListItem() {
             Row() {
-              Image(msg.avatar)
+              Image(this.aiRoleMap[conv.aiRoleId]?.avatarUrl ?? $r('app.media.splash'))
                 .width(48)
                 .height(48)
                 .borderRadius(24)
                 .margin({ left: 16, right: 12 })
               Column({ space: 4 }) {
-                Row() {
-                  Text(msg.name)
-                    .fontSize(16)
-                    .fontColor(msg.isOfficial ? '#0D9FFB' : (msg.isSystem ? '#1976D2' : '#fff'))
-                    .fontWeight(FontWeight.Bold)
-                  if (msg.followed) {
-                    Text('已关注')
-                      .fontSize(12)
-                      .fontColor('#888')
-                      .margin({ left: 8 })
-                  }
-                  if (msg.isOfficial) {
-                    Text('官方助手')
-                      .fontSize(12)
-                      .fontColor('#0D9FFB')
-                      .backgroundColor('#222')
-                      .margin({ left: 8 })
-                      .borderRadius(6)
-                      .padding({ left: 4, right: 4 })
-                  }
-                }
-                Text(msg.desc)
+                Text(conv.title)
+                  .fontSize(16)
+                  .fontColor('#fff')
+                  .fontWeight(FontWeight.Bold)
+                Text('') // 可扩展为摘要
                   .fontSize(13)
                   .fontColor('#bbb')
                   .maxLines(1)
@@ -193,20 +194,10 @@ export struct MessagePage {
               }
               .layoutWeight(1)
               Column() {
-                Text(msg.time)
+                Text(conv.lastActive ? conv.lastActive.replace('T', ' ').slice(0, 16) : '')
                   .fontSize(12)
                   .fontColor('#888')
                   .margin({ bottom: 8 })
-                if (msg.unread > 0) {
-                  Text(msg.unread.toString())
-                    .fontSize(10)
-                    .fontColor('#fff')
-                    .backgroundColor('#FF5252')
-                    .borderRadius(8)
-                    .width(16)
-                    .height(16)
-                    .textAlign(TextAlign.Center)
-                }
               }
               .alignItems(HorizontalAlign.End)
               .margin({ right: 16 })
@@ -214,7 +205,7 @@ export struct MessagePage {
             .height(64)
             .backgroundColor('rgba(34,34,34,0)')
           }
-        }, (msg: MessageItem) => msg.name + msg.time)
+        }, (conv: Conversation) => conv.id.toString())
       }
       .width('100%')
       .backgroundColor('#181818')

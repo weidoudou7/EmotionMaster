@@ -1,6 +1,7 @@
 import router from '@ohos.router';
 import { inputMethod } from '@kit.IMEKit';
 import { ApiService } from '../service/apiservice';
+import { CreateConversationRequest } from '../common/types';
 
 interface ChatMessage {
   id: number;
@@ -19,6 +20,7 @@ interface ChatParams {
   figureName?: string;
   isFromCreateFigure?: boolean;
   description?: string; // 新增：描述词参数
+  createdAiRoleId?: number; // 新增
 }
 
 // 新增：治愈天使信息接口
@@ -79,6 +81,8 @@ export struct Chat {
     views: '5.6万'
   };
 
+  @State private createdAiRoleId: number = 0; // 新增：创建的AI角色ID
+
   aboutToAppear() {
     // 获取路由参数
     const params = router.getParams() as ChatParams;
@@ -87,7 +91,8 @@ export struct Chat {
       this.figureType = params.figureType || '';
       this.figureName = params.figureName || '';
       this.isFromCreateFigure = params.isFromCreateFigure || false;
-      this.description = params.description || ''; // 新增：获取描述词
+      this.description = params.description || '';
+      this.createdAiRoleId = params.createdAiRoleId || 0; // 新增
       
       // 添加调试日志
       console.log('=== Chat页面接收到的参数 ===');
@@ -96,6 +101,7 @@ export struct Chat {
       console.log('figureName:', this.figureName);
       console.log('isFromCreateFigure:', this.isFromCreateFigure);
       console.log('description:', this.description);
+      console.log('createdAiRoleId:', this.createdAiRoleId);
       console.log('========================');
       
       // 如果是从CreateFigure页面来的，更新聊天信息
@@ -136,6 +142,9 @@ export struct Chat {
       
       console.log('治愈天使默认设置完成');
     }
+    
+    // 新增：自动创建对话记录
+    this.createConversationRecord();
     
     // 新增：初始化时滚动到底部
     setTimeout(() => {
@@ -208,6 +217,39 @@ export struct Chat {
       this.scrollToBottom();
     } finally {
       this.isSending = false;
+    }
+  }
+
+  /**
+   * 新增：自动创建对话记录
+   */
+  private async createConversationRecord(): Promise<void> {
+    try {
+      console.log('开始创建对话记录...');
+      
+      // 准备对话信息，符合CreateConversationRequest接口
+      const conversationData: CreateConversationRequest = {
+        userId: 372, //todo 默认用户ID，实际应用中应该从用户登录信息获取
+        aiRoleId: this.isFromCreateFigure && this.createdAiRoleId > 0 ? this.createdAiRoleId : 1, // 用新角色ID
+        title: `与${this.agentName}的对话`,
+        moodTag: 'normal' // 默认心情标签
+      };
+      
+      console.log('对话数据:', conversationData);
+      
+      // 调用API创建对话记录
+      const result = await ApiService.createConversation(conversationData);
+      console.log('对话记录创建成功:', result);
+      
+      // 可以在这里保存返回的conversationId用于后续的消息记录
+      if (result && result.id) {
+        this.chatId = result.id.toString();
+        console.log('更新聊天ID:', this.chatId);
+      }
+      
+    } catch (error) {
+      console.error('创建对话记录失败:', error);
+      // 不显示错误提示，避免影响用户体验
     }
   }
 

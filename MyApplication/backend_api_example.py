@@ -38,6 +38,10 @@ CHARACTER_PERSONALITIES = load_character_personalities()
 # 聊天历史存储（实际项目中应该使用数据库）
 chat_histories = {}
 
+# AI角色存储（实际项目中应该使用数据库）
+ai_roles = {}  # 存储AI角色数据
+next_role_id = 1  # 角色ID计数器
+
 @app.route('/api/ai/chat/<identity>', methods=['POST'])
 def chat_with_ai(identity):
     """

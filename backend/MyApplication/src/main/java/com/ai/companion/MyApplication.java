@@ -10,7 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
 @ComponentScan(basePackages = "com.ai.companion", 
                includeFilters = @ComponentScan.Filter(
                    type = org.springframework.context.annotation.FilterType.REGEX,
-                   pattern = "com\\.ai\\.companion\\.(UserController|UserService|UserServiceImpl|UserMapper|config\\..*|utils\\..*)"
+                   pattern = "com\\.ai\\.companion\\.(UserController|ChatHistoryController|UserService|UserServiceImpl|UserMapper|config\\..*|utils\\..*)"
                ))
 public class MyApplication {
 
