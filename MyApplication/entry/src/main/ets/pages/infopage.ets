@@ -29,13 +29,18 @@ export struct InfoPage {
 
   // 页面生命周期
   aboutToAppear() {
-    this.loadUserInfo();
+    // 使用全局数据快速初始化
+    this.userName = globalUserData.userName;
+    this.userUID = globalUserData.userUID;
+    this.isPrivacyVisible = globalUserData.isPrivacyVisible;
+    
+    // 异步加载详细信息
+    this.loadUserInfoAsync();
   }
 
-  // 加载用户信息
-  async loadUserInfo() {
+  // 异步加载用户信息（不阻塞页面显示）
+  async loadUserInfoAsync() {
     try {
-      this.isLoading = true;
       const userInfo = await ApiService.getUserInfo(this.userUID);
       this.userInfo = userInfo;
       this.userName = userInfo.userName;
@@ -53,9 +58,7 @@ export struct InfoPage {
       }
     } catch (error) {
       console.error('加载用户信息失败:', error);
-      promptAction.showToast({ message: '加载用户信息失败' });
-    } finally {
-      this.isLoading = false;
+      // 不显示错误提示，避免影响用户体验
     }
   }
 

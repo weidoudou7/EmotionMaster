@@ -6,8 +6,7 @@ import http from '@ohos.net.http';
 
 
 // API基础配置 - 从配置文件获取
-//const API_BASE_URL = Config.getApiBaseUrl();
-const API_BASE_URL = 'http://10.255.10.135:8081/api';
+const API_BASE_URL = Config.getApiBaseUrl();
 // 定义HTTP请求选项接口
 interface HttpRequestOptions {
   method?: http.RequestMethod;
@@ -33,7 +32,11 @@ export class ApiService {
     options: HttpRequestOptions = {}
   ): Promise<ApiResponse<T>> {
     try {
+      console.log('🌐 request 方法开始，URL:', url);
+      console.log('🌐 请求选项:', JSON.stringify(options));
+      
       const httpRequest = http.createHttp();
+      console.log('🌐 HTTP请求对象创建成功');
       
       // 设置请求头
       const headers: Record<string, string> = {
@@ -45,6 +48,8 @@ export class ApiService {
       Object.keys(customHeader).forEach(key => {
         headers[key] = customHeader[key];
       });
+      
+      console.log('🌐 请求头:', JSON.stringify(headers));
 
       // 设置请求选项
       const requestOptions: http.HttpRequestOptions = {
@@ -58,9 +63,14 @@ export class ApiService {
       if (options.body) {
         requestOptions.extraData = options.body;
       }
-
+      
+      console.log('🌐 开始发送HTTP请求...');
       const response = await httpRequest.request(url, requestOptions);
+      console.log('🌐 HTTP请求完成，响应码:', response.responseCode);
+      console.log('🌐 响应结果:', response.result.toString());
+      
       httpRequest.destroy();
+      console.log('🌐 HTTP请求对象已销毁');
 
       if (response.responseCode !== 200) {
         throw new Error(`HTTP error! status: ${response.responseCode}`);
@@ -69,9 +79,10 @@ export class ApiService {
       let result: ApiResponse<T>;
       try {
         result = JSON.parse(response.result.toString());
+        console.log('🌐 JSON解析成功:', result);
       } catch (e) {
         // 打印原始内容，便于调试
-        console.error('API返回内容不是标准JSON，原始内容如下:');
+        console.error('🌐 API返回内容不是标准JSON，原始内容如下:');
         console.error(response.result.toString());
         // 直接抛出错误，提示后端返回内容异常
         throw new Error('后端返回内容不是标准JSON，无法解析');
@@ -79,31 +90,31 @@ export class ApiService {
       
       // 调试模式下的日志
       if (Config.isDebug()) {
-        console.log(`API请求: ${url}`, result);
+        console.log(`🌐 API请求: ${url}`, result);
       }
       
       return result;
     } catch (error) {
-      console.error('API请求失败:', error);
+      console.error('🌐 API请求失败:', error);
       if (error instanceof Error) {
-        console.error('error.message:', error.message);
+        console.error('🌐 error.message:', error.message);
         if (error.stack) {
-          console.error('error.stack:', error.stack);
+          console.error('🌐 error.stack:', error.stack);
         }
       } else {
-        console.error('error(非Error类型):', JSON.stringify(error));
+        console.error('🌐 error(非Error类型):', JSON.stringify(error));
       }
       try {
         if (typeof error === 'object' && error !== null) {
           const errObj = error as Record<string, string>;
           Object.keys(errObj).forEach((key) => {
-            console.error(`error[${key}]:`, errObj[key]);
+            console.error(`🌐 error[${key}]:`, errObj[key]);
           });
         } else {
-          console.error('error(原始):', error);
+          console.error('🌐 error(原始):', error);
         }
       } catch (e) {
-        console.error('打印error属性失败:', e);
+        console.error('🌐 打印error属性失败:', e);
       }
       if (error instanceof Error) {
         throw error;
@@ -581,18 +592,62 @@ export class ApiService {
   }
 
   /**
+   * 测试网络连接
+   */
+  static async testConnection(): Promise<boolean> {
+    try {
+      console.log('🔍 测试网络连接...');
+      console.log('🔍 目标URL:', `${API_BASE_URL}/user/test`);
+      
+      const response = await ApiService.request<string>(`${API_BASE_URL}/user/test`);
+      console.log('✅ 网络连接测试成功:', response);
+      return true;
+    } catch (error) {
+      console.error('❌ 网络连接测试失败:', error);
+      return false;
+    }
+  }
+
+  /**
    * 搜索用户
    */
   static async searchUser(userUID: string): Promise<SearchUserResult | null> {
     try {
-      const response = await ApiService.request<SearchUserResult>(`${API_BASE_URL}/user/search/${userUID}`);
+      console.log('🔍 ApiService.searchUser 开始搜索:', userUID);
+      console.log('🔍 API_BASE_URL:', API_BASE_URL);
+      const url = `${API_BASE_URL}/user/search/${userUID}`;
+      console.log('🔍 请求URL:', url);
+      console.log('🔍 开始调用 request 方法...');
+      
+      const response = await ApiService.request<SearchUserResult>(url);
+      console.log('🔍 API响应:', response);
+      console.log('🔍 响应类型:', typeof response);
+      console.log('🔍 响应success:', response.success);
+      console.log('🔍 响应data:', response.data);
+      console.log('🔍 响应data类型:', typeof response.data);
+      
       if (response.success) {
+        console.log('✅ 搜索成功，返回数据:', response.data);
+        console.log('✅ 数据字段检查:');
+        console.log('  - userUID:', response.data?.userUID);
+        console.log('  - userName:', response.data?.userName);
+        console.log('  - userAvatar:', response.data?.userAvatar);
+        console.log('  - level:', response.data?.level, '类型:', typeof response.data?.level);
+        console.log('  - gender:', response.data?.gender);
+        console.log('  - signature:', response.data?.signature);
         return response.data;
       } else {
+        console.log('❌ 搜索失败，API返回错误:', response.message);
         return null; // 用户不存在
       }
     } catch (error) {
-      console.error('搜索用户失败:', error);
+      console.error('❌ 搜索用户失败:', error);
+      console.error('❌ 错误类型:', typeof error);
+      console.error('❌ 错误详情:', JSON.stringify(error));
+      if (error instanceof Error) {
+        console.error('❌ 错误消息:', error.message);
+        console.error('❌ 错误堆栈:', error.stack);
+      }
       return null; // 搜索失败时返回null
     }
   }

@@ -46,10 +46,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserInfoVO getUserInfo(String userUID) {
+        System.out.println("🔍 UserService: 正在查询用户UID: " + userUID);
         User user = userMapper.selectByUID(userUID);
         if (user == null) {
+            System.out.println("❌ UserService: 用户不存在，UID: " + userUID);
             throw new RuntimeException("用户不存在");
         }
+        System.out.println("✅ UserService: 找到用户，UID: " + userUID + ", 用户名: " + user.getUserName());
         return convertToVO(user);
     }
 
@@ -259,6 +262,17 @@ public class UserServiceImpl implements UserService {
     @Override
     public int insertUser(User user) {
         return userMapper.insertUser(user);
+    }
+    
+    @Override
+    public boolean deleteUser(String userUID) {
+        try {
+            int result = userMapper.deleteUser(userUID);
+            return result > 0;
+        } catch (Exception e) {
+            System.err.println("删除用户失败: " + e.getMessage());
+            return false;
+        }
     }
 
     /**

@@ -71,6 +71,13 @@ public interface UserService {
     List<UserInfoVO> searchUsersByName(String keyword);
     
     /**
+     * 删除用户
+     * @param userUID 用户UID
+     * @return 是否删除成功
+     */
+    boolean deleteUser(String userUID);
+    
+    /**
      * 插入新用户
      * @param user 用户实体
      * @return 影响的行数

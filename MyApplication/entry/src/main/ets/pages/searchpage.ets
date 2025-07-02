@@ -2,6 +2,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import promptAction from '@ohos.promptAction';
 import { ApiService } from '../service/apiservice';
 import { SearchUserResult } from '../common/types';
+import { Config } from '../common/config';
 
 @Entry
 @Component
@@ -10,6 +11,12 @@ export struct SearchPage {
   @State isSearching: boolean = false; // 搜索状态
   @State searchResult: SearchUserResult | null = null; // 搜索结果
   @State hasSearched: boolean = false; // 是否已经搜索过
+
+  // 页面生命周期
+  aboutToAppear() {
+    console.log('🚀 SearchPage 页面开始加载');
+    console.log('🚀 当前API地址:', Config.getApiBaseUrl());
+  }
 
   // 搜索功能
   async performSearch() {
@@ -22,22 +29,20 @@ export struct SearchPage {
     this.hasSearched = true;
     
     try {
-      console.log('开始搜索用户:', this.searchText);
       promptAction.showToast({ message: `正在搜索用户: ${this.searchText}` });
       
       const result = await ApiService.searchUser(this.searchText.trim());
-      this.searchResult = result;
       
       if (result) {
-        console.log('搜索成功:', result);
+        this.searchResult = result;
         promptAction.showToast({ message: `找到用户: ${result.userName}` });
       } else {
-        console.log('未找到用户');
+        this.searchResult = null;
         promptAction.showToast({ message: '未找到该用户' });
       }
     } catch (error) {
       console.error('搜索失败:', error);
-      promptAction.showToast({ message: `搜索失败: ${error.message}` });
+      promptAction.showToast({ message: `搜索失败: ${error.message || '未知错误'}` });
       this.searchResult = null;
     } finally {
       this.isSearching = false;
@@ -228,56 +233,61 @@ export struct SearchPage {
                 
                 // 用户卡片
                 Row() {
-                  // 左侧头像
-                  Image(this.searchResult.userAvatar || $r('app.media.image'))
-                    .width(60)
-                    .height(60)
-                    .borderRadius(30)
-                    .backgroundColor('rgba(255,255,255,0.1)')
-                    .border({ width: 2, color: 'rgba(255,255,255,0.3)' })
-                  
-                  // 中间用户信息
+                  // 左侧：头像+用户名+UID 垂直排列
                   Column() {
+                    // 头像
+                    Image(this.searchResult.userAvatar || $r('app.media.image'))
+                      .width(60)
+                      .height(60)
+                      .borderRadius(30)
+                      .backgroundColor('rgba(255,255,255,0.1)')
+                      .border({ width: 2, color: 'rgba(255,255,255,0.3)' })
+                      .margin({ bottom: 8 })
+                    
+                    // 用户名
                     Text(this.searchResult.userName)
                       .fontSize(16)
                       .fontWeight(FontWeight.Bold)
                       .fontColor('#fff')
-                      .textAlign(TextAlign.Start)
+                      .textAlign(TextAlign.Center)
                       .margin({ bottom: 4 })
+                    
+                    // UID
                     Text(`UID: ${this.searchResult.userUID}`)
                       .fontSize(12)
                       .fontColor('rgba(255,255,255,0.6)')
-                      .textAlign(TextAlign.Start)
+                      .textAlign(TextAlign.Center)
                   }
-                  .alignItems(HorizontalAlign.Start)
+                  .alignItems(HorizontalAlign.Center)
                   .layoutWeight(1)
-                  .margin({ left: 16 })
                   
-                  // 右侧按钮
-                  Row() {
+                  // 右侧：按钮垂直排列
+                  Column() {
                     Button('关注')
-                      .width(50)
-                      .height(28)
+                      .width(60)
+                      .height(32)
                       .fontSize(12)
                       .backgroundColor('rgba(128,128,128,0.3)')
                       .fontColor('#fff')
-                      .borderRadius(14)
-                      .margin({ right: 8 })
+                      .borderRadius(16)
+                      .margin({ bottom: 8 })
                       .onClick(() => {
                         this.onFollowClick();
                       })
                     
                     Button('查看')
-                      .width(50)
-                      .height(28)
+                      .width(60)
+                      .height(32)
                       .fontSize(12)
                       .backgroundColor('rgba(128,128,128,0.3)')
                       .fontColor('#fff')
-                      .borderRadius(14)
+                      .borderRadius(16)
                       .onClick(() => {
                         this.onViewClick();
                       })
                   }
+                  .alignItems(HorizontalAlign.Center)
+                  .justifyContent(FlexAlign.Center)
                 }
                 .width('100%')
                 .padding(16)

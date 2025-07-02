@@ -32,12 +32,10 @@ public class ChatRecordServiceImpl implements ChatRecordService {
             conversation.setUserId(userId);
             conversation.setAiRoleId(aiRoleId);
             conversation.setTitle(title != null ? title : "新对话");
-            conversation.setMode(mode != null ? mode : "text");
             conversation.setTurns(0);
             conversation.setStartTime(LocalDateTime.now());
             conversation.setLastActive(LocalDateTime.now());
             conversation.setMoodTag(null);
-            conversation.setPlanetGrowth(0);
             conversationMapper.insertConversation(conversation);
         }
         return conversation;

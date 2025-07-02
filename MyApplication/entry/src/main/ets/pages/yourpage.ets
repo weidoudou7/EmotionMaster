@@ -5,8 +5,6 @@ import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
 import { UserInfo, UserStats } from '../common/types';
 import promptAction from '@ohos.promptAction';
-//导入图片模块
-
 
 @Entry
 @Component
@@ -25,14 +23,19 @@ export struct YourPage {
 
   // 页面生命周期
   aboutToAppear() {
-    this.loadUserInfo();
-    this.loadUserStats();
+    // 使用全局数据快速初始化，避免等待API
+    this.yourname = globalUserData.userName;
+    this.UID = globalUserData.userUID;
+    this.ooo = globalUserData.isPrivacyVisible;
+    
+    // 异步加载详细信息，不阻塞页面显示
+    this.loadUserInfoAsync();
+    this.loadUserStatsAsync();
   }
 
-  // 加载用户信息
-  async loadUserInfo() {
+  // 异步加载用户信息（不阻塞页面显示）
+  async loadUserInfoAsync() {
     try {
-      this.isLoading = true;
       const userInfo = await ApiService.getUserInfo(this.UID);
       this.userInfo = userInfo;
       this.yourname = userInfo.userName;
@@ -40,14 +43,12 @@ export struct YourPage {
       this.ooo = userInfo.isPrivacyVisible;
     } catch (error) {
       console.error('加载用户信息失败:', error);
-      promptAction.showToast({ message: '加载用户信息失败' });
-    } finally {
-      this.isLoading = false;
+      // 不显示错误提示，避免影响用户体验
     }
   }
 
-  // 加载用户统计信息
-  async loadUserStats() {
+  // 异步加载用户统计信息（不阻塞页面显示）
+  async loadUserStatsAsync() {
     try {
       const userStats = await ApiService.getUserStats(this.UID);
       this.userStats = userStats;
@@ -113,349 +114,338 @@ export struct YourPage {
       .position({ x: 0, y: 0 })
       .zIndex(1)
       
-      if (this.isLoading) {
+      // 主体内容
+      Scroll() {
         Column() {
-          LoadingProgress().width(50).height(50)
-          Text('加载中...').fontSize(16).fontColor('#fff').margin({ top: 10 })
-        }
-        .width('100%')
-        .height('100%')
-        .justifyContent(FlexAlign.Center)
-        .zIndex(10)
-      } else {
-        // 主体内容
-        Scroll() {
+          // 上半部分：个人信息卡片
           Column() {
-            // 上半部分：个人信息卡片
-            Column() {
-              // 1. 头像+名称+UID 卡片区域（包含右侧按钮）
-              Row() {
-                // 左侧：头像+名称+UID 卡片
-                Stack() {
-                  // 卡片
-                  Row() {
-                    // 头像
-                    Image(this.userInfo?.userAvatar ? this.userInfo.userAvatar : $r("app.media.image"))
-                      .width(80)
-                      .height(80)
-                      .borderRadius(40)
-                      .margin({ top: 2, right: 20 })
-                      .backgroundColor('rgba(255,255,255,0.1)')
-                      .border({ width: 2, color: 'rgba(255,255,255,0.3)' })
-                      .scale({ x: this.avatarScale, y: this.avatarScale })
-                      .animation({
-                        duration: 120,
-                        curve: Curve.EaseInOut
-                      })
+            // 1. 头像+名称+UID 卡片区域（包含右侧按钮）
+            Row() {
+              // 左侧：头像+名称+UID 卡片
+              Stack() {
+                // 卡片
+                Row() {
+                  // 头像
+                  Image(this.userInfo?.userAvatar ? this.userInfo.userAvatar : $r("app.media.image"))
+                    .width(80)
+                    .height(80)
+                    .borderRadius(40)
+                    .margin({ top: 2, right: 20 })
+                    .backgroundColor('rgba(255,255,255,0.1)')
+                    .border({ width: 2, color: 'rgba(255,255,255,0.3)' })
+                    .scale({ x: this.avatarScale, y: this.avatarScale })
+                    .animation({
+                      duration: 120,
+                      curve: Curve.EaseInOut
+                    })
+                    .onClick(() => {
+                      this.avatarScale = 0.92;
+                      setTimeout(() => {
+                        this.avatarScale = 1.0;
+                        let uiContext: UIContext = this.getUIContext();
+                        let router = uiContext.getRouter();
+                        router.pushUrl({ url: 'pages/infopage' });
+                      }, 120);
+                    })
+                  // 名称和UID
+                  Column() {
+                    Text(this.yourname)
+                      .fontSize(24)
+                      .fontWeight(FontWeight.Bold)
+                      .fontColor('#fff')
+                      .margin({ bottom: 2 })
+                      .textAlign(TextAlign.Start)
+                    Text(`UID: ${this.UID}`)
+                      .fontSize(13)
+                      .fontColor('rgba(255,255,255,0.6)')
+                      .margin({ bottom: 4 })
+                      .textAlign(TextAlign.Start)
+                    Text(`性别: ${this.userInfo?.gender || '未设置'}`)
+                      .fontSize(13)
+                      .fontColor('rgba(255,255,255,0.6)')
+                      .textAlign(TextAlign.Start)
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .width('70%')
+                }
+                .width('100%')
+                .scale({ x: this.cardScale, y: this.cardScale })
+                .animation({
+                  duration: 200,
+                  curve: Curve.EaseInOut
+                })
+                .onClick(() => {
+                  this.cardScale = 0.98;
+                  setTimeout(() => {
+                    this.cardScale = 1.0;
+                  }, 200);
+                })
+              }
+              .width('70%')
+              .padding({ left: 16 })
+              
+              // 右侧小卡片
+              Column() {
+                // 设置按钮
+                Button() {
+                  Image($r('app.media.setting'))
+                    .width(28)
+                    .height(28)
+                    .fillColor('#fff')
+                }
+                .width(48)
+                .height(23)
+                .backgroundColor('rgba(128,128,128,0)')
+                .borderRadius(24)
+                .margin({ bottom: 4 })
+                .onClick(() => {
+                  let uiContext: UIContext = this.getUIContext();
+                  let router = uiContext.getRouter();
+                  router.pushUrl({ url: 'pages/infopage' });
+                })
+                
+                // 动态按钮
+                Button() {
+                  Image($r('app.media.dynamic'))
+                    .width(28)
+                    .height(28)
+                    .fillColor('#fff')
+                }
+                .width(48)
+                .height(48)
+                .backgroundColor('rgba(128,128,128,0)')
+                .borderRadius(24)
+                .margin({ bottom: 4 })
+                .onClick(() => {
+                  let uiContext: UIContext = this.getUIContext();
+                  let router = uiContext.getRouter();
+                  router.pushUrl({ url: 'pages/DynamicList' });
+                })
+              }
+              .width('20%')
+              .height('100%')
+              .justifyContent(FlexAlign.End)
+              .alignItems(HorizontalAlign.Center)
+            }
+            .width('90%')
+            .height(100)
+            .margin({ top: 12, bottom: 2 })
+            
+            // 2. 个性签名和社交信息
+            Row() {
+              // 左侧：个性签名
+              Column() {
+                // 个性签名
+                Column() {
+                  Text('个性签名')
+                    .fontSize(15)
+                    .fontColor('#fff')
+                    .margin({ bottom: 8 })
+                  Text(this.userInfo?.signature || '这个人很懒，什么都没留下~')
+                    .fontSize(14)
+                    .fontColor('rgba(255,255,255,0.8)')
+                    .textAlign(TextAlign.Start)
+                    .maxLines(2)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                }
+                .alignItems(HorizontalAlign.Start)
+                .margin({ bottom: 4 })
+                
+                // 社交信息按钮
+                Row() {
+                  ForEach([
+                    `关注:${this.userStats?.followingCount || 0}`,
+                    `粉丝:${this.userStats?.followerCount || 0}`,
+                    `好友:${this.userStats?.friendCount || 0}`
+                  ], (label: string, index: number) => {
+                    Button(label)
+                      .width(68)
+                      .height(28)
+                      .fontSize(12)
+                      .backgroundColor('rgba(128,128,128,0)')
+                      .fontColor('#fff')
+                      .borderRadius(14)
+                      .margin({ right: 6 })
                       .onClick(() => {
-                        this.avatarScale = 0.92;
-                        setTimeout(() => {
-                          this.avatarScale = 1.0;
-                          let uiContext: UIContext = this.getUIContext();
-                          let router = uiContext.getRouter();
-                          router.pushUrl({ url: 'pages/infopage' });
-                        }, 120);
+                        promptAction.showToast({ message: '好友功能正在开发中' });
                       })
-                    // 名称和UID
-                    Column() {
-                      Text(this.yourname)
-                        .fontSize(24)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor('#fff')
-                        .margin({ bottom: 2 })
-                        .textAlign(TextAlign.Start)
-                      Text(`UID: ${this.UID}`)
-                        .fontSize(13)
-                        .fontColor('rgba(255,255,255,0.6)')
-                        .margin({ bottom: 4 })
-                        .textAlign(TextAlign.Start)
-                      Text(`性别: ${this.userInfo?.gender || '未设置'}`)
-                        .fontSize(13)
-                        .fontColor('rgba(255,255,255,0.6)')
-                        .textAlign(TextAlign.Start)
-                    }
-                    .alignItems(HorizontalAlign.Start)
-                    .width('70%')
+                  })
+                  // 单独放置查找按钮，避免ForEach影响事件绑定
+                  Button('查找')
+                    .width(65)
+                    .height(32)
+                    .fontSize(12)
+                    .backgroundColor('rgba(0,128,255,0.3)')
+                    .fontColor('#fff')
+                    .borderRadius(14)
+                    .margin({ right: 6 })
+                    .onClick(() => {
+                      let uiContext: UIContext = this.getUIContext();
+                      let router = uiContext.getRouter();
+                      router.pushUrl({ url: 'pages/searchpage' });
+                    })
+                }
+                .justifyContent(FlexAlign.Start)
+              }
+              .width('70%')
+              .padding({ left: 16 })
+              
+              // 右侧空白区域，保持与头像卡片布局一致
+              Blank()
+                .width('20%')
+            }
+            .width('90%')
+            .margin({ bottom: 2 })
+            
+            // 3. 底部两个按钮
+            Row() {
+              // 左侧：按钮区域
+              Row() {
+                Column() {
+                  Button('我的阁楼')
+                    .fontSize(15)
+                    .backgroundColor('rgba(128,128,128,0)')
+                    .fontColor('#fff')
+                    .borderRadius(20)
+                    .onClick(() => {
+                      this.selectedTab = 'attic';
+                    })
+                  if (this.selectedTab === 'attic') {
+                    Divider()
+                      .width(80)
+                      .height(2)
+                      .color('#fff')
+                      .margin({ top: 2 })
+                  }
+                }
+                .margin({ right: 12 })
+                
+                Column() {
+                  Button('我的动态')
+                    .fontSize(15)
+                    .backgroundColor('rgba(128,128,128,0)')
+                    .fontColor('#fff')
+                    .borderRadius(20)
+                    .onClick(() => {
+                      this.selectedTab = 'dynamic';
+                    })
+                  if (this.selectedTab === 'dynamic') {
+                    Divider()
+                      .width(80)
+                      .height(2)
+                      .color('#fff')
+                      .margin({ top: 2 })
+                  }
+                }
+              }
+              .width('70%')
+              .padding({ left: 16 })
+              .justifyContent(FlexAlign.Start)
+              
+              // 右侧空白区域
+              Blank()
+                .width('20%')
+            }
+            .width('90%')
+            .margin({ bottom: 2 })
+            
+            // 4. 阁楼内容显示
+            Column() {
+              if (this.selectedTab === 'attic') {
+                // 阁楼五个标签页导航栏（支持滑动）
+                Scroll() {
+                  Row() {
+                    ForEach(["智能体", "故事", "时刻", "群聊", "记忆簿"], (tab: string, index: number) => {
+                      Column() {
+                        Button(tab)
+                          .fontSize(12)
+                          .backgroundColor('rgba(128,128,128,0)')
+                          .fontColor('#fff')
+                          .borderRadius(12)
+                          .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+                          .onClick(() => {
+                            this.selectedAtticTab = tab;
+                          })
+                        if (this.selectedAtticTab === tab) {
+                          Divider()
+                            .width(40)
+                            .height(2)
+                            .color('#fff')
+                            .margin({ top: 2 })
+                        }
+                      }
+                      .margin({ right: 12 })
+                    })
                   }
                   .width('100%')
-                  .scale({ x: this.cardScale, y: this.cardScale })
-                  .animation({
-                    duration: 200,
-                    curve: Curve.EaseInOut
-                  })
-                  .onClick(() => {
-                    this.cardScale = 0.98;
-                    setTimeout(() => {
-                      this.cardScale = 1.0;
-                    }, 200);
-                  })
                 }
-                .width('70%')
-                .padding({ left: 16 })
+                .scrollable(ScrollDirection.Horizontal)
+                .scrollBar(BarState.Off)
+                .width('100%')
+                .margin({ bottom: 8 })
                 
-                // 右侧小卡片
+                // 阁楼内容显示区域
                 Column() {
-                  // 设置按钮
-                  Button() {
-                    Image($r('app.media.setting'))
-                      .width(28)
-                      .height(28)
-                      .fillColor('#fff')
-                  }
-                  .width(48)
-                  .height(23)
-                  .backgroundColor('rgba(128,128,128,0)')
-                  .borderRadius(24)
-                  .margin({ bottom: 4 })
-                  .onClick(() => {
-                    let uiContext: UIContext = this.getUIContext();
-                    let router = uiContext.getRouter();
-                    router.pushUrl({ url: 'pages/infopage' });
-                  })
+                  Text('没有可用的内容')
+                    .fontSize(16)
+                    .fontColor('rgba(255,255,255,0.5)')
+                    .textAlign(TextAlign.Center)
+                }
+                .width('100%')
+                .height(120)
+                .backgroundColor('rgba(255,255,255,0.08)')
+                .borderRadius(16)
+                .justifyContent(FlexAlign.Center)
+              } else if (this.selectedTab === 'dynamic') {
+                // 动态预览内容
+                Column() {
+                  Text('我的动态')
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor('#fff')
+                    .margin({ bottom: 16 })
                   
-                  // 动态按钮
-                  Button() {
-                    Image($r('app.media.dynamic'))
-                      .width(28)
-                      .height(28)
-                      .fillColor('#fff')
+                  // 最近一条动态预览
+                  Column() {
+                    Text('今天的心情很好，想要分享给大家...')
+                      .fontSize(14)
+                      .fontColor('rgba(255,255,255,0.8)')
+                      .textAlign(TextAlign.Start)
+                      .margin({ bottom: 8 })
+                    Text('2024-01-15 14:30')
+                      .fontSize(12)
+                      .fontColor('rgba(255,255,255,0.5)')
+                      .textAlign(TextAlign.Start)
                   }
-                  .width(48)
-                  .height(48)
-                  .backgroundColor('rgba(128,128,128,0)')
-                  .borderRadius(24)
-                  .margin({ bottom: 4 })
+                  .width('100%')
+                  .height(120)
+                  .backgroundColor('rgba(255,255,255,0.08)')
+                  .borderRadius(16)
+                  .padding(16)
+                  .justifyContent(FlexAlign.Start)
                   .onClick(() => {
                     let uiContext: UIContext = this.getUIContext();
                     let router = uiContext.getRouter();
                     router.pushUrl({ url: 'pages/DynamicList' });
                   })
                 }
-                .width('20%')
-                .height('100%')
-                .justifyContent(FlexAlign.End)
-                .alignItems(HorizontalAlign.Center)
+                .width('100%')
               }
-              .width('90%')
-              .height(100)
-              .margin({ top: 12, bottom: 2 })
-              
-              // 2. 个性签名和社交信息
-              Row() {
-                // 左侧：个性签名
-                Column() {
-                  // 个性签名
-                  Column() {
-                    Text('个性签名')
-                      .fontSize(15)
-                      .fontColor('#fff')
-                      .margin({ bottom: 8 })
-                    Text(this.userInfo?.signature || '这个人很懒，什么都没留下~')
-                      .fontSize(14)
-                      .fontColor('rgba(255,255,255,0.8)')
-                      .textAlign(TextAlign.Start)
-                      .maxLines(2)
-                      .textOverflow({ overflow: TextOverflow.Ellipsis })
-                  }
-                  .alignItems(HorizontalAlign.Start)
-                  .margin({ bottom: 4 })
-                  
-                  // 社交信息按钮
-                  Row() {
-                    ForEach([
-                      `关注:${this.userStats?.followingCount || 0}`,
-                      `粉丝:${this.userStats?.followerCount || 0}`,
-                      `好友:${this.userStats?.friendCount || 0}`
-                    ], (label: string, index: number) => {
-                      Button(label)
-                        .width(68)
-                        .height(28)
-                        .fontSize(12)
-                        .backgroundColor('rgba(128,128,128,0)')
-                        .fontColor('#fff')
-                        .borderRadius(14)
-                        .margin({ right: 6 })
-                        .onClick(() => {
-                          promptAction.showToast({ message: '好友功能正在开发中' });
-                        })
-                    })
-                    // 单独放置查找按钮，避免ForEach影响事件绑定
-                    Button('查找')
-                      .width(60)
-                      .height(28)
-                      .fontSize(12)
-                       .backgroundColor('rgba(0,128,255,0.3)')// 调试用浅蓝色背景
-                      .fontColor('#fff')
-                      .borderRadius(14)
-                      .margin({ left: 3 })
-                      .onClick(() => {
-                        let uiContext: UIContext = this.getUIContext();
-                        let router = uiContext.getRouter();
-                        router.pushUrl({ url: 'pages/searchpage' });
-                      })
-                  }
-                  .justifyContent(FlexAlign.Start)
-                }
-                .width('70%')
-                .padding({ left: 16 })
-                
-                // 右侧空白区域，保持与头像卡片布局一致
-                Blank()
-                  .width('20%')
-              }
-              .width('90%')
-              .margin({ bottom: 2 })
-              
-              // 3. 底部两个按钮
-              Row() {
-                // 左侧：按钮区域
-                Row() {
-                  Column() {
-                    Button('我的阁楼')
-                      .fontSize(15)
-                      .backgroundColor('rgba(128,128,128,0)')
-                      .fontColor('#fff')
-                      .borderRadius(20)
-                      .onClick(() => {
-                        this.selectedTab = 'attic';
-                      })
-                    if (this.selectedTab === 'attic') {
-                      Divider()
-                        .width(80)
-                        .height(2)
-                        .color('#fff')
-                        .margin({ top: 2 })
-                    }
-                  }
-                  .margin({ right: 12 })
-                  
-                  Column() {
-                    Button('我的动态')
-                      .fontSize(15)
-                      .backgroundColor('rgba(128,128,128,0)')
-                      .fontColor('#fff')
-                      .borderRadius(20)
-                      .onClick(() => {
-                        this.selectedTab = 'dynamic';
-                      })
-                    if (this.selectedTab === 'dynamic') {
-                      Divider()
-                        .width(80)
-                        .height(2)
-                        .color('#fff')
-                        .margin({ top: 2 })
-                    }
-                  }
-                }
-                .width('70%')
-                .padding({ left: 16 })
-                .justifyContent(FlexAlign.Start)
-                
-                // 右侧空白区域
-                Blank()
-                  .width('20%')
-              }
-              .width('90%')
-              .margin({ bottom: 2 })
-              
-              // 4. 阁楼内容显示
-              Column() {
-                if (this.selectedTab === 'attic') {
-                  // 阁楼五个标签页导航栏（支持滑动）
-                  Scroll() {
-                    Row() {
-                      ForEach(["智能体", "故事", "时刻", "群聊", "记忆簿"], (tab: string, index: number) => {
-                        Column() {
-                          Button(tab)
-                            .fontSize(12)
-                            .backgroundColor('rgba(128,128,128,0)')
-                            .fontColor('#fff')
-                            .borderRadius(12)
-                            .padding({ left: 12, right: 12, top: 8, bottom: 8 })
-                            .onClick(() => {
-                              this.selectedAtticTab = tab;
-                            })
-                          if (this.selectedAtticTab === tab) {
-                            Divider()
-                              .width(40)
-                              .height(2)
-                              .color('#fff')
-                              .margin({ top: 2 })
-                          }
-                        }
-                        .margin({ right: 12 })
-                      })
-                    }
-                    .width('100%')
-                  }
-                  .scrollable(ScrollDirection.Horizontal)
-                  .scrollBar(BarState.Off)
-                  .width('100%')
-                  .margin({ bottom: 8 })
-                  
-                  // 阁楼内容显示区域
-                  Column() {
-                    Text('没有可用的内容')
-                      .fontSize(16)
-                      .fontColor('rgba(255,255,255,0.5)')
-                      .textAlign(TextAlign.Center)
-                  }
-                  .width('100%')
-                  .height(120)
-                  .backgroundColor('rgba(255,255,255,0.08)')
-                  .borderRadius(16)
-                  .justifyContent(FlexAlign.Center)
-                } else if (this.selectedTab === 'dynamic') {
-                  // 动态预览内容
-                  Column() {
-                    Text('我的动态')
-                      .fontSize(18)
-                      .fontWeight(FontWeight.Bold)
-                      .fontColor('#fff')
-                      .margin({ bottom: 16 })
-                    
-                    // 最近一条动态预览
-                    Column() {
-                      Text('今天的心情很好，想要分享给大家...')
-                        .fontSize(14)
-                        .fontColor('rgba(255,255,255,0.8)')
-                        .textAlign(TextAlign.Start)
-                        .margin({ bottom: 8 })
-                      Text('2024-01-15 14:30')
-                        .fontSize(12)
-                        .fontColor('rgba(255,255,255,0.5)')
-                        .textAlign(TextAlign.Start)
-                    }
-                    .width('100%')
-                    .height(120)
-                    .backgroundColor('rgba(255,255,255,0.08)')
-                    .borderRadius(16)
-                    .padding(16)
-                    .justifyContent(FlexAlign.Start)
-                    .onClick(() => {
-                      let uiContext: UIContext = this.getUIContext();
-                      let router = uiContext.getRouter();
-                      router.pushUrl({ url: 'pages/DynamicList' });
-                    })
-                  }
-                  .width('100%')
-                }
-              }
-              .width('90%')
-              .height('50%')
-              .margin({ bottom: 4 })
             }
-            .width('100%')
+            .width('90%')
+            .height('50%')
+            .margin({ bottom: 4 })
           }
           .width('100%')
-          .padding({ top: 0 })
         }
-        .scrollable(ScrollDirection.Vertical)
-        .scrollBar(BarState.Off)
         .width('100%')
-        .height('100%')
-        .zIndex(2)
+        .padding({ top: 0 })
       }
+      .scrollable(ScrollDirection.Vertical)
+      .scrollBar(BarState.Off)
+      .width('100%')
+      .height('100%')
+      .zIndex(2)
     }
   }
 } 
