@@ -1,6 +1,7 @@
 package com.ai.companion.controller;
 
 import com.ai.companion.dto.FeaturedPersonDto;
+import com.ai.companion.entity.AiRole;
 import com.ai.companion.service.FeaturedPersonService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,8 +14,7 @@ import java.util.List;
  * 提供对特色人物资源的增删改查操作
  */
 @RestController
-@RequestMapping("/api/featured-people")
-@CrossOrigin(origins = "*", maxAge = 3600) // 允许跨域请求，支持前端不同域名访问
+@RequestMapping("/featured-people")
 public class FeaturedPersonController {
 
     private final FeaturedPersonService service;
@@ -33,9 +33,9 @@ public class FeaturedPersonController {
      * 请求路径: /api/featured-people
      * @return 包含所有特色人物DTO的列表，HTTP状态码200
      */
-    @GetMapping
-    public ResponseEntity<List<FeaturedPersonDto>> getAllFeaturedPersons() {
-        List<FeaturedPersonDto> dtos = service.getAllFeaturedPersons();
+    @GetMapping("/all")
+    public ResponseEntity<List<AiRole>> getAllFeaturedPersons() {
+        List<AiRole> dtos = service.getAllFeaturedPersons();
         return ResponseEntity.ok(dtos);
     }
 
@@ -61,7 +61,7 @@ public class FeaturedPersonController {
      * @param dto 特色人物数据传输对象
      * @return 返回新创建的特色人物DTO和HTTP 201状态码
      */
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<FeaturedPersonDto> createFeaturedPerson(@RequestBody FeaturedPersonDto dto) {
         FeaturedPersonDto createdDto = service.createFeaturedPerson(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdDto);

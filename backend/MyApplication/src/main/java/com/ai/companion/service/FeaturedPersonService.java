@@ -1,6 +1,7 @@
 package com.ai.companion.service;
 
 import com.ai.companion.dto.FeaturedPersonDto;
+import com.ai.companion.entity.AiRole;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +17,7 @@ public interface FeaturedPersonService {
      * 获取所有特色人物列表
      * @return 包含所有特色人物信息的DTO列表
      */
-    List<FeaturedPersonDto> getAllFeaturedPersons();
+    List<AiRole> getAllFeaturedPersons();
 
     /**
      * 根据ID获取单个特色人物信息
@@ -46,4 +47,7 @@ public interface FeaturedPersonService {
      * @return 删除操作结果（true表示成功，false表示未找到对应ID）
      */
     boolean deleteFeaturedPerson(Long id);
+
+    // 新增按类型查询的方法
+    List<FeaturedPersonDto> getFeaturedPersonsByType(String type);
 }
