@@ -24,10 +24,10 @@
     "pages/BottomNavBar",
     "pages/FeaturedList",
     "pages/fm_message",
+    "pages/fm_message",
     "pages/searchpage",
     "pages/music_cloud_style",
     "pages/music_test",
     "pages/LoadingPage"
-
   ]
 }

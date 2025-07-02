@@ -64,7 +64,7 @@ struct EmailConfirmPage {
     Column() {
       // 顶部返回按钮
       Row() {
-        Image($r('app.media.return'))
+        Image($r('app.media.back'))
           .width(24)
           .height(24)
           .onClick(() => {
@@ -80,7 +80,7 @@ struct EmailConfirmPage {
       Text('欢迎登录心屿')
         .fontSize(30)
         .fontWeight(FontWeight.Bold)
-        .fontColor(Color.Black)
+        .fontColor(Color.White)
         .width('100%')
         .textAlign(TextAlign.Start)
         .padding({ left: 24 })
@@ -97,10 +97,11 @@ struct EmailConfirmPage {
 
       // 邮箱输入框
       TextInput({ placeholder: '请输入QQ邮箱' })
+        .placeholderColor('#6e6e6e')
         .type(InputType.Email)
         .fontSize(18)
-        .fontColor(Color.Black)
-        .backgroundColor('#F5F5F5')
+        .fontColor(Color.White)
+        .backgroundColor('#202021')
         .borderRadius(8)
         .width('90%')
         .height(56)
@@ -113,10 +114,11 @@ struct EmailConfirmPage {
       // 验证码输入框和获取验证码按钮
       Row() {
         TextInput({ placeholder: '请输入验证码' })
+          .placeholderColor('#6e6e6e')
           .type(InputType.Number)
           .fontSize(18)
-          .fontColor(Color.Black)
-          .backgroundColor('#F5F5F5')
+          .fontColor(Color.White)
+          .backgroundColor('#202021')
           .borderRadius(8)
           .layoutWeight(1)
           .height(56)
@@ -128,8 +130,8 @@ struct EmailConfirmPage {
           .width(120)
           .height(44)
           .fontSize(16)
-          .fontColor('#fff')
-          .backgroundColor('#14DCA0')
+          .fontColor('#121114')
+          .backgroundColor('#ffda7f')
           .borderRadius(22)
           .margin({ left: 10 })
           .onClick(() => {
@@ -144,9 +146,8 @@ struct EmailConfirmPage {
         .width('90%')
         .height(50)
         .fontSize(20)
-        .fontWeight(FontWeight.Bold)
-        .fontColor(Color.White)
-        .backgroundColor('#14DCA0')
+        .fontColor('#121114')
+        .backgroundColor('#ffda7f')
         .borderRadius(25)
         .margin({ bottom: 20 })
         .onClick(() => {
@@ -156,6 +157,12 @@ struct EmailConfirmPage {
       // 用户协议勾选框
       Row() {
         Checkbox()
+          .selectedColor('#ffda7f')
+          .foregroundColor(Color.Black)
+          .mark({
+            strokeColor:Color.Black,
+            size: 50
+          })
           .select(this.agree)
           .onChange((value: boolean) => {
             this.agree = value;
@@ -163,16 +170,16 @@ struct EmailConfirmPage {
           .margin({ right: 8 })
         Text('已阅读并同意')
           .fontSize(14)
-          .fontColor('#888')
+          .fontColor('#6e6e6e')
         Text('《用户协议》')
           .fontSize(14)
-          .fontColor('#14DCA0')
+          .fontColor(Color.White)
           .onClick(() => {
             // 跳转到用户协议页面
           })
         Text('《隐私政策》')
           .fontSize(14)
-          .fontColor('#14DCA0')
+          .fontColor(Color.White)
           .onClick(() => {
             // 跳转到隐私政策页面
           })
@@ -183,8 +190,9 @@ struct EmailConfirmPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(Color.White)
+    .backgroundColor('#121114')
     .justifyContent(FlexAlign.Start)
+    .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
     .alignItems(HorizontalAlign.Center)
   }
 } 

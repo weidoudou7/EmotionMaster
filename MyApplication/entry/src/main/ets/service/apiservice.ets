@@ -1,12 +1,24 @@
 import { globalUserData } from '../models/userdata';
 import { Config } from '../common/config';
+<<<<<<< HEAD
 import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult, CreateAiRoleRequest, GenerateRoleNameRequest, CreateConversationRequest, Conversation } from '../common/types';
+=======
+<<<<<<< HEAD
+import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult } from '../common/types';
+>>>>>>> d7e5b41 (导航栏)
 import {  AiRole } from '../common/types';
+=======
+import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO } from '../common/types';
+>>>>>>> bc19685 (导航栏)
 import http from '@ohos.net.http';
 
 
 // API基础配置 - 从配置文件获取
 const API_BASE_URL = Config.getApiBaseUrl();
+<<<<<<< HEAD
+=======
+//const API_BASE_URL = 'http://10.128.156.25:8081/api';
+>>>>>>> bc19685 (导航栏)
 // 定义HTTP请求选项接口
 interface HttpRequestOptions {
   method?: http.RequestMethod;

@@ -19,14 +19,21 @@
     {
       "name": "MainAbility_label",
       "value": "心屿Harmony"
+<<<<<<< HEAD
+=======
+
+>>>>>>> bc19685 (导航栏)
     },
     {
       "name": "reason_internet",
       "value": "应用需要联网播放音乐"
+<<<<<<< HEAD
     },
     {
       "name": "reason_radioplaying",
       "value": "需要后台运行权限以支持朗读功能"
+=======
+>>>>>>> bc19685 (导航栏)
     }
   ]
 }
