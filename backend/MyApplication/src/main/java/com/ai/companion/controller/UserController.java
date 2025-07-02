@@ -146,10 +146,21 @@ public class UserController {
      */
     @GetMapping("/search/{userUID}")
     public ApiResponse<UserInfoVO> searchUser(@PathVariable String userUID) {
+        System.out.println("🔍 ========== 用户搜索请求开始 ==========");
+        System.out.println("🔍 请求路径: /user/search/" + userUID);
+        System.out.println("🔍 请求时间: " + java.time.LocalDateTime.now());
+        System.out.println("🔍 正在查找UID: " + userUID);
+        
         try {
             UserInfoVO userInfo = userService.getUserInfo(userUID);
+            System.out.println("✅ 查找成功，用户: " + userInfo.getUserName());
+            System.out.println("✅ 用户信息: " + userInfo);
+            System.out.println("🔍 ========== 用户搜索请求成功 ==========");
             return ApiResponse.success("用户查找成功", userInfo);
         } catch (Exception e) {
+            System.out.println("❌ 查找失败，用户不存在: " + userUID);
+            System.out.println("❌ 错误信息: " + e.getMessage());
+            System.out.println("🔍 ========== 用户搜索请求失败 ==========");
             // 用户不存在时返回失败响应
             return ApiResponse.error("用户不存在");
         }
@@ -177,6 +188,16 @@ public class UserController {
     @GetMapping("/health")
     public ApiResponse<String> health() {
         return ApiResponse.success("用户服务运行正常", "OK");
+    }
+
+    /**
+     * 简单测试接口 - 用于验证前端连接
+     * @return 测试响应
+     */
+    @GetMapping("/test")
+    public ApiResponse<String> test() {
+        System.out.println("🧪 测试接口被调用 - " + java.time.LocalDateTime.now());
+        return ApiResponse.success("测试成功", "Hello from backend!");
     }
 
     /**

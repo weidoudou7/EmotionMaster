@@ -75,6 +75,12 @@ export interface SearchUserResult {
   userUID: string;
   userName: string;
   userAvatar: string;
+  isPrivacyVisible: boolean;
+  level: number;
+  gender: string;
+  signature: string;
+  registerTime: string;
+  updateTime: string;
 }
 
 // AI角色接口
