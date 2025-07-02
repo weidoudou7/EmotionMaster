@@ -251,7 +251,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-<<<<<<< HEAD
+
     public List<UserInfoVO> searchUsersByName(String keyword) {
         List<User> users = userMapper.searchUsers(keyword, 50); // 限制最多返回50个
         List<UserInfoVO> result = new ArrayList<>();
@@ -275,7 +275,7 @@ public class UserServiceImpl implements UserService {
             System.err.println("删除用户失败: " + e.getMessage());
             return false;
         }
-=======
+    }
     public UserInfoVO createOrLoginUserByEmail(String email) {
         // 1. 查询邮箱是否已存在
         User user = userMapper.selectByEmail(email);
@@ -302,7 +302,6 @@ public class UserServiceImpl implements UserService {
         }
         // 4. 返回VO
         return convertToVO(user);
->>>>>>> bc19685 (导航栏)
     }
 
     /**

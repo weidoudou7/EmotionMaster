@@ -201,4 +201,18 @@ public class AIRoleController {
         public void setDescription(String description) { this.description = description; }
     }
 
+    /**
+     * 根据ID获取AI角色
+     * GET /ai/role/{id}
+     */
+    @GetMapping("/{id}")
+    public ApiResponse<AiRole> getAiRoleById(@PathVariable("id") Integer id) {
+        AiRole aiRole = aiRoleMapper.selectById(id);
+        if (aiRole != null) {
+            return ApiResponse.success("查询成功", aiRole);
+        } else {
+            return ApiResponse.error("未找到该AI角色");
+        }
+    }
+
 }

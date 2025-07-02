@@ -26,7 +26,6 @@ public class ChatHistoryController {
     }
 
     /**
-     *
      * @param type 传入AI对话类型
      * @return 返回对话ID列表
      */
@@ -37,18 +36,17 @@ public class ChatHistoryController {
     }
 
     /**
-     *
-     * @param type 传入AI对话类型
+     * @param type   传入AI对话类型
      * @param chatId 传入AI对话ID
      * @return 返回消息（角色+内容）列表
      */
     @GetMapping(value = "{type}/{chatId}")
     public List<MessageVO> getHistory(@PathVariable("type") String type, @PathVariable("chatId") String chatId) {
-        List<Message> history = chatMemory.get(chatId+"_"+type);
-        if(history == null) {
+        List<Message> history = chatMemory.get(chatId + "_" + type);
+        if (history == null) {
             return List.of();
         }
-        return history.stream().map(m->new MessageVO(m)).toList();
+        return history.stream().map(m -> new MessageVO(m)).toList();
     }
 
     /**
@@ -102,17 +100,37 @@ public class ChatHistoryController {
         private String moodTag;
 
         // Getters and Setters
-        public Integer getUserId() { return userId; }
-        public void setUserId(Integer userId) { this.userId = userId; }
+        public Integer getUserId() {
+            return userId;
+        }
 
-        public Integer getAiRoleId() { return aiRoleId; }
-        public void setAiRoleId(Integer aiRoleId) { this.aiRoleId = aiRoleId; }
+        public void setUserId(Integer userId) {
+            this.userId = userId;
+        }
 
-        public String getTitle() { return title; }
-        public void setTitle(String title) { this.title = title; }
+        public Integer getAiRoleId() {
+            return aiRoleId;
+        }
 
-        public String getMoodTag() { return moodTag; }
-        public void setMoodTag(String moodTag) { this.moodTag = moodTag; }
+        public void setAiRoleId(Integer aiRoleId) {
+            this.aiRoleId = aiRoleId;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
+        }
+
+        public String getMoodTag() {
+            return moodTag;
+        }
+
+        public void setMoodTag(String moodTag) {
+            this.moodTag = moodTag;
+        }
     }
 
     /**
@@ -132,3 +150,4 @@ public class ChatHistoryController {
         }
     }
 }
+

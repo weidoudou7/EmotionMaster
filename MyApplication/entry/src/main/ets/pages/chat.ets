@@ -44,10 +44,10 @@ export struct Chat {
   ];
 
   @State private inputText: string = '';
-  @State private bgImage: Resource = $r('app.media.planet1'); // TODO: 替换为实际的 chat_bg 图片资源
+  @State private bgImage: string | Resource = $r('app.media.planet1'); // 支持网络图片和本地资源
   @State private agentName: string = '治愈天使'; // 默认设置为治愈天使
   @State private agentSubInfo: string = '5.7万 连接者'; // 智能体副信息
-  @State private agentAvatar: Resource = $r('app.media.splash'); // TODO: 替换为实际的 agent_avatar 图片资源
+  @State private agentAvatar: string | Resource = $r('app.media.splash'); // TODO: 替换为实际的 agent_avatar 图片资源
 
   @State private scrollOffset: number = 0; // 滚动偏移量
   @State private isHeaderCompact: boolean = false; // 顶部栏是否紧凑
@@ -100,7 +100,6 @@ export struct Chat {
       this.isFromCreateFigure = params.isFromCreateFigure || false;
       this.description = params.description || '';
       this.createdAiRoleId = params.createdAiRoleId || 0; // 新增
-      
       // 添加调试日志
       console.log('=== Chat页面接收到的参数 ===');
       console.log('figureImageUrl:', this.figureImageUrl);
@@ -110,12 +109,9 @@ export struct Chat {
       console.log('description:', this.description);
       console.log('createdAiRoleId:', this.createdAiRoleId);
       console.log('========================');
-      
-      // 如果是从CreateFigure页面来的，更新聊天信息
       if (this.isFromCreateFigure && this.figureImageUrl) {
         this.agentName = this.figureName;
         this.agentSubInfo = `${this.figureType}风格角色`;
-        
         // 添加欢迎消息
         const welcomeMessage: ChatMessage = {
           id: this.chatData.length + 1,
@@ -125,6 +121,13 @@ export struct Chat {
           time: new Date().toLocaleTimeString().slice(0, 5)
         };
         this.chatData = [welcomeMessage, ...this.chatData];
+        // 只有从CreateFigure页面来的才创建会话记录
+        this.createConversationRecord();
+      } else if (this.figureName && this.figureImageUrl) {
+        this.agentName = this.figureName;
+        this.agentSubInfo = `${this.figureType}风格角色`;
+        this.bgImage = this.figureImageUrl; // 允许网络图片作为背景
+        this.agentAvatar = this.figureImageUrl; // 头像也用同一图片
       }
     } else {
       // 如果没有传递参数，使用治愈天使作为默认设置
@@ -148,6 +151,8 @@ export struct Chat {
       this.chatData = [welcomeMessage, ...this.chatData];
       
       console.log('治愈天使默认设置完成');
+      // 只有默认治愈天使时才创建会话记录
+      this.createConversationRecord();
     }
     
     // 新增：自动创建对话记录
@@ -231,16 +236,10 @@ export struct Chat {
 
     try {
       let aiResponse: string;
-      
-      // 如果是从CreateFigure页面来的且有描述词，使用featured_chat接口
-      if (this.isFromCreateFigure && this.description) {
+
         console.log('使用featured_chat接口，描述词:', this.description);
         aiResponse = await ApiService.featuredChat(userMessage, this.chatId, this.description);
-      } else {
-        console.log('使用普通AI聊天接口，figureType:', this.figureType || 'default');
-        // 否则使用普通的AI聊天接口
-        aiResponse = await ApiService.chatWithAI(userMessage, this.chatId, this.figureType || 'default');
-      }
+
 
       // 添加AI回复消息
       const aiMessage: ChatMessage = {
@@ -290,7 +289,7 @@ export struct Chat {
 
       // 准备对话信息，符合CreateConversationRequest接口
       const conversationData: CreateConversationRequest = {
-        userId: 372, //todo 默认用户ID，实际应用中应该从用户登录信息获取
+        userId: 405, //todo 默认用户ID，实际应用中应该从用户登录信息获取
         aiRoleId: this.isFromCreateFigure && this.createdAiRoleId > 0 ? this.createdAiRoleId : 1, // 用新角色ID
         title: `与${this.agentName}的对话`,
         moodTag: 'normal' // 默认心情标签

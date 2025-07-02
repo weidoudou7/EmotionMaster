@@ -1,3 +1,4 @@
+import router from '@ohos.router'
 import { fetchWeather } from '../model/WeatherService';
 import { ApiService } from '../service/apiservice';
 import { Conversation, AiRole } from '../common/types';
@@ -176,7 +177,7 @@ export struct MessagePage {
         ForEach(this.conversations, (conv: Conversation, idx: number) => {
           ListItem() {
             Row() {
-              Image(this.aiRoleMap[conv.aiRoleId]?.avatarUrl ?? $r('app.media.splash'))
+              Image(this.aiRoleMap[conv.aiRoleId]?.avatarUrl )
                 .width(48)
                 .height(48)
                 .borderRadius(24)
@@ -205,6 +206,21 @@ export struct MessagePage {
             .height(64)
             .backgroundColor('rgba(34,34,34,0)')
           }
+          .onClick(() => {
+            const aiRole = this.aiRoleMap[conv.aiRoleId];
+            console.log('角色ID:', aiRole.id);
+            router.pushUrl({
+              url: 'pages/chat',
+              params: {
+                figureImageUrl: aiRole?.avatarUrl ,
+                figureType: aiRole?.roleType ,
+                figureName: aiRole?.roleName ,
+                isFromCreateFigure: false,
+                description: aiRole?.roleDescription ,
+                createdAiRoleId: aiRole?.id
+              }
+            });
+          })
         }, (conv: Conversation) => conv.id.toString())
       }
       .width('100%')
