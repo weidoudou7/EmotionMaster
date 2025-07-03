@@ -30,13 +30,13 @@ public class FeaturedPersonController {
     /**
      * 获取所有特色人物列表
      * HTTP方法: GET
-     * 请求路径: /api/featured-people
+     * 请求路径: /api/featured-people/all
      * @return 包含所有特色人物DTO的列表，HTTP状态码200
      */
     @GetMapping("/all")
-    public ResponseEntity<List<AiRole>> getAllFeaturedPersons() {
-        List<AiRole> dtos = service.getAllFeaturedPersons();
-        return ResponseEntity.ok(dtos);
+    public ResponseEntity<List<AiRole>> getAllRoles() {
+        List<AiRole> roles = service.getAllFeaturedPersons(); // 假设service方法返回AiRole列表
+        return ResponseEntity.ok(roles);
     }
 
     /**
@@ -47,25 +47,27 @@ public class FeaturedPersonController {
      * @return 若存在则返回特色人物DTO和HTTP 200状态码，否则返回HTTP 404状态码
      */
     @GetMapping("/{id}")
-    public ResponseEntity<FeaturedPersonDto> getFeaturedPersonById(@PathVariable Long id) {
-        return service.getFeaturedPersonById(id)
+    public ResponseEntity<AiRole> getRoleById(@PathVariable Long id) {
+        return service.getRoleById(id) // 需要在service中添加对应方法
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
+
     /**
      * 创建新的特色人物
      * HTTP方法: POST
-     * 请求路径: /api/featured-people
+     * 请求路径: /api/featured-people/create
      * 请求体: 包含特色人物信息的JSON
-     * @param dto 特色人物数据传输对象
+     * @param role 特色人物数据传输对象
      * @return 返回新创建的特色人物DTO和HTTP 201状态码
      */
     @PostMapping("/create")
-    public ResponseEntity<FeaturedPersonDto> createFeaturedPerson(@RequestBody FeaturedPersonDto dto) {
-        FeaturedPersonDto createdDto = service.createFeaturedPerson(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdDto);
+    public ResponseEntity<AiRole> createRole(@RequestBody AiRole role) {
+        AiRole createdRole = service.createRole(role); // 需要在service中添加对应方法
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdRole);
     }
+
 
     /**
      * 更新现有特色人物
@@ -73,15 +75,15 @@ public class FeaturedPersonController {
      * 请求路径: /api/featured-people/{id}
      * 请求体: 包含更新信息的特色人物JSON
      * @param id 要更新的特色人物ID
-     * @param dto 包含更新信息的特色人物DTO
+     * @param role 包含更新信息的特色人物DTO
      * @return 若存在则返回更新后的特色人物DTO和HTTP 200状态码，否则返回HTTP 404状态码
      */
     @PutMapping("/{id}")
-    public ResponseEntity<FeaturedPersonDto> updateFeaturedPerson(
+    public ResponseEntity<AiRole> updateRole(
             @PathVariable Long id,
-            @RequestBody FeaturedPersonDto dto
+            @RequestBody AiRole role
     ) {
-        return service.updateFeaturedPerson(id, dto)
+        return service.updateRole(id, role) // 需要在service中添加对应方法
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -94,8 +96,8 @@ public class FeaturedPersonController {
      * @return 若删除成功返回HTTP 204状态码，若不存在则返回HTTP 404状态码
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteFeaturedPerson(@PathVariable Long id) {
-        boolean deleted = service.deleteFeaturedPerson(id);
+    public ResponseEntity<Void> deleteRole(@PathVariable Long id) {
+        boolean deleted = service.deleteRole(id); // 需要在service中添加对应方法
         return deleted ?
                 ResponseEntity.noContent().build() :
                 ResponseEntity.notFound().build();

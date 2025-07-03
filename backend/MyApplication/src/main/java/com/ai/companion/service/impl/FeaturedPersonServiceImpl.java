@@ -1,15 +1,14 @@
 package com.ai.companion.service.impl;
 
-import com.ai.companion.dto.FeaturedPersonDto;
 import com.ai.companion.entity.AiRole;
 import com.ai.companion.mapper.AiRoleMapper;
 import com.ai.companion.service.FeaturedPersonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class FeaturedPersonServiceImpl implements FeaturedPersonService {
@@ -23,92 +22,61 @@ public class FeaturedPersonServiceImpl implements FeaturedPersonService {
 
     @Override
     public List<AiRole> getAllFeaturedPersons() {
-        List<AiRole> roles = aiRoleMapper.selectAll();
-        return roles;
+        // 直接返回查询到的所有AiRole实体
+        return aiRoleMapper.selectAll();
     }
 
     @Override
-    public Optional<FeaturedPersonDto> getFeaturedPersonById(Long id) {
+    public Optional<AiRole> getRoleById(Long id) {
+        // 注意类型转换：Long转Integer（因为实体类id是Integer类型）
         AiRole role = aiRoleMapper.selectById(id.intValue());
-        return Optional.ofNullable(role).map(this::convertToDto);
+        return Optional.ofNullable(role);
     }
 
     @Override
-    public FeaturedPersonDto createFeaturedPerson(FeaturedPersonDto dto) {
-        AiRole role = new AiRole();
-        role.setRoleName(dto.getName());
-        role.setRoleDescription(dto.getDesc());
-        role.setAvatarUrl(dto.getImage());
-        role.setRoleAuthor(dto.getAuthorName());
-        role.setViewCount(Integer.parseInt(dto.getViews().replaceAll("[^0-9]", "")));
-        //role.setCreateTime(new java.util.Date());
-
-        aiRoleMapper.insertAiRole(role);
-
-        // 获取插入后的ID
-        if (role.getId() > 0) {
-            return convertToDto(role);
+    public AiRole createRole(AiRole role) {
+        // 设置默认创建时间（如果前端未传递）
+        if (role.getCreatedAt() == null) {
+            role.setCreatedAt(LocalDateTime.now());
         }
-
-        throw new RuntimeException("创建特色人物失败");
+        // 插入数据库
+        aiRoleMapper.insertAiRole(role);
+        // 返回包含自增ID的实体
+        return role;
     }
 
     @Override
-    public Optional<FeaturedPersonDto> updateFeaturedPerson(Long id, FeaturedPersonDto dto) {
-        AiRole role = aiRoleMapper.selectById(id.intValue());
-        if (role == null) {
+    public Optional<AiRole> updateRole(Long id, AiRole role) {
+        // 先查询原实体是否存在
+        AiRole existingRole = aiRoleMapper.selectById(id.intValue());
+        if (existingRole == null) {
             return Optional.empty();
         }
-
-        role.setRoleName(dto.getName());
-        role.setRoleDescription(dto.getDesc());
-        role.setAvatarUrl(dto.getImage());
-        role.setRoleAuthor(dto.getAuthorName());
-        role.setViewCount(Integer.parseInt(dto.getViews().replaceAll("[^0-9]", "")));
-
+        // 确保更新的是指定ID的实体（防止前端传递错误ID）
+        role.setId(id.intValue());
+        // 保留原创建时间（避免被覆盖）
+        role.setCreatedAt(existingRole.getCreatedAt());
+        // 执行更新
         aiRoleMapper.updateAiRole(role);
-        return Optional.of(convertToDto(role));
+        // 返回更新后的实体
+        return Optional.of(aiRoleMapper.selectById(id.intValue()));
     }
 
     @Override
-    public boolean deleteFeaturedPerson(Long id) {
+    public boolean deleteRole(Long id) {
+        // 执行删除并返回结果
         int result = aiRoleMapper.deleteAiRole(id.intValue());
         return result > 0;
     }
 
-    private FeaturedPersonDto convertToDto(AiRole role) {
-        FeaturedPersonDto dto = new FeaturedPersonDto();
-        dto.setId(Long.valueOf(role.getId()));
-        dto.setImage(role.getAvatarUrl());
-        dto.setName(role.getRoleName());
-        dto.setDesc(role.getRoleDescription());
-        dto.setAuthorName(role.getRoleAuthor());
-        // 注意：这里需要从用户表获取作者头像，暂时使用默认值
-        //dto.setAuthorAvatar("https://img.zcool.cn/community/01b6c95d5b2e2fa801216518a8e3e2.jpg");
-        //dto.setViews(String.valueOf(role.getViewCount()));
-
-        // 格式化浏览量（添加单位）
-        int viewCount = role.getViewCount();
-        if (viewCount >= 10000) {
-            dto.setViews(String.format("%.1f万", viewCount / 10000.0));
-        } else {
-            dto.setViews(String.valueOf(viewCount));
-        }
-
-        return dto;
-    }
-
-    // 添加到 FeaturedPersonServiceImpl 类中
-    public List<FeaturedPersonDto> getFeaturedPersonsByType(String type) {
+    @Override
+    public List<AiRole> getRolesByType(String type) {
+        // 按角色类型查询并返回结果
         List<AiRole> roles = aiRoleMapper.selectByRoleType(type);
-
-        // 限制数量为9个
+        // 限制最多返回9条数据
         if (roles.size() > 9) {
-            roles = roles.subList(0, 9);
+            return roles.subList(0, 9);
         }
-
-        return roles.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        return roles;
     }
 }
