@@ -3,13 +3,6 @@ import http from '@ohos.net.http';
 import { it } from '@ohos/hypium';
 
 interface FeaturedPerson {
-//   id: number;
-//   image: string;
-//   name: string;
-//   desc: string;
-//   authorName: string;
-//   authorAvatar: string;
-//   views: string;
 
    id: number | null;
    userId: number | null;
@@ -23,12 +16,12 @@ interface FeaturedPerson {
    createdAt: string; // ISO字符串
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: number;
-}
+// interface ApiResponse<T> {
+//   success: boolean;
+//   message: string;
+//   data: T;
+//   timestamp: number;
+// }
 
 @Entry
 @Component
@@ -48,7 +41,7 @@ export struct FeaturedList {
   async fetchFeaturedPersons() {
     this.isLoading = true;
     this.errorMessage = '';
-    this.persons = [];//清空现有数据
+    //this.persons = [];//清空现有数据
 
     try {
       console.log("开始请求特色人物数据...");
@@ -64,23 +57,18 @@ export struct FeaturedList {
           connectTimeout: 30000 // 30秒连接超时
         }
       );
-      console.log("API响应状态码:", response.responseCode);
-      // console.log("API原始响应:", response.result);
-      //
-      // console.log(response.result.toString());
-      console.log("70");
+
+      // 日志1：打印完整响应状态和原始结果
+      console.log("响应状态码:", response.responseCode);
+      console.log("原始响应结果:", response.result); // 关键：确认返回的是否是数组字符串
 
       if (response.responseCode === 200 && typeof response.result === 'string') {
         // 显式指定类型，解决any报错
-        const result = JSON.parse(response.result) as ApiResponse<FeaturedPerson[]>;
+        const result = JSON.parse(response.result) as FeaturedPerson[];
         console.log("75");
-        console.log(result.data.toString())
-        if (result.success && Array.isArray(result.data)) {
-          this.persons = result.data;
-          console.log(this.persons.toString())
-        } else {
-          this.errorMessage = "数据加载失败: " + result.message;
-        }
+        //console.log(result.data.toString())
+        this.persons = result; // 直接使用数组
+
       } else {
         this.errorMessage = "请求失败，状态码: " + response.responseCode;
       }
