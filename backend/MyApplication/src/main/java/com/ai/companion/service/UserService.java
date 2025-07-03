@@ -18,6 +18,13 @@ public interface UserService {
     UserInfoVO getUserInfo(String userUID);
     
     /**
+     * 根据用户ID获取用户信息
+     * @param userId 用户ID
+     * @return 用户信息
+     */
+    UserInfoVO getUserInfoById(Integer userId);
+
+    /**
      * 更新用户信息
      * @param userUID 用户UID
      * @param request 更新请求
@@ -84,7 +91,4 @@ public interface UserService {
      * @return 影响的行数
      */
     int insertUser(User user);
-
-    UserInfoVO createOrLoginUserByEmail(String email);
-
 } 

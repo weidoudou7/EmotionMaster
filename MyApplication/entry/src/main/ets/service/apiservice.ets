@@ -1,6 +1,6 @@
 import { globalUserData } from '../models/userdata';
 import { Config } from '../common/config';
-import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult, CreateAiRoleRequest, GenerateRoleNameRequest, CreateConversationRequest, Conversation, Message, CreateMessageRequest } from '../common/types';
+import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult, CreateAiRoleRequest, GenerateRoleNameRequest, CreateConversationRequest, Conversation, Message, CreateMessageRequest,CommentItem } from '../common/types';
 import {  AiRole } from '../common/types';
 import http from '@ohos.net.http';
 
@@ -23,6 +23,60 @@ interface AIArticleResponse {
   content: string;
 }
 
+// 评论列表返回类型
+interface CommentListResponse {
+  comments: CommentItem[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
+}
+
+// 回复列表返回类型
+interface ReplyListResponse {
+  replies: CommentItem[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
+}
+
+// 发布评论返回类型
+interface PublishCommentResponse {
+  commentId: number;
+  message: string;
+}
+
+// 回复评论返回类型
+interface ReplyCommentResponse {
+  replyId: number;
+  message: string;
+}
+
+// 点赞操作返回类型
+interface LikeOperationResponse {
+  success: boolean;
+  message: string;
+}
+
+// 删除评论返回类型
+interface DeleteCommentResponse {
+  success: boolean;
+  message: string;
+}
+
+// 检查点赞状态返回类型
+interface CheckLikeStatusResponse {
+  isLiked: boolean;
+}
+
+// 回复评论请求体接口
+interface ReplyCommentRequestBody {
+  aiRoleId: number;
+  userId: number;
+  content: string;
+  rootCommentId: number;
+  toCommentId?: number;
+}
+
 /**
  * API服务类
  */
@@ -36,11 +90,8 @@ export class ApiService {
     options: HttpRequestOptions = {}
   ): Promise<ApiResponse<T>> {
     try {
-      console.log('🌐 request 方法开始，URL:', url);
-      console.log('🌐 请求选项:', JSON.stringify(options));
       
       const httpRequest = http.createHttp();
-      console.log('🌐 HTTP请求对象创建成功');
       
       // 设置请求头
       const headers: Record<string, string> = {
@@ -52,8 +103,6 @@ export class ApiService {
       Object.keys(customHeader).forEach(key => {
         headers[key] = customHeader[key];
       });
-      
-      console.log('🌐 请求头:', JSON.stringify(headers));
 
       // 设置请求选项
       const requestOptions: http.HttpRequestOptions = {
@@ -67,14 +116,10 @@ export class ApiService {
       if (options.body) {
         requestOptions.extraData = options.body;
       }
-      
-      console.log('🌐 开始发送HTTP请求...');
+
       const response = await httpRequest.request(url, requestOptions);
-      console.log('🌐 HTTP请求完成，响应码:', response.responseCode);
-      console.log('🌐 响应结果:', response.result.toString());
-      
+
       httpRequest.destroy();
-      console.log('🌐 HTTP请求对象已销毁');
 
       if (response.responseCode !== 200) {
         throw new Error(`HTTP error! status: ${response.responseCode}`);
@@ -122,10 +167,8 @@ export class ApiService {
       }
       if (error instanceof Error) {
         throw error;
-      } else if (typeof error === 'string') {
-        throw new Error(error);
       } else {
-        throw new Error('Unknown error: ' + JSON.stringify(error));
+        throw new Error('未知错误: ' + JSON.stringify(error));
       }
     }
   }
@@ -206,7 +249,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw error;
       } else {
-        throw new Error('Avatar upload failed');
+        throw new Error('未知错误: ' + JSON.stringify(error));
       }
     }
   }
@@ -304,7 +347,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw new Error(`AI聊天失败: ${error.message}`);
       } else {
-        throw new Error('AI聊天失败: 未知错误');
+        throw new Error('未知错误: ' + JSON.stringify(error));
       }
     }
   }
@@ -508,15 +551,33 @@ export class ApiService {
    * 创建动态
    */
   static async createDynamic(userUID: string, dynamicData: CreateDynamicRequest): Promise<Dynamic> {
-    const response = await ApiService.request<Dynamic>(`${API_BASE_URL}/dynamic/create/${userUID}`, {
-      method: http.RequestMethod.POST,
-      body: JSON.stringify(dynamicData)
-    });
+    console.log('🌐 ApiService.createDynamic 开始调用');
+    console.log('🌐 userUID:', userUID);
+    console.log('🌐 dynamicData:', JSON.stringify(dynamicData));
+    console.log('🌐 请求URL:', `${API_BASE_URL}/dynamic/create/${userUID}`);
 
-    if (response.success) {
-      return response.data;
-    } else {
-      throw new Error(response.message || 'Failed to create dynamic');
+    try {
+      const response = await ApiService.request<Dynamic>(`${API_BASE_URL}/dynamic/create/${userUID}`, {
+        method: http.RequestMethod.POST,
+        body: JSON.stringify(dynamicData)
+      });
+
+      console.log('🌐 API响应:', JSON.stringify(response));
+
+      if (response.success) {
+        console.log('✅ 创建动态成功:', JSON.stringify(response.data));
+        return response.data;
+      } else {
+        console.log('❌ 创建动态失败:', response.message);
+        throw new Error(response.message || 'Failed to create dynamic');
+      }
+    } catch (error) {
+      console.error('❌ ApiService.createDynamic 异常:', error);
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error('未知错误: ' + JSON.stringify(error));
+      }
     }
   }
 
@@ -590,10 +651,10 @@ export class ApiService {
   }
 
   /**
-   * 获取所有公开动态
+   * 获取所有公开动态（分页）
    */
-  static async getAllPublicDynamics(): Promise<Dynamic[]> {
-    const response = await ApiService.request<Dynamic[]>(`${API_BASE_URL}/dynamic/public`);
+  static async getAllPublicDynamics(page: number = 1, size: number = 10): Promise<Dynamic[]> {
+    const response = await ApiService.request<Dynamic[]>(`${API_BASE_URL}/dynamic/public?page=${page}&size=${size}`);
     if (response.success) {
       return response.data;
     } else {
@@ -609,8 +670,35 @@ export class ApiService {
     if (type === 'deep') url = `${API_BASE_URL}/ai/article/deep-analysis?prompt=${encodeURIComponent(prompt)}`;
     if (type === 'tech') url = `${API_BASE_URL}/ai/article/tech-enjoy?prompt=${encodeURIComponent(prompt)}`;
     if (type === 'industry') url = `${API_BASE_URL}/ai/article/industry-observation?prompt=${encodeURIComponent(prompt)}`;
-    const response = await ApiService.request<AIArticleResponse>(url, { method: http.RequestMethod.GET });
-    return response.data.content;
+
+    // 单独设置5分钟超时，方式同generateFigure
+    const httpRequest = http.createHttp();
+    const requestOptions: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET,
+      header: {
+        'Content-Type': 'application/json'
+      },
+      readTimeout: 300000, // 5分钟超时
+      connectTimeout: 30000 // 30秒连接超时
+    };
+    const response = await httpRequest.request(url, requestOptions);
+    httpRequest.destroy();
+    if (response.responseCode !== 200) {
+      throw new Error(`HTTP error! status: ${response.responseCode}`);
+    }
+    let result: ApiResponse<AIArticleResponse>;
+    try {
+      result = JSON.parse(response.result.toString());
+      console.log('🌐 JSON解析成功:', result);
+    } catch (e) {
+      console.error('🌐 API返回内容不是标准JSON，原始内容如下:');
+      console.error(response.result.toString());
+      throw new Error('后端返回内容不是标准JSON，无法解析');
+    }
+    if (!result.success) {
+      throw new Error(result.message || 'AI生成失败');
+    }
+    return result.data.content;
   }
 
   /**
@@ -912,10 +1000,10 @@ export class ApiService {
     try {
       console.log('💬 ApiService.saveMessage 开始保存消息:', messageData);
       console.log('💬 API_BASE_URL:', API_BASE_URL);
-      
+
       const url = `${API_BASE_URL}/ai/message/save`;
       console.log('💬 请求URL:', url);
-      
+
       const requestBody: CreateMessageRequest = {
         conversationId: messageData.conversationId,
         senderType: messageData.senderType,
@@ -924,16 +1012,16 @@ export class ApiService {
         sentimentScore: messageData.sentimentScore,
         topicTag: messageData.topicTag
       };
-      
+
       console.log('💬 请求体:', JSON.stringify(requestBody));
-      
+
       const response = await ApiService.request<Message>(url, {
         method: http.RequestMethod.POST,
         body: JSON.stringify(requestBody)
       });
-      
+
       console.log('💬 API响应:', response);
-      
+
       if (response.success) {
         console.log('✅ 消息保存成功，返回数据:', response.data);
         return response.data;
@@ -945,7 +1033,7 @@ export class ApiService {
       console.error('❌ 保存消息失败:', error);
       console.error('❌ 错误类型:', typeof error);
       console.error('❌ 错误详情:', JSON.stringify(error));
-      
+
       if (error instanceof Error) {
         console.error('❌ 错误消息:', error.message);
         console.error('❌ 错误堆栈:', error.stack);
@@ -964,14 +1052,14 @@ export class ApiService {
       console.log('💬 ApiService.getMessagesByConversationId 开始获取消息列表');
       console.log('💬 会话ID:', conversationId);
       console.log('💬 API_BASE_URL:', API_BASE_URL);
-      
+
       const url = `${API_BASE_URL}/ai/message/list?conversationId=${conversationId}`;
       console.log('💬 请求URL:', url);
-      
+
       const response = await ApiService.request<Message[]>(url);
-      
+
       console.log('💬 API响应:', response);
-      
+
       if (response.success) {
         console.log('✅ 获取消息列表成功，返回数据:', response.data);
         return response.data;
@@ -983,7 +1071,7 @@ export class ApiService {
       console.error('❌ 获取消息列表失败:', error);
       console.error('❌ 错误类型:', typeof error);
       console.error('❌ 错误详情:', JSON.stringify(error));
-      
+
       if (error instanceof Error) {
         console.error('❌ 错误消息:', error.message);
         console.error('❌ 错误堆栈:', error.stack);
@@ -1003,14 +1091,14 @@ export class ApiService {
       console.log('💬 用户ID:', userId);
       console.log('💬 AI角色ID:', aiRoleId);
       console.log('💬 API_BASE_URL:', API_BASE_URL);
-      
+
       const url = `${API_BASE_URL}/ai/history/conversation/find?userId=${userId}&aiRoleId=${aiRoleId}`;
       console.log('💬 请求URL:', url);
-      
+
       const response = await ApiService.request<Conversation>(url);
-      
+
       console.log('💬 API响应:', response);
-      
+
       if (response.success) {
         console.log('✅ 查找对话成功，返回数据:', response.data);
         return response.data;
@@ -1027,7 +1115,7 @@ export class ApiService {
       console.error('❌ 查找对话失败:', error);
       console.error('❌ 错误类型:', typeof error);
       console.error('❌ 错误详情:', JSON.stringify(error));
-      
+
       if (error instanceof Error) {
         console.error('❌ 错误消息:', error.message);
         console.error('❌ 错误堆栈:', error.stack);
@@ -1047,17 +1135,17 @@ export class ApiService {
       console.log('💬 用户ID:', userId);
       console.log('💬 AI角色ID:', aiRoleId);
       console.log('💬 标题:', title);
-      
+
       // 首先尝试查找现有对话
       const existingConversation = await ApiService.findConversationByUserAndRole(userId, aiRoleId);
-      
+
       if (existingConversation) {
         console.log('✅ 找到现有对话:', existingConversation);
         return existingConversation;
       }
-      
+
       console.log('📝 未找到现有对话，开始创建新对话...');
-      
+
       // 如果没有找到，创建新对话
       const conversationData: CreateConversationRequest = {
         userId: userId,
@@ -1065,11 +1153,11 @@ export class ApiService {
         title: title || `与AI角色的对话`,
         moodTag: 'normal'
       };
-      
+
       const newConversation = await ApiService.createConversation(conversationData);
       console.log('✅ 创建新对话成功:', newConversation);
       return newConversation;
-      
+
     } catch (error) {
       console.error('❌ 查找或创建对话失败:', error);
       if (error instanceof Error) {
@@ -1088,16 +1176,16 @@ export class ApiService {
       console.log('💬 ApiService.analyzeConversationEmotion 开始分析对话情绪');
       console.log('💬 会话ID:', conversationId);
       console.log('💬 API_BASE_URL:', API_BASE_URL);
-      
+
       const url = `${API_BASE_URL}/ai/analyze-emotion?conversationId=${conversationId}`;
       console.log('💬 请求URL:', url);
-      
+
       const response = await ApiService.request<string>(url, {
         method: http.RequestMethod.POST
       });
-      
+
       console.log('💬 API响应:', response);
-      
+
       if (response.success) {
         console.log('✅ 情绪分析成功，返回数据:', response.data);
         return response.data;
@@ -1109,7 +1197,7 @@ export class ApiService {
       console.error('❌ 情绪分析失败:', error);
       console.error('❌ 错误类型:', typeof error);
       console.error('❌ 错误详情:', JSON.stringify(error));
-      
+
       if (error instanceof Error) {
         console.error('❌ 错误消息:', error.message);
         console.error('❌ 错误堆栈:', error.stack);
@@ -1128,16 +1216,16 @@ export class ApiService {
       console.log('💬 ApiService.generateReplySuggestions 开始生成回复建议');
       console.log('💬 会话ID:', conversationId);
       console.log('💬 API_BASE_URL:', API_BASE_URL);
-      
+
       const url = `${API_BASE_URL}/ai/generate-replies?conversationId=${conversationId}`;
       console.log('💬 请求URL:', url);
-      
+
       const response = await ApiService.request<string[]>(url, {
         method: http.RequestMethod.POST
       });
-      
+
       console.log('💬 API响应:', response);
-      
+
       if (response.success) {
         console.log('✅ 回复建议生成成功，返回数据:', response.data);
         return response.data;
@@ -1149,7 +1237,7 @@ export class ApiService {
       console.error('❌ 回复建议生成失败:', error);
       console.error('❌ 错误类型:', typeof error);
       console.error('❌ 错误详情:', JSON.stringify(error));
-      
+
       if (error instanceof Error) {
         console.error('❌ 错误消息:', error.message);
         console.error('❌ 错误堆栈:', error.stack);
@@ -1159,6 +1247,142 @@ export class ApiService {
       }
     }
   }
+
+
+  // ==================== 评论系统接口 ====================
+
+  /**
+   * 获取AI角色的评论列表
+   */
+  static async getCommentsByAiRoleId(aiRoleId: number, page: number = 1, size: number = 10): Promise<CommentListResponse> {
+    const response = await ApiService.request<CommentListResponse>(`${API_BASE_URL}/comments/ai-role/${aiRoleId}?page=${page}&size=${size}`);
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '获取评论列表失败');
+    }
+  }
+
+  /**
+   * 获取评论的回复列表
+   */
+  static async getRepliesByRootCommentId(rootCommentId: number, page: number = 1, size: number = 10): Promise<ReplyListResponse> {
+    const response = await ApiService.request<ReplyListResponse>(`${API_BASE_URL}/comments/${rootCommentId}/replies?page=${page}&size=${size}`);
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '获取回复列表失败');
+    }
+  }
+
+  /**
+   * 发布评论
+   */
+  static async publishComment(aiRoleId: number, userId: number, content: string): Promise<PublishCommentResponse> {
+    const response = await ApiService.request<PublishCommentResponse>(`${API_BASE_URL}/comments/publish`, {
+      method: http.RequestMethod.POST,
+      body: JSON.stringify({
+        aiRoleId: aiRoleId,
+        userId: userId,
+        content: content
+      })
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '发布评论失败');
+    }
+  }
+
+  /**
+   * 回复评论
+   */
+  static async replyComment(aiRoleId: number, userId: number, content: string, rootCommentId: number, toCommentId?: number): Promise<ReplyCommentResponse> {
+    const requestBody: ReplyCommentRequestBody = {
+      aiRoleId: aiRoleId,
+      userId: userId,
+      content: content,
+      rootCommentId: rootCommentId
+    };
+
+    if (toCommentId) {
+      requestBody.toCommentId = toCommentId;
+    }
+
+    const response = await ApiService.request<ReplyCommentResponse>(`${API_BASE_URL}/comments/reply`, {
+      method: http.RequestMethod.POST,
+      body: JSON.stringify(requestBody)
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '发布回复失败');
+    }
+  }
+
+  /**
+   * 点赞评论
+   */
+  static async likeComment(commentId: number, userId: number): Promise<LikeOperationResponse> {
+    const response = await ApiService.request<LikeOperationResponse>(`${API_BASE_URL}/comments/${commentId}/like?userId=${userId}`, {
+      method: http.RequestMethod.POST
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '点赞失败');
+    }
+  }
+
+  /**
+   * 取消点赞评论
+   */
+  static async unlikeComment(commentId: number, userId: number): Promise<LikeOperationResponse> {
+    const response = await ApiService.request<LikeOperationResponse>(`${API_BASE_URL}/comments/${commentId}/like?userId=${userId}`, {
+      method: http.RequestMethod.DELETE
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '取消点赞失败');
+    }
+  }
+
+  /**
+   * 删除评论
+   */
+  static async deleteComment(commentId: number, userId: number): Promise<DeleteCommentResponse> {
+    const response = await ApiService.request<DeleteCommentResponse>(`${API_BASE_URL}/comments/${commentId}?userId=${userId}`, {
+      method: http.RequestMethod.DELETE
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '删除评论失败');
+    }
+  }
+
+  /**
+   * 检查用户是否已点赞评论
+   */
+  static async checkUserLikedComment(commentId: number, userId: number): Promise<CheckLikeStatusResponse> {
+    const response = await ApiService.request<CheckLikeStatusResponse>(`${API_BASE_URL}/comments/${commentId}/liked?userId=${userId}`);
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '检查点赞状态失败');
+    }
+  }
 }
+
+
 
 

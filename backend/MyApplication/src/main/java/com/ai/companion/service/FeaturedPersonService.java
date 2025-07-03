@@ -1,6 +1,7 @@
 package com.ai.companion.service;
 
 import com.ai.companion.dto.FeaturedPersonDto;
+import com.ai.companion.entity.AiRole;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,34 +17,37 @@ public interface FeaturedPersonService {
      * 获取所有特色人物列表
      * @return 包含所有特色人物信息的DTO列表
      */
-    List<FeaturedPersonDto> getAllFeaturedPersons();
+    List<AiRole> getAllFeaturedPersons();
 
     /**
      * 根据ID获取单个特色人物信息
      * @param id 特色人物唯一标识
      * @return 包含特色人物信息的DTO对象（如果存在）
      */
-    Optional<FeaturedPersonDto> getFeaturedPersonById(Long id);
+    Optional<AiRole> getRoleById(Long id);
 
     /**
      * 创建新的特色人物
-     * @param dto 包含特色人物信息的DTO对象
+     * @param role 包含特色人物信息的DTO对象
      * @return 创建成功后的特色人物DTO对象，包含生成的ID
      */
-    FeaturedPersonDto createFeaturedPerson(FeaturedPersonDto dto);
+    AiRole createRole(AiRole role);
 
     /**
      * 更新现有特色人物信息
      * @param id 要更新的特色人物ID
-     * @param dto 包含更新信息的DTO对象
+     * @param role 包含更新信息的DTO对象
      * @return 更新后的特色人物DTO对象（如果存在）
      */
-    Optional<FeaturedPersonDto> updateFeaturedPerson(Long id, FeaturedPersonDto dto);
+    Optional<AiRole> updateRole(Long id, AiRole role);
 
     /**
      * 根据ID删除特色人物
      * @param id 要删除的特色人物ID
      * @return 删除操作结果（true表示成功，false表示未找到对应ID）
      */
-    boolean deleteFeaturedPerson(Long id);
+    boolean deleteRole(Long id);
+
+    // 新增按类型查询的方法
+    List<AiRole> getRolesByType(String type);
 }

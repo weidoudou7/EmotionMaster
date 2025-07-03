@@ -11,7 +11,7 @@ public class FeaturedPersonDto {
     private Long id;
     private String image;
     private String name;
-    private String description;
+    private String desc;
     private String authorName;
     private String authorAvatar;
     private String views;
