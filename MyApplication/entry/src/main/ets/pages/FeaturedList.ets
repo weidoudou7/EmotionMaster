@@ -1,5 +1,6 @@
 import router from '@ohos.router';
 import http from '@ohos.net.http';
+import { Config } from '../common/config';
 import { it } from '@ohos/hypium';
 
 interface FeaturedPerson {
@@ -47,7 +48,7 @@ export struct FeaturedList {
       console.log("开始请求特色人物数据...");
       let httpRequest = http.createHttp();
       const response = await httpRequest.request(
-        "http://localhost:8081/api/featured-people/all",
+        Config.getApiBaseUrl()+"/featured-people/all",
         {
           method: http.RequestMethod.GET,
           readTimeout: 60000,
