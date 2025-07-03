@@ -38,8 +38,12 @@ export interface UpdateUserRequest {
 export interface Dynamic {
   id: string;
   userUID: string;
+  userName?: string;
+  userAvatar?: string;
   content: string;
   images?: string[];
+  topicTags?: string[];
+  visibility?: string;
   likeCount: number;
   commentCount: number;
   isPrivate: boolean;

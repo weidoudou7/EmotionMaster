@@ -1,9 +1,13 @@
 package com.ai.companion.controller;
 
 import com.ai.companion.entity.Dynamic;
+import com.ai.companion.entity.User;
 import com.ai.companion.entity.vo.ApiResponse;
 import com.ai.companion.entity.vo.CreateDynamicRequest;
+import com.ai.companion.entity.vo.DynamicVO;
+import com.ai.companion.entity.vo.UserInfoVO;
 import com.ai.companion.service.DynamicService;
+import com.ai.companion.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,12 +20,15 @@ public class DynamicController {
 
     @Autowired
     private DynamicService dynamicService;
+    
+    @Autowired
+    private UserService userService;
 
     /**
      * 创建新动态（使用CreateDynamicRequest）
      */
     @PostMapping("/create/{userUID}")
-    public ApiResponse<Dynamic> createDynamic(@PathVariable String userUID,
+    public ApiResponse<DynamicVO> createDynamic(@PathVariable String userUID,
             @RequestBody CreateDynamicRequest request) {
         try {
             // 设置默认值
@@ -35,7 +42,14 @@ public class DynamicController {
             }
             
             Dynamic dynamic = dynamicService.createDynamic(userUID, request.getContent(), images, topicTags, visibility);
-            return ApiResponse.success("动态创建成功", dynamic);
+            
+            // 获取用户信息
+            UserInfoVO userInfoVO = userService.getUserInfo(userUID);
+            
+            // 转换为 DynamicVO
+            DynamicVO dynamicVO = DynamicVO.fromDynamic(dynamic, userInfoVO);
+            
+            return ApiResponse.success("动态创建成功", dynamicVO);
         } catch (Exception e) {
             return ApiResponse.error("创建动态失败: " + e.getMessage());
         }
@@ -62,10 +76,19 @@ public class DynamicController {
      * 获取用户的所有动态
      */
     @GetMapping("/user/{userUID}")
-    public ApiResponse<List<Dynamic>> getUserDynamics(@PathVariable String userUID) {
+    public ApiResponse<List<DynamicVO>> getUserDynamics(@PathVariable String userUID) {
         try {
             List<Dynamic> dynamics = dynamicService.getUserDynamics(userUID);
-            return ApiResponse.success("获取用户动态成功", dynamics);
+            
+            // 获取用户信息
+            UserInfoVO userInfoVO = userService.getUserInfo(userUID);
+            
+            // 转换为 DynamicVO 列表
+            List<DynamicVO> dynamicVOs = dynamics.stream()
+                .map(dynamic -> DynamicVO.fromDynamic(dynamic, userInfoVO))
+                .toList();
+            
+            return ApiResponse.success("获取用户动态成功", dynamicVOs);
         } catch (Exception e) {
             return ApiResponse.error("获取用户动态失败: " + e.getMessage());
         }
@@ -75,10 +98,19 @@ public class DynamicController {
      * 获取用户公开的动态
      */
     @GetMapping("/user/{userUID}/public")
-    public ApiResponse<List<Dynamic>> getUserPublicDynamics(@PathVariable String userUID) {
+    public ApiResponse<List<DynamicVO>> getUserPublicDynamics(@PathVariable String userUID) {
         try {
             List<Dynamic> dynamics = dynamicService.getUserPublicDynamics(userUID);
-            return ApiResponse.success("获取用户公开动态成功", dynamics);
+            
+            // 获取用户信息
+            UserInfoVO userInfoVO = userService.getUserInfo(userUID);
+            
+            // 转换为 DynamicVO 列表
+            List<DynamicVO> dynamicVOs = dynamics.stream()
+                .map(dynamic -> DynamicVO.fromDynamic(dynamic, userInfoVO))
+                .toList();
+            
+            return ApiResponse.success("获取用户公开动态成功", dynamicVOs);
         } catch (Exception e) {
             return ApiResponse.error("获取用户公开动态失败: " + e.getMessage());
         }

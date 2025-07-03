@@ -163,10 +163,8 @@ export class ApiService {
       }
       if (error instanceof Error) {
         throw error;
-      } else if (typeof error === 'string') {
-        throw new Error(error);
       } else {
-        throw new Error('Unknown error: ' + JSON.stringify(error));
+        throw new Error('未知错误: ' + JSON.stringify(error));
       }
     }
   }
@@ -247,7 +245,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw error;
       } else {
-        throw new Error('Avatar upload failed');
+        throw new Error('未知错误: ' + JSON.stringify(error));
       }
     }
   }
@@ -345,7 +343,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw new Error(`AI聊天失败: ${error.message}`);
       } else {
-        throw new Error('AI聊天失败: 未知错误');
+        throw new Error('未知错误: ' + JSON.stringify(error));
       }
     }
   }
@@ -394,7 +392,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw new Error(`特色聊天失败: ${error.message}`);
       } else {
-        throw new Error('特色聊天失败: 未知错误');
+        throw new Error('未知错误: ' + JSON.stringify(error));
       }
     }
   }
@@ -458,7 +456,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw new Error(`生成描述失败: ${error.message}`);
       } else {
-        throw new Error('生成描述失败: 未知错误');
+        throw new Error('未知错误: ' + JSON.stringify(error));
       }
     }
   }
@@ -514,7 +512,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw new Error(`生成图片失败: ${error.message}`);
       } else {
-        throw new Error('生成图片失败: 未知错误');
+        throw new Error('未知错误: ' + JSON.stringify(error));
       }
     }
   }
@@ -549,15 +547,33 @@ export class ApiService {
    * 创建动态
    */
   static async createDynamic(userUID: string, dynamicData: CreateDynamicRequest): Promise<Dynamic> {
-    const response = await ApiService.request<Dynamic>(`${API_BASE_URL}/dynamic/create/${userUID}`, {
-      method: http.RequestMethod.POST,
-      body: JSON.stringify(dynamicData)
-    });
+    console.log('🌐 ApiService.createDynamic 开始调用');
+    console.log('🌐 userUID:', userUID);
+    console.log('🌐 dynamicData:', JSON.stringify(dynamicData));
+    console.log('🌐 请求URL:', `${API_BASE_URL}/dynamic/create/${userUID}`);
+    
+    try {
+      const response = await ApiService.request<Dynamic>(`${API_BASE_URL}/dynamic/create/${userUID}`, {
+        method: http.RequestMethod.POST,
+        body: JSON.stringify(dynamicData)
+      });
 
-    if (response.success) {
-      return response.data;
-    } else {
-      throw new Error(response.message || 'Failed to create dynamic');
+      console.log('🌐 API响应:', JSON.stringify(response));
+
+      if (response.success) {
+        console.log('✅ 创建动态成功:', JSON.stringify(response.data));
+        return response.data;
+      } else {
+        console.log('❌ 创建动态失败:', response.message);
+        throw new Error(response.message || 'Failed to create dynamic');
+      }
+    } catch (error) {
+      console.error('❌ ApiService.createDynamic 异常:', error);
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error('未知错误: ' + JSON.stringify(error));
+      }
     }
   }
 
@@ -819,7 +835,7 @@ export class ApiService {
         console.error('❌ 错误堆栈:', error.stack);
         throw error;
       } else {
-        throw new Error('创建AI角色失败: 未知错误');
+        throw new Error('未知错误: ' + JSON.stringify(error));
       }
     }
   }
@@ -866,7 +882,7 @@ export class ApiService {
         console.error('❌ 错误堆栈:', error.stack);
         throw error;
       } else {
-        throw new Error('生成角色名称失败: 未知错误');
+        throw new Error('未知错误: ' + JSON.stringify(error));
       }
     }
   }
@@ -915,7 +931,7 @@ export class ApiService {
         console.error('❌ 错误堆栈:', error.stack);
         throw error;
       } else {
-        throw new Error('创建对话失败: 未知错误');
+        throw new Error('未知错误: ' + JSON.stringify(error));
       }
     }
   }
