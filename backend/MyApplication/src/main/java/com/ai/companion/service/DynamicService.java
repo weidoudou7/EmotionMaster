@@ -48,6 +48,11 @@ public interface DynamicService {
     List<Dynamic> getAllPublicDynamics();
 
     /**
+     * 获取所有公开的动态（分页）
+     */
+    List<Dynamic> getAllPublicDynamics(Integer page, Integer size);
+
+    /**
      * 根据可见性获取动态
      */
     List<Dynamic> getDynamicsByVisibility(String visibility);

@@ -35,6 +35,11 @@ public interface DynamicMapper {
     List<Dynamic> getAllPublicDynamics();
 
     /**
+     * 获取所有公开的动态（分页，按时间倒序）
+     */
+    List<Dynamic> getAllPublicDynamicsWithPagination(@Param("offset") Integer offset, @Param("size") Integer size);
+
+    /**
      * 根据可见性获取动态
      */
     List<Dynamic> getDynamicsByVisibility(@Param("visibility") String visibility);

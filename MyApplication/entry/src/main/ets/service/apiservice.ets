@@ -647,10 +647,10 @@ export class ApiService {
   }
 
   /**
-   * 获取所有公开动态
+   * 获取所有公开动态（分页）
    */
-  static async getAllPublicDynamics(): Promise<Dynamic[]> {
-    const response = await ApiService.request<Dynamic[]>(`${API_BASE_URL}/dynamic/public`);
+  static async getAllPublicDynamics(page: number = 1, size: number = 10): Promise<Dynamic[]> {
+    const response = await ApiService.request<Dynamic[]>(`${API_BASE_URL}/dynamic/public?page=${page}&size=${size}`);
     if (response.success) {
       return response.data;
     } else {

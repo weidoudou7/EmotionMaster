@@ -57,6 +57,18 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserInfoVO getUserInfoById(Integer userId) {
+        System.out.println("🔍 UserService: 正在查询用户ID: " + userId);
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            System.out.println("❌ UserService: 用户不存在，ID: " + userId);
+            throw new RuntimeException("用户不存在");
+        }
+        System.out.println("✅ UserService: 找到用户，ID: " + userId + ", 用户名: " + user.getUserName());
+        return convertToVO(user);
+    }
+
+    @Override
     public UserInfoVO updateUserInfo(String userUID, UpdateUserRequest request) {
         User user = userMapper.selectByUID(userUID);
         if (user == null) {

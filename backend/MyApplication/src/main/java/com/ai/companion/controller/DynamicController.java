@@ -117,13 +117,29 @@ public class DynamicController {
     }
 
     /**
-     * 获取所有公开的动态
+     * 获取所有公开的动态（分页）
      */
     @GetMapping("/public")
-    public ApiResponse<List<Dynamic>> getAllPublicDynamics() {
+    public ApiResponse<List<DynamicVO>> getAllPublicDynamics(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
         try {
-            List<Dynamic> dynamics = dynamicService.getAllPublicDynamics();
-            return ApiResponse.success("获取公开动态成功", dynamics);
+            List<Dynamic> dynamics = dynamicService.getAllPublicDynamics(page, size);
+            
+            // 获取所有动态的用户信息并转换为 DynamicVO
+            List<DynamicVO> dynamicVOs = dynamics.stream()
+                .map(dynamic -> {
+                    try {
+                        UserInfoVO userInfoVO = userService.getUserInfoById(dynamic.getUserId());
+                        return DynamicVO.fromDynamic(dynamic, userInfoVO);
+                    } catch (Exception e) {
+                        // 如果获取用户信息失败，使用不包含用户信息的版本
+                        return DynamicVO.fromDynamic(dynamic);
+                    }
+                })
+                .toList();
+            
+            return ApiResponse.success("获取公开动态成功", dynamicVOs);
         } catch (Exception e) {
             return ApiResponse.error("获取公开动态失败: " + e.getMessage());
         }

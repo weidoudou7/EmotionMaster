@@ -83,6 +83,13 @@ public class DynamicServiceImpl implements DynamicService {
     }
 
     @Override
+    public List<Dynamic> getAllPublicDynamics(Integer page, Integer size) {
+        // 计算偏移量
+        int offset = (page - 1) * size;
+        return dynamicMapper.getAllPublicDynamicsWithPagination(offset, size);
+    }
+
+    @Override
     public List<Dynamic> getDynamicsByVisibility(String visibility) {
         return dynamicMapper.getDynamicsByVisibility(visibility);
     }
