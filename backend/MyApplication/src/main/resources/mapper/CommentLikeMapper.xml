@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ai.companion.mapper.CommentLikeMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="CommentLikeResultMap" type="com.ai.companion.entity.CommentLike">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="comment_id" property="commentId"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <!-- 插入点赞记录 -->
+    <insert id="insertCommentLike" parameterType="com.ai.companion.entity.CommentLike" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO comment_likes (user_id, comment_id, created_at)
+        VALUES (#{userId}, #{commentId}, NOW())
+    </insert>
+
+    <!-- 删除点赞记录 -->
+    <delete id="deleteCommentLike">
+        DELETE FROM comment_likes 
+        WHERE user_id = #{userId} AND comment_id = #{commentId}
+    </delete>
+
+    <!-- 检查用户是否已点赞评论 -->
+    <select id="checkUserLikedComment" resultType="int">
+        SELECT COUNT(*) 
+        FROM comment_likes 
+        WHERE user_id = #{userId} AND comment_id = #{commentId}
+    </select>
+
+</mapper> 
