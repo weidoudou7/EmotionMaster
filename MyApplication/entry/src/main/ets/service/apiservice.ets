@@ -666,8 +666,35 @@ export class ApiService {
     if (type === 'deep') url = `${API_BASE_URL}/ai/article/deep-analysis?prompt=${encodeURIComponent(prompt)}`;
     if (type === 'tech') url = `${API_BASE_URL}/ai/article/tech-enjoy?prompt=${encodeURIComponent(prompt)}`;
     if (type === 'industry') url = `${API_BASE_URL}/ai/article/industry-observation?prompt=${encodeURIComponent(prompt)}`;
-    const response = await ApiService.request<AIArticleResponse>(url, { method: http.RequestMethod.GET });
-    return response.data.content;
+
+    // 单独设置5分钟超时，方式同generateFigure
+    const httpRequest = http.createHttp();
+    const requestOptions: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET,
+      header: {
+        'Content-Type': 'application/json'
+      },
+      readTimeout: 300000, // 5分钟超时
+      connectTimeout: 30000 // 30秒连接超时
+    };
+    const response = await httpRequest.request(url, requestOptions);
+    httpRequest.destroy();
+    if (response.responseCode !== 200) {
+      throw new Error(`HTTP error! status: ${response.responseCode}`);
+    }
+    let result: ApiResponse<AIArticleResponse>;
+    try {
+      result = JSON.parse(response.result.toString());
+      console.log('🌐 JSON解析成功:', result);
+    } catch (e) {
+      console.error('🌐 API返回内容不是标准JSON，原始内容如下:');
+      console.error(response.result.toString());
+      throw new Error('后端返回内容不是标准JSON，无法解析');
+    }
+    if (!result.success) {
+      throw new Error(result.message || 'AI生成失败');
+    }
+    return result.data.content;
   }
 
   /**
