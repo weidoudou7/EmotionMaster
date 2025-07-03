@@ -1,5 +1,4 @@
 // homepage.ets - 超级动态页面
-import { BottomNavBar } from './BottomNavBar';
 import { ApiService } from '../service/apiservice';
 import { globalUserData } from '../models/userdata';
 import { Dynamic } from '../models/aidata';
@@ -16,6 +15,7 @@ export struct HomePage {
   private pageSize: number = 10 // 每页数量
 
   aboutToAppear() {
+    console.log('🏠 HomePage 开始加载')
     this.loadDynamics(true)
   }
 
@@ -77,16 +77,14 @@ export struct HomePage {
 
   // 导航到发布动态页面
   navigateToPublish() {
-    let uiContext: UIContext = this.getUIContext();
-    let router = uiContext.getRouter();
-    router.pushUrl({ url: 'pages/DynamicList' });
+    console.log('📝 导航到发布页面')
+    // TODO: 实现导航逻辑
   }
 
   // 导航到个人页面
   navigateToProfile() {
-    let uiContext: UIContext = this.getUIContext();
-    let router = uiContext.getRouter();
-    router.pushUrl({ url: 'pages/yourpage' });
+    console.log('👤 导航到个人页面')
+    // TODO: 实现导航逻辑
   }
 
   // 格式化时间
@@ -208,7 +206,6 @@ export struct HomePage {
             .fontColor('#666666')
         }
         .onClick(() => {
-          // TODO: 实现点赞功能
           console.log('点赞动态:', dynamic.id)
         })
         
@@ -223,7 +220,6 @@ export struct HomePage {
         }
         .margin({ left: 24 })
         .onClick(() => {
-          // TODO: 实现评论功能
           console.log('评论动态:', dynamic.id)
         })
         
@@ -238,7 +234,6 @@ export struct HomePage {
         }
         .margin({ left: 24 })
         .onClick(() => {
-          // TODO: 实现分享功能
           console.log('分享动态:', dynamic.id)
         })
       }
@@ -253,156 +248,177 @@ export struct HomePage {
   }
 
   build() {
-    Stack() {
-      Column() {
-        // 顶部导航栏
-        Row() {
-          Text('动态广场')
-            .fontSize(20)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#333333')
-          
-          Blank()
-          
-          // 发布按钮
-          Button('发布')
-            .fontSize(14)
-            .fontColor(Color.White)
-            .backgroundColor('#0D9FFB')
-            .borderRadius(16)
-            .padding({ left: 16, right: 16, top: 6, bottom: 6 })
-            .onClick(() => {
-              this.navigateToPublish()
-            })
-          
-          // 个人中心按钮
-          Button() {
-            Image(globalUserData.userAvatar || '/common/media/default.png')
-              .width(32)
-              .height(32)
-              .borderRadius(16)
-          }
-          .backgroundColor(Color.Transparent)
-          .margin({ left: 12 })
-          .onClick(() => {
-            this.navigateToProfile()
-          })
-        }
-        .width('100%')
-        .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-        .backgroundColor(Color.White)
-        .shadow({ radius: 2, color: '#00000010', offsetX: 0, offsetY: 1 })
+    Column() {
+      // 顶部导航栏
+      Row() {
+        Text('动态广场')
+          .fontSize(20)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#333333')
         
-        // 动态列表
-        Refresh({ refreshing: $$this.isRefreshing, offset: 120, friction: 100 }) {
-          List() {
-            // 动态卡片
-            ForEach(this.dynamics, (dynamic: Dynamic) => {
-              ListItem() {
-                this.DynamicCard(dynamic)
-              }
-            })
-            
-            // 加载更多指示器
-            if (this.isLoading && this.dynamics.length > 0) {
-              ListItem() {
-                Row() {
-                  LoadingProgress()
-                    .width(20)
-                    .height(20)
-                    .margin({ right: 8 })
-                  Text('加载中...')
-                    .fontSize(14)
-                    .fontColor('#999999')
-                }
-                .width('100%')
-                .justifyContent(FlexAlign.Center)
-                .padding({ top: 20, bottom: 20 })
-              }
-            }
-            
-            // 没有更多数据提示
-            if (!this.hasMore && this.dynamics.length > 0) {
-              ListItem() {
-                Text('没有更多动态了')
-                  .fontSize(14)
-                  .fontColor('#999999')
-                  .width('100%')
-                  .textAlign(TextAlign.Center)
-                  .padding({ top: 20, bottom: 20 })
-              }
-            }
-            
-            // 空状态
-            if (!this.isLoading && this.dynamics.length === 0 && !this.errorMessage) {
-              ListItem() {
-                Column() {
-                  Text('📝')
-                    .fontSize(80)
-                    .margin({ bottom: 16 })
-                  Text('暂无动态')
-                    .fontSize(16)
-                    .fontColor('#999999')
-                  Text('快来发布第一条动态吧！')
-                    .fontSize(14)
-                    .fontColor('#CCCCCC')
-                    .margin({ top: 8 })
-                }
-                .width('100%')
-                .justifyContent(FlexAlign.Center)
-                .padding({ top: 100, bottom: 100 })
-              }
-            }
-            
-            // 错误状态
-            if (this.errorMessage) {
-              ListItem() {
-                Column() {
-                  Text('❌')
-                    .fontSize(80)
-                    .margin({ bottom: 16 })
-                  Text('加载失败')
-                    .fontSize(16)
-                    .fontColor('#FF4D4F')
-                  Text(this.errorMessage)
-                    .fontSize(14)
-                    .fontColor('#999999')
-                    .margin({ top: 8 })
-                  Button('重试')
-                    .fontSize(14)
-                    .fontColor(Color.White)
-                    .backgroundColor('#0D9FFB')
-                    .borderRadius(16)
-                    .padding({ left: 24, right: 24, top: 8, bottom: 8 })
-                    .margin({ top: 16 })
-                    .onClick(() => {
-                      this.loadDynamics(true)
-                    })
-                }
-                .width('100%')
-                .justifyContent(FlexAlign.Center)
-                .padding({ top: 100, bottom: 100 })
-              }
-            }
-          }
-          .width('100%')
-          .height('100%')
-          .padding({ left: 16, right: 16 })
-          .onReachEnd(() => {
-            this.onLoadMore()
+        Blank()
+        
+        // 发布按钮
+        Button('发布')
+          .fontSize(14)
+          .fontColor(Color.White)
+          .backgroundColor('#0D9FFB')
+          .borderRadius(16)
+          .padding({ left: 16, right: 16, top: 6, bottom: 6 })
+          .onClick(() => {
+            this.navigateToPublish()
           })
+        
+        // 个人中心按钮
+        Button() {
+          Image(globalUserData.userAvatar || '/common/media/default.png')
+            .width(32)
+            .height(32)
+            .borderRadius(16)
         }
-        .onRefreshing(() => {
-          this.onRefresh()
+        .backgroundColor(Color.Transparent)
+        .margin({ left: 12 })
+        .onClick(() => {
+          this.navigateToProfile()
         })
-        .layoutWeight(1)
       }
       .width('100%')
-      .height('100%')
-      .backgroundColor('#F5F5F5')
+      .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+      .backgroundColor(Color.White)
+      .shadow({ radius: 2, color: '#00000010', offsetX: 0, offsetY: 1 })
       
-      // 底部导航栏
-      BottomNavBar({ currentIndex: 0 })
+      // 动态列表区域
+      Column() {
+        // 下拉刷新区域
+        if (this.isRefreshing) {
+          Row() {
+            LoadingProgress()
+              .width(20)
+              .height(20)
+              .margin({ right: 8 })
+            Text('刷新中...')
+              .fontSize(14)
+              .fontColor('#999999')
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.Center)
+          .padding({ top: 20, bottom: 20 })
+        } else {
+          // 刷新按钮
+          Button('🔄 刷新动态')
+            .fontSize(14)
+            .fontColor('#0D9FFB')
+            .backgroundColor(Color.Transparent)
+            .borderRadius(16)
+            .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+            .margin({ top: 12, bottom: 12 })
+            .onClick(() => {
+              this.onRefresh()
+            })
+        }
+        
+        // 动态列表
+        List() {
+          // 动态卡片
+          ForEach(this.dynamics, (dynamic: Dynamic) => {
+            ListItem() {
+              this.DynamicCard(dynamic)
+            }
+          })
+          
+          // 加载更多指示器
+          if (this.isLoading && this.dynamics.length > 0) {
+            ListItem() {
+              Row() {
+                LoadingProgress()
+                  .width(20)
+                  .height(20)
+                  .margin({ right: 8 })
+                Text('加载中...')
+                  .fontSize(14)
+                  .fontColor('#999999')
+              }
+              .width('100%')
+              .justifyContent(FlexAlign.Center)
+              .padding({ top: 20, bottom: 20 })
+            }
+          }
+          
+          // 没有更多数据提示
+          if (!this.hasMore && this.dynamics.length > 0) {
+            ListItem() {
+              Text('没有更多动态了')
+                .fontSize(14)
+                .fontColor('#999999')
+                .width('100%')
+                .textAlign(TextAlign.Center)
+                .padding({ top: 20, bottom: 20 })
+            }
+          }
+          
+          // 空状态
+          if (!this.isLoading && this.dynamics.length === 0 && !this.errorMessage) {
+            ListItem() {
+              Column() {
+                Text('📝')
+                  .fontSize(80)
+                  .margin({ bottom: 16 })
+                Text('暂无动态')
+                  .fontSize(16)
+                  .fontColor('#999999')
+                Text('快来发布第一条动态吧！')
+                  .fontSize(14)
+                  .fontColor('#CCCCCC')
+                  .margin({ top: 8 })
+              }
+              .width('100%')
+              .justifyContent(FlexAlign.Center)
+              .padding({ top: 100, bottom: 100 })
+            }
+          }
+          
+          // 错误状态
+          if (this.errorMessage) {
+            ListItem() {
+              Column() {
+                Text('❌')
+                  .fontSize(80)
+                  .margin({ bottom: 16 })
+                Text('加载失败')
+                  .fontSize(16)
+                  .fontColor('#FF4D4F')
+                Text(this.errorMessage)
+                  .fontSize(14)
+                  .fontColor('#999999')
+                  .margin({ top: 8 })
+                Button('重试')
+                  .fontSize(14)
+                  .fontColor(Color.White)
+                  .backgroundColor('#0D9FFB')
+                  .borderRadius(16)
+                  .padding({ left: 24, right: 24, top: 8, bottom: 8 })
+                  .margin({ top: 16 })
+                  .onClick(() => {
+                    this.loadDynamics(true)
+                  })
+              }
+              .width('100%')
+              .justifyContent(FlexAlign.Center)
+              .padding({ top: 100, bottom: 100 })
+            }
+          }
+        }
+        .width('100%')
+        .layoutWeight(1)
+        .padding({ left: 16, right: 16 })
+        .onReachEnd(() => {
+          this.onLoadMore()
+        })
+      }
+      .layoutWeight(1)
     }
+    .width('100%')
+    .height('100%')
+    .backgroundColor('#F5F5F5')
   }
 }
