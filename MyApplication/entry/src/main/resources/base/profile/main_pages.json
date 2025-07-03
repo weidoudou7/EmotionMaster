@@ -27,6 +27,7 @@
     "pages/searchpage",
     "pages/music_cloud_style",
     "pages/music_test",
+    "pages/chatComment",
     "pages/LoadingPage"
   ]
 }

@@ -3,8 +3,9 @@
 import { BusinessError } from '@kit.BasicServicesKit';
 import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
-import { UserInfo, UserStats } from '../common/types';
+import { UserInfo, UserStats, Dynamic } from '../common/types';
 import promptAction from '@ohos.promptAction';
+import preferences from '@ohos.data.preferences';
 
 @Entry
 @Component
@@ -20,6 +21,7 @@ export struct YourPage {
   @State selectedTab: string = 'dynamic' // 当前选中的标签页：dynamic 或 attic
   @State selectedAtticTab: string = '智能体' // 当前选中的阁楼标签页
   @State cardScale: number = 1.0; // 卡片缩放动画
+  @State latestDynamic: Dynamic | null = null; // 最新动态
 
   // 页面生命周期
   aboutToAppear() {
@@ -31,6 +33,7 @@ export struct YourPage {
     // 异步加载详细信息，不阻塞页面显示
     this.loadUserInfoAsync();
     this.loadUserStatsAsync();
+    this.loadLatestDynamicAsync();
   }
 
   // 异步加载用户信息（不阻塞页面显示）
@@ -56,6 +59,40 @@ export struct YourPage {
       console.error('加载用户统计信息失败:', error);
       // 不显示错误提示，因为统计信息不是核心功能
     }
+  }
+
+  // 异步加载最新动态（不阻塞页面显示）
+  async loadLatestDynamicAsync() {
+    try {
+      const context = getContext(this);
+      const preferencesHelper = await preferences.getPreferences(context, 'userData');
+      const latestDynamicStr = await preferencesHelper.get('latestDynamic', '') as string;
+      
+      if (latestDynamicStr) {
+        this.latestDynamic = JSON.parse(latestDynamicStr);
+      }
+    } catch (error) {
+      console.error('加载最新动态失败:', error);
+      // 不显示错误提示，因为动态信息不是核心功能
+    }
+  }
+
+  // 格式化时间
+  formatTime(timeString: string): string {
+    const date = new Date(timeString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (minutes < 1) return '刚刚';
+    if (minutes < 60) return `${minutes}分钟前`;
+    if (hours < 24) return `${hours}小时前`;
+    if (days < 7) return `${days}天前`;
+    
+    return date.toLocaleDateString();
   }
 
   // 个人资料详情切换页面调出的构建函数
@@ -253,15 +290,30 @@ export struct YourPage {
                 
                 // 社交信息按钮
                 Row() {
+                  // 查找按钮放在最前面
+                  Button('查找')
+                    .width(80)
+                    .height(28)
+                    .fontSize(10)
+                    .backgroundColor('rgba(0,128,255,0)')
+                    .fontColor('#fff')
+                    .borderRadius(14)
+                    .margin({ right: 8 })
+                    .onClick(() => {
+                      let uiContext: UIContext = this.getUIContext();
+                      let router = uiContext.getRouter();
+                      router.pushUrl({ url: 'pages/searchpage' });
+                    })
+                  
                   ForEach([
                     `关注:${this.userStats?.followingCount || 0}`,
                     `粉丝:${this.userStats?.followerCount || 0}`,
                     `好友:${this.userStats?.friendCount || 0}`
                   ], (label: string, index: number) => {
                     Button(label)
-                      .width(68)
+                      .width(62)
                       .height(28)
-                      .fontSize(12)
+                      .fontSize(10)
                       .backgroundColor('rgba(128,128,128,0)')
                       .fontColor('#fff')
                       .borderRadius(14)
@@ -270,21 +322,8 @@ export struct YourPage {
                         promptAction.showToast({ message: '好友功能正在开发中' });
                       })
                   })
-                  // 单独放置查找按钮，避免ForEach影响事件绑定
-                  Button('查找')
-                    .width(65)
-                    .height(32)
-                    .fontSize(12)
-                    .backgroundColor('rgba(0,128,255,0.3)')
-                    .fontColor('#fff')
-                    .borderRadius(14)
-                    .margin({ right: 6 })
-                    .onClick(() => {
-                      let uiContext: UIContext = this.getUIContext();
-                      let router = uiContext.getRouter();
-                      router.pushUrl({ url: 'pages/searchpage' });
-                    })
                 }
+                .width('100%')
                 .justifyContent(FlexAlign.Start)
               }
               .width('70%')
@@ -406,28 +445,55 @@ export struct YourPage {
                     .margin({ bottom: 16 })
                   
                   // 最近一条动态预览
-                  Column() {
-                    Text('今天的心情很好，想要分享给大家...')
-                      .fontSize(14)
-                      .fontColor('rgba(255,255,255,0.8)')
-                      .textAlign(TextAlign.Start)
-                      .margin({ bottom: 8 })
-                    Text('2024-01-15 14:30')
-                      .fontSize(12)
-                      .fontColor('rgba(255,255,255,0.5)')
-                      .textAlign(TextAlign.Start)
+                  if (this.latestDynamic) {
+                    Column() {
+                      Text(this.latestDynamic.content.length > 50 ? 
+                        this.latestDynamic.content.substring(0, 50) + '...' : 
+                        this.latestDynamic.content)
+                        .fontSize(14)
+                        .fontColor('rgba(255,255,255,0.8)')
+                        .textAlign(TextAlign.Start)
+                        .margin({ bottom: 8 })
+                      Text(this.formatTime(this.latestDynamic.createTime))
+                        .fontSize(12)
+                        .fontColor('rgba(255,255,255,0.5)')
+                        .textAlign(TextAlign.Start)
+                    }
+                    .width('100%')
+                    .height(120)
+                    .backgroundColor('rgba(255,255,255,0.08)')
+                    .borderRadius(16)
+                    .padding(16)
+                    .justifyContent(FlexAlign.Start)
+                    .onClick(() => {
+                      let uiContext: UIContext = this.getUIContext();
+                      let router = uiContext.getRouter();
+                      router.pushUrl({ url: 'pages/DynamicList' });
+                    })
+                  } else {
+                    Column() {
+                      Text('还没有发布过动态')
+                        .fontSize(14)
+                        .fontColor('rgba(255,255,255,0.6)')
+                        .textAlign(TextAlign.Center)
+                      Text('点击发布第一条动态吧')
+                        .fontSize(12)
+                        .fontColor('rgba(255,255,255,0.4)')
+                        .textAlign(TextAlign.Center)
+                        .margin({ top: 8 })
+                    }
+                    .width('100%')
+                    .height(120)
+                    .backgroundColor('rgba(255,255,255,0.08)')
+                    .borderRadius(16)
+                    .padding(16)
+                    .justifyContent(FlexAlign.Center)
+                    .onClick(() => {
+                      let uiContext: UIContext = this.getUIContext();
+                      let router = uiContext.getRouter();
+                      router.pushUrl({ url: 'pages/DynamicList' });
+                    })
                   }
-                  .width('100%')
-                  .height(120)
-                  .backgroundColor('rgba(255,255,255,0.08)')
-                  .borderRadius(16)
-                  .padding(16)
-                  .justifyContent(FlexAlign.Start)
-                  .onClick(() => {
-                    let uiContext: UIContext = this.getUIContext();
-                    let router = uiContext.getRouter();
-                    router.pushUrl({ url: 'pages/DynamicList' });
-                  })
                 }
                 .width('100%')
               }
