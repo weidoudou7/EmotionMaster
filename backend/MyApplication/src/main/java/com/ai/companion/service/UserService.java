@@ -62,7 +62,6 @@ public interface UserService {
      * @return 用户统计信息
      */
     UserStatsVO getUserStats(String userUID);
-
     
     /**
      * 通过用户名关键词模糊搜索用户
@@ -84,7 +83,4 @@ public interface UserService {
      * @return 影响的行数
      */
     int insertUser(User user);
-
-    UserInfoVO createOrLoginUserByEmail(String email);
-    
 } 

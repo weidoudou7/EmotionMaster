@@ -26,7 +26,6 @@ import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService {
-    
 
     @Autowired
     private DynamicService dynamicService;
@@ -251,7 +250,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-
     public List<UserInfoVO> searchUsersByName(String keyword) {
         List<User> users = userMapper.searchUsers(keyword, 50); // 限制最多返回50个
         List<UserInfoVO> result = new ArrayList<>();
@@ -275,33 +273,6 @@ public class UserServiceImpl implements UserService {
             System.err.println("删除用户失败: " + e.getMessage());
             return false;
         }
-    }
-    public UserInfoVO createOrLoginUserByEmail(String email) {
-        // 1. 查询邮箱是否已存在
-        User user = userMapper.selectByEmail(email);
-        LocalDateTime now = LocalDateTime.now();
-        if (user == null) {
-            // 2. 新用户注册
-            String userUID = UUID.randomUUID().toString().replace("-", "");
-            user = new User();
-            user.setUserUID(userUID);
-            user.setUserName("用户" + userUID.substring(0, 6)); // 默认用户名
-            user.setGender("未设置");
-            user.setPrivacyVisible(false);
-            user.setSignature("这个人很懒，什么都没留下~");
-            user.setEmail(email);
-            user.setLevel(1);
-            user.setRegisterTime(now);
-            user.setUpdateTime(now);
-            user.setUserAvatar("/avatars/default.png");
-            userMapper.insertUser(user);
-        } else {
-            // 3. 已注册用户，更新登录时间
-            user.setUpdateTime(now);
-            userMapper.updateUser(user);
-        }
-        // 4. 返回VO
-        return convertToVO(user);
     }
 
     /**

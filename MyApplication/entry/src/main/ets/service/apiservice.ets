@@ -7,10 +7,6 @@ import http from '@ohos.net.http';
 
 // API基础配置 - 从配置文件获取
 const API_BASE_URL = Config.getApiBaseUrl();
-
-
-//const API_BASE_URL = 'http://10.128.156.25:8081/api';
-
 // 定义HTTP请求选项接口
 interface HttpRequestOptions {
   method?: http.RequestMethod;
@@ -882,7 +878,7 @@ export class ApiService {
   /**
    * 根据userId查找全部对话
    */
-  static async getConversationsByUserId(userId: number = 405): Promise<Conversation[]> {
+  static async getConversationsByUserId(userId: number = 372): Promise<Conversation[]> {
     const url = `${API_BASE_URL}/ai/history/conversation/list?userId=${userId}`;
     const response = await ApiService.request<Conversation[]>(url);
     if (response.success) {
