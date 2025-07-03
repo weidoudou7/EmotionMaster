@@ -97,6 +97,40 @@ export interface AiRole {
   createdAt: string; // ISO字符串
 }
 
+// 评论项接口
+export interface CommentItem {
+  id: number;
+  aiRoleId: number;
+  userId: number;
+  content: string;
+  likeCount: number;
+  replyCount: number;
+  rootCommentId?: number;
+  toCommentId?: number;
+  replyToUserId?: number;
+  replyToUsername?: string;
+  isTop: boolean;
+  isAuthor: boolean;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  // 关联查询字段
+  username?: string;
+  profileImage?: string;
+  totalReplies?: number;
+  // 前端显示字段
+  avatar?: string;
+  name?: string;
+  tag?: string;
+  top?: boolean;
+  time?: string;
+  reply?: string;
+  like?: number;
+  replies?: CommentItem[];
+  replyTotal: number;     // 总回复数
+  repliesLoadedAll: boolean; // 是否已加载全部回复
+}
+
 // 创建AI角色请求接口
 export interface CreateAiRoleRequest {
   roleName: string;

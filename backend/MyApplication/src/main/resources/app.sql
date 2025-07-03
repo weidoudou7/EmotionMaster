@@ -92,3 +92,97 @@ CREATE TABLE user_dynamics (
                                INDEX idx_dynamics_created (created_at) COMMENT '创建时间索引',
                                INDEX idx_dynamics_likes (like_count) COMMENT '点赞数索引'
 );
+
+-- 7. 评论表：统一存储评论和回复（单表设计）
+CREATE TABLE comments (
+                          id INT AUTO_INCREMENT PRIMARY KEY COMMENT '评论唯一ID',
+                          ai_role_id INT NOT NULL COMMENT '被评论的AI角色ID',
+                          user_id INT NOT NULL COMMENT '评论用户ID',
+                          content TEXT NOT NULL COMMENT '评论内容',
+                          like_count INT DEFAULT 0 COMMENT '点赞数',
+                          reply_count INT DEFAULT 0 COMMENT '回复数',
+                          root_comment_id INT NULL COMMENT '根评论ID(null表示顶级评论，否则为回复)',
+                          to_comment_id INT NULL COMMENT '回复目标评论ID(null表示回复根评论，否则为回复某条回复)',
+                          reply_to_user_id INT NULL COMMENT '回复目标用户ID',
+                          reply_to_username VARCHAR(50) NULL COMMENT '回复目标用户昵称(静态存储，不随用户昵称变化)',
+                          is_top BOOLEAN DEFAULT 0 COMMENT '是否置顶(0:否/1:是)',
+                          is_author BOOLEAN DEFAULT 0 COMMENT '是否为作者评论(0:否/1:是)',
+                          status ENUM('normal', 'hidden', 'deleted') DEFAULT 'normal' COMMENT '评论状态(normal:正常/hidden:隐藏/deleted:已删除)',
+                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '评论创建时间',
+                          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '评论更新时间',
+                          FOREIGN KEY (ai_role_id) REFERENCES ai_roles(id) ON DELETE CASCADE,
+                          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                          FOREIGN KEY (root_comment_id) REFERENCES comments(id) ON DELETE CASCADE,
+                          FOREIGN KEY (to_comment_id) REFERENCES comments(id) ON DELETE CASCADE,
+                          FOREIGN KEY (reply_to_user_id) REFERENCES users(id) ON DELETE SET NULL,
+                          INDEX idx_comments_ai_role (ai_role_id) COMMENT 'AI角色ID索引',
+                          INDEX idx_comments_user (user_id) COMMENT '用户ID索引',
+                          INDEX idx_comments_root (root_comment_id) COMMENT '根评论ID索引',
+                          INDEX idx_comments_to (to_comment_id) COMMENT '回复目标评论ID索引',
+                          INDEX idx_comments_status (status) COMMENT '评论状态索引',
+                          INDEX idx_comments_created (created_at) COMMENT '创建时间索引',
+                          INDEX idx_comments_likes (like_count) COMMENT '点赞数索引',
+                          INDEX idx_comments_top (is_top) COMMENT '置顶索引'
+);
+
+-- 8. 评论点赞记录表：记录用户对评论的点赞状态
+CREATE TABLE comment_likes (
+                               id INT AUTO_INCREMENT PRIMARY KEY COMMENT '点赞记录唯一ID',
+                               user_id INT NOT NULL COMMENT '点赞用户ID',
+                               comment_id INT NOT NULL COMMENT '被点赞的评论ID',
+                               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '点赞时间',
+                               FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                               FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE,
+                               UNIQUE KEY unique_user_comment (user_id, comment_id) COMMENT '用户评论点赞唯一约束',
+                               INDEX idx_likes_user (user_id) COMMENT '用户ID索引',
+                               INDEX idx_likes_comment (comment_id) COMMENT '评论ID索引'
+);
+
+-- 创建触发器：更新评论回复数
+DELIMITER //
+CREATE TRIGGER update_comment_reply_count_insert
+    AFTER INSERT ON comments
+    FOR EACH ROW
+BEGIN
+    -- 如果是回复评论，更新根评论的回复数
+    IF NEW.root_comment_id IS NOT NULL THEN
+    UPDATE comments
+    SET reply_count = reply_count + 1
+    WHERE id = NEW.root_comment_id;
+END IF;
+END//
+
+CREATE TRIGGER update_comment_reply_count_delete
+    AFTER DELETE ON comments
+    FOR EACH ROW
+BEGIN
+    -- 如果是回复评论，减少根评论的回复数
+    IF OLD.root_comment_id IS NOT NULL THEN
+    UPDATE comments
+    SET reply_count = GREATEST(reply_count - 1, 0)
+    WHERE id = OLD.root_comment_id;
+END IF;
+END//
+DELIMITER ;
+
+-- 创建触发器：更新评论点赞数
+DELIMITER //
+CREATE TRIGGER update_comment_like_count_insert
+    AFTER INSERT ON comment_likes
+    FOR EACH ROW
+BEGIN
+    UPDATE comments
+    SET like_count = like_count + 1
+    WHERE id = NEW.comment_id;
+END//
+
+CREATE TRIGGER update_comment_like_count_delete
+    AFTER DELETE ON comment_likes
+    FOR EACH ROW
+BEGIN
+    UPDATE comments
+    SET like_count = GREATEST(like_count - 1, 0)
+    WHERE id = OLD.comment_id;
+END//
+DELIMITER ;
+---------------------------

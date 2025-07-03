@@ -401,6 +401,22 @@ export struct Chat {
           .backgroundColor('rgba(255,255,255,0.2)')
           .padding(this.isHeaderCompact ? { left: 6, right: 4 } : { left: 8, right: 6})
           .margin({ left: this.isHeaderCompact ? 6 : 8 }) // 调整为左侧间距
+          .onClick(() => {
+            // 跳转到评论页面，传递AI角色信息
+            // 获取当前AI角色ID，优先用this.aiRoleId或其它动态来源
+            router.pushUrl({
+              url: 'pages/chatComment',
+              params: {
+                aiRoleId: 311, //TODO : 实际为该界面对应的角色id
+                aiRoleName: this.agentName,
+                aiRoleAvatar: this.isFromCreateFigure && this.figureImageUrl ? this.figureImageUrl : '',
+                aiRoleType: this.figureType || 'default',
+                aiRoleDescription: this.description || '',
+                currentUserId: 405 // TODO:实际应从用户数据获取
+              }
+            });
+            console.log('跳转到评论页面，AI角色ID:', 311, '名称:', this.agentName);
+          })
 
           Blank() // 占据剩余空间，将右侧按钮推到最右边
 

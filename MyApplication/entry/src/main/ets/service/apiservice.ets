@@ -1,6 +1,6 @@
 import { globalUserData } from '../models/userdata';
 import { Config } from '../common/config';
-import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult, CreateAiRoleRequest, GenerateRoleNameRequest, CreateConversationRequest, Conversation } from '../common/types';
+import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult, CreateAiRoleRequest, GenerateRoleNameRequest, CreateConversationRequest, Conversation,CommentItem } from '../common/types';
 import {  AiRole } from '../common/types';
 import http from '@ohos.net.http';
 
@@ -19,6 +19,60 @@ interface AIArticleResponse {
   content: string;
 }
 
+// 评论列表返回类型
+interface CommentListResponse {
+  comments: CommentItem[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
+}
+
+// 回复列表返回类型
+interface ReplyListResponse {
+  replies: CommentItem[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
+}
+
+// 发布评论返回类型
+interface PublishCommentResponse {
+  commentId: number;
+  message: string;
+}
+
+// 回复评论返回类型
+interface ReplyCommentResponse {
+  replyId: number;
+  message: string;
+}
+
+// 点赞操作返回类型
+interface LikeOperationResponse {
+  success: boolean;
+  message: string;
+}
+
+// 删除评论返回类型
+interface DeleteCommentResponse {
+  success: boolean;
+  message: string;
+}
+
+// 检查点赞状态返回类型
+interface CheckLikeStatusResponse {
+  isLiked: boolean;
+}
+
+// 回复评论请求体接口
+interface ReplyCommentRequestBody {
+  aiRoleId: number;
+  userId: number;
+  content: string;
+  rootCommentId: number;
+  toCommentId?: number;
+}
+
 /**
  * API服务类
  */
@@ -32,11 +86,8 @@ export class ApiService {
     options: HttpRequestOptions = {}
   ): Promise<ApiResponse<T>> {
     try {
-      console.log('🌐 request 方法开始，URL:', url);
-      console.log('🌐 请求选项:', JSON.stringify(options));
       
       const httpRequest = http.createHttp();
-      console.log('🌐 HTTP请求对象创建成功');
       
       // 设置请求头
       const headers: Record<string, string> = {
@@ -48,8 +99,6 @@ export class ApiService {
       Object.keys(customHeader).forEach(key => {
         headers[key] = customHeader[key];
       });
-      
-      console.log('🌐 请求头:', JSON.stringify(headers));
 
       // 设置请求选项
       const requestOptions: http.HttpRequestOptions = {
@@ -63,14 +112,10 @@ export class ApiService {
       if (options.body) {
         requestOptions.extraData = options.body;
       }
-      
-      console.log('🌐 开始发送HTTP请求...');
+
       const response = await httpRequest.request(url, requestOptions);
-      console.log('🌐 HTTP请求完成，响应码:', response.responseCode);
-      console.log('🌐 响应结果:', response.result.toString());
-      
+
       httpRequest.destroy();
-      console.log('🌐 HTTP请求对象已销毁');
 
       if (response.responseCode !== 200) {
         throw new Error(`HTTP error! status: ${response.responseCode}`);
@@ -900,6 +945,141 @@ export class ApiService {
       throw new Error(response.message || 'Failed to get ai role');
     }
   }
+
+  // ==================== 评论系统接口 ====================
+
+  /**
+   * 获取AI角色的评论列表
+   */
+  static async getCommentsByAiRoleId(aiRoleId: number, page: number = 1, size: number = 10): Promise<CommentListResponse> {
+    const response = await ApiService.request<CommentListResponse>(`${API_BASE_URL}/comments/ai-role/${aiRoleId}?page=${page}&size=${size}`);
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '获取评论列表失败');
+    }
+  }
+
+  /**
+   * 获取评论的回复列表
+   */
+  static async getRepliesByRootCommentId(rootCommentId: number, page: number = 1, size: number = 10): Promise<ReplyListResponse> {
+    const response = await ApiService.request<ReplyListResponse>(`${API_BASE_URL}/comments/${rootCommentId}/replies?page=${page}&size=${size}`);
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '获取回复列表失败');
+    }
+  }
+
+  /**
+   * 发布评论
+   */
+  static async publishComment(aiRoleId: number, userId: number, content: string): Promise<PublishCommentResponse> {
+    const response = await ApiService.request<PublishCommentResponse>(`${API_BASE_URL}/comments/publish`, {
+      method: http.RequestMethod.POST,
+      body: JSON.stringify({
+        aiRoleId: aiRoleId,
+        userId: userId,
+        content: content
+      })
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '发布评论失败');
+    }
+  }
+
+  /**
+   * 回复评论
+   */
+  static async replyComment(aiRoleId: number, userId: number, content: string, rootCommentId: number, toCommentId?: number): Promise<ReplyCommentResponse> {
+    const requestBody: ReplyCommentRequestBody = {
+      aiRoleId: aiRoleId,
+      userId: userId,
+      content: content,
+      rootCommentId: rootCommentId
+    };
+
+    if (toCommentId) {
+      requestBody.toCommentId = toCommentId;
+    }
+
+    const response = await ApiService.request<ReplyCommentResponse>(`${API_BASE_URL}/comments/reply`, {
+      method: http.RequestMethod.POST,
+      body: JSON.stringify(requestBody)
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '发布回复失败');
+    }
+  }
+
+  /**
+   * 点赞评论
+   */
+  static async likeComment(commentId: number, userId: number): Promise<LikeOperationResponse> {
+    const response = await ApiService.request<LikeOperationResponse>(`${API_BASE_URL}/comments/${commentId}/like?userId=${userId}`, {
+      method: http.RequestMethod.POST
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '点赞失败');
+    }
+  }
+
+  /**
+   * 取消点赞评论
+   */
+  static async unlikeComment(commentId: number, userId: number): Promise<LikeOperationResponse> {
+    const response = await ApiService.request<LikeOperationResponse>(`${API_BASE_URL}/comments/${commentId}/like?userId=${userId}`, {
+      method: http.RequestMethod.DELETE
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '取消点赞失败');
+    }
+  }
+
+  /**
+   * 删除评论
+   */
+  static async deleteComment(commentId: number, userId: number): Promise<DeleteCommentResponse> {
+    const response = await ApiService.request<DeleteCommentResponse>(`${API_BASE_URL}/comments/${commentId}?userId=${userId}`, {
+      method: http.RequestMethod.DELETE
+    });
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '删除评论失败');
+    }
+  }
+
+  /**
+   * 检查用户是否已点赞评论
+   */
+  static async checkUserLikedComment(commentId: number, userId: number): Promise<CheckLikeStatusResponse> {
+    const response = await ApiService.request<CheckLikeStatusResponse>(`${API_BASE_URL}/comments/${commentId}/liked?userId=${userId}`);
+
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || '检查点赞状态失败');
+    }
+  }
 }
+
+
 
 
