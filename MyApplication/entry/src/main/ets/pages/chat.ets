@@ -756,7 +756,7 @@ export struct Chat {
       .height('100%')
       .justifyContent(FlexAlign.SpaceBetween) // 顶部底部内容分开
       .alignItems(HorizontalAlign.Center)
-      .padding({ left:8,right:8, bottom: 30 }) // 移除top padding
+      .padding({ left:8,right:8, bottom: 56 }) // 底部padding与底部导航栏高度一致，避免重叠
 
       // 底部导航栏 (Z-index: 3)
       Column() {

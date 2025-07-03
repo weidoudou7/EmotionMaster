@@ -249,7 +249,8 @@ export struct CreateFigurePage {
                     figureType: role.roleType,
                     figureName: role.roleName,
                     isFromCreateFigure: true,
-                    description: role.roleDescription
+                    description: role.roleDescription,
+                    createdAiRoleId:role.id
                   }
                 });
                 this.lastClickTime = 0;
@@ -261,7 +262,7 @@ export struct CreateFigurePage {
               }
             })
           }
-        }, (role: AiRole, idx: number) => (role.id !== null ? role.id.toString() : idx.toString()))
+        }, )
       }
       .height(110)
       .margin({ left: 20, right: 20, bottom: 18 })

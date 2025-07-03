@@ -1,7 +1,7 @@
 import router from '@ohos.router';
 import http from '@ohos.net.http';
 import { Config } from '../common/config';
-import { it } from '@ohos/hypium';
+
 
 interface FeaturedPerson {
 
@@ -149,7 +149,8 @@ export struct FeaturedList {
                     figureType: item.roleType,
                     figureName: item.roleName,
                     isFromCreateFigure: true,
-                    description: item.roleDescription
+                    description: item.roleDescription,
+                    createdAiRoleId:item.id
                   }
                 });
                 // 重置状态

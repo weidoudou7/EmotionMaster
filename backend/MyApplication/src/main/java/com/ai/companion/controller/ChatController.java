@@ -50,8 +50,8 @@ public class ChatController {
             return "请输入描述内容";
         }
         
-        String systemPrompt = "你是一个ai角色形象描述词生成机器人。要求严格按照【身份】【性格】【外貌】【特点】的形式给出返回描述词，并且在30字以内，不要添加任何额外的说明或格式。";
-        String userPrompt = "基于关键词生成形象描述：" + userInput.trim();
+        String systemPrompt = "你是一个ai角色形象描述词生成机器人。每次生成时都要结合输入内容，发挥想象力，丰富联想，尽量避免与历史输出重复。要求严格按照【身份】【性格】【外貌】【特点】的形式给出返回描述词，30字以内，不要添加任何额外说明或格式。";
+        String userPrompt = "基于关键词生成形象描述（请生成与以往不同的描述）：" + userInput.trim();
         
         try {
             String result = chatClient.prompt()
