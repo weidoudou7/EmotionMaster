@@ -34,6 +34,8 @@ export struct ChatCommentPage {
   @State private replyToComment: CommentItem | null = null; // 当前正在回复的评论
   @State private isActive: boolean = true; // 页面活跃标记
   @State private refreshKey: number = 0; // 强制刷新键
+  @State private pendingDeleteCommentId: number | null = null; // 待删除的评论ID
+  @State private deleteConfirmTimeout: number | null = null; // 删除确认超时定时器
 
   aboutToAppear() {
     this.isActive = true;
@@ -62,6 +64,11 @@ export struct ChatCommentPage {
 
   aboutToDisappear() {
     this.isActive = false;
+    // 清理删除确认定时器
+    if (this.deleteConfirmTimeout !== null) {
+      clearTimeout(this.deleteConfirmTimeout);
+      this.deleteConfirmTimeout = null;
+    }
   }
 
   // 加载所有评论（包括主评论和回复）
@@ -97,6 +104,7 @@ export struct ChatCommentPage {
       if (this.isActive) {
         // 先清空数组，然后重新赋值，确保UI能检测到变化
         this.comments = [];
+        // 使用setTimeout确保UI能检测到数组变化
         setTimeout(() => {
           if (!this.isActive) return;
           this.comments = mainComments;
@@ -120,7 +128,7 @@ export struct ChatCommentPage {
           });
           // 强制触发UI重新渲染
           this.refreshKey++;
-        }, 50);
+        }, 10);
       }
     } catch (error) {
       setTimeout(() => {
@@ -248,44 +256,99 @@ export struct ChatCommentPage {
     }
   }
 
-  // 删除评论
+  // 删除评论（双击确认）
   private async deleteComment(commentId: number) {
-    try {
-      const result = await ApiService.deleteComment(commentId, this.currentUserId);
-      setTimeout(async () => {
-        if (!this.isActive) return;
+    // 如果已经有待删除的评论，且是同一个评论，则执行删除
+    if (this.pendingDeleteCommentId === commentId) {
+      // 清理定时器
+      if (this.deleteConfirmTimeout !== null) {
+        clearTimeout(this.deleteConfirmTimeout);
+        this.deleteConfirmTimeout = null;
+      }
+      
+      // 重置待删除状态
+      this.pendingDeleteCommentId = null;
+      
+      // 执行删除操作
+      try {
+        console.info(`[删除] 开始删除评论ID=${commentId}`);
+        const result = await ApiService.deleteComment(commentId, this.currentUserId);
+        console.info(`[删除] 删除结果:`, result);
         if (result.success) {
+          // 立即清理相关状态
+          this.likedComments.delete(commentId);
+          this.likeCounts[commentId] = 0;
+          this.heartScales[commentId] = 1;
+          console.info(`[删除] 清理状态完成，开始刷新评论列表`);
+          
+          // 立即清空评论数组，强制UI更新
+          this.comments = [];
+          
+          // 立即刷新评论列表
           await this.loadAllComments();
-          try {
-            if (this.isActive) {
-              promptAction.showToast({ message: result.message });
+          console.info(`[删除] 评论列表刷新完成`);
+          
+          // 强制触发UI重新渲染
+          this.refreshKey++;
+          
+          // 显示成功提示
+          setTimeout(() => {
+            if (!this.isActive) return;
+            try {
+              if (this.isActive) {
+                promptAction.showToast({ message: '删除成功' });
+              }
+            } catch (error) {
+              console.error('显示Toast失败:', error);
             }
-          } catch (error) {
-            console.error('显示Toast失败:', error);
-          }
+          }, 100);
         } else {
+          setTimeout(() => {
+            if (!this.isActive) return;
+            try {
+              if (this.isActive) {
+                promptAction.showToast({ message: result.message || '删除失败' });
+              }
+            } catch (error) {
+              console.error('显示Toast失败:', error);
+            }
+          }, 100);
+        }
+      } catch (error) {
+        setTimeout(() => {
+          if (!this.isActive) return;
+          console.error('删除评论失败:', error);
           try {
             if (this.isActive) {
-              promptAction.showToast({ message: result.message });
+              promptAction.showToast({ message: '删除失败，请重试' });
             }
           } catch (error) {
             console.error('显示Toast失败:', error);
           }
-        }
-      }, 100);
-    } catch (error) {
-      setTimeout(() => {
-        if (!this.isActive) return;
-        console.error('删除评论失败:', error);
-        try {
-          if (this.isActive) {
-            promptAction.showToast({ message: '删除失败，请重试' });
-          }
-        } catch (error) {
-          console.error('显示Toast失败:', error);
-        }
-      }, 100);
+        }, 100);
+      }
+      return;
     }
+    
+    // 第一次点击删除，设置待删除状态
+    this.pendingDeleteCommentId = commentId;
+    
+    // 显示确认提示
+    try {
+      if (this.isActive) {
+        promptAction.showToast({ message: '再按一次删除' });
+      }
+    } catch (error) {
+      console.error('显示确认提示失败:', error);
+    }
+    
+    // 设置3秒超时，超时后重置状态
+    this.deleteConfirmTimeout = setTimeout(() => {
+      if (this.isActive) {
+        this.pendingDeleteCommentId = null;
+        this.deleteConfirmTimeout = null;
+      }
+    }, 3000);
   }
 
   // 格式化时间
@@ -517,6 +580,15 @@ export struct ChatCommentPage {
                           this.replyToComment = item;
                           this.commentText = '';
                         })
+                      // 删除主评论按钮（只有评论作者可以删除）
+                      if (item.userId === this.currentUserId) {
+                        Text('删除')
+                          .fontSize(12)
+                          .fontColor(this.pendingDeleteCommentId === item.id ? '#FF6B6B' : 'rgba(255,255,255,0.5)')
+                          .fontWeight(this.pendingDeleteCommentId === item.id ? FontWeight.Bold : FontWeight.Normal)
+                          .margin({ left: 8 })
+                          .onClick(() => this.deleteComment(item.id))
+                      }
                       Blank().layoutWeight(1)
                       // 爱心点赞
                       Text(this.likedComments.has(item.id) ? '❤️' : '🤍')
@@ -579,6 +651,15 @@ export struct ChatCommentPage {
                               this.replyToComment = reply;
                               this.commentText = '';
                             })
+                          // 删除回复按钮（只有回复作者可以删除）
+                          if (reply.userId === this.currentUserId) {
+                            Text('删除')
+                              .fontSize(11)
+                              .fontColor(this.pendingDeleteCommentId === reply.id ? '#FF6B6B' : 'rgba(255,255,255,0.5)')
+                              .fontWeight(this.pendingDeleteCommentId === reply.id ? FontWeight.Bold : FontWeight.Normal)
+                              .margin({ left: 8 })
+                              .onClick(() => this.deleteComment(reply.id))
+                          }
                           Blank().layoutWeight(1)
                           Text(this.likedComments.has(reply.id) ? '❤️' : '🤍')
                             .fontSize(15)
