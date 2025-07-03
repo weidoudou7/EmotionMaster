@@ -17,8 +17,9 @@ interface MusicCloudParams {
   musicTitle?: string;
   musicArtist?: string;
   musicDetail?: MusicDetailVO;
+  songs?: MusicDetailVO[];
+  currentIndex?: number;
 }
-
 @Entry
 @Component
 struct CloudMusicPlayer {
@@ -30,6 +31,7 @@ struct CloudMusicPlayer {
   @State isLoading: boolean = false;
   @State isInitialized: boolean = false;
   @State errorMessage: string = '';
+  @State isRandomMode: boolean = true; // true为随机播放，false为单曲循环
   
   private rotateTimerId: number = -1;
   private audioPlayerService: AudioPlayerService = new AudioPlayerService();
@@ -50,26 +52,32 @@ struct CloudMusicPlayer {
     coverUrl: ''
   };
 
+  @State songs: MusicDetailVO[] = [];
+  @State currentIndex: number = 0;
+
   aboutToAppear() {
-    // 获取路由参数
     const params = router.getParams() as MusicCloudParams;
-    if (params?.musicId) {
-      this.song.musicId = params.musicId;
-    }
-    if (params?.musicTitle) {
-      this.song.title = params.musicTitle;
-    }
-    if (params?.musicArtist) {
-      this.song.artist = params.musicArtist;
-    }
-    if (params?.musicDetail) {
-      this.songDetail = params.musicDetail;
+    if (params?.songs && params?.currentIndex !== undefined) {
+      this.songs = params.songs;
+      this.currentIndex = params.currentIndex;
+      this.setSongByIndex(this.currentIndex);
     } else {
-      this.fetchSongDetail();
+      if (params?.musicId) {
+        this.song.musicId = params.musicId;
+      }
+      if (params?.musicTitle) {
+        this.song.title = params.musicTitle;
+      }
+      if (params?.musicArtist) {
+        this.song.artist = params.musicArtist;
+      }
+      if (params?.musicDetail) {
+        this.songDetail = params.musicDetail;
+      } else {
+        this.fetchSongDetail();
+      }
     }
-    // 设置音频播放器回调
     this.setupAudioCallbacks();
-    // 初始化音频播放器
     this.initAudioPlayer();
   }
 
@@ -115,6 +123,11 @@ struct CloudMusicPlayer {
         this.isPlaying = false;
         this.currentTime = 0;
         this.stopRotate();
+        if (this.isRandomMode) {
+          this.randomPlay();
+        } else {
+          this.setSongByIndex(this.currentIndex); // 单曲循环
+        }
       }
     };
     
@@ -219,6 +232,43 @@ struct CloudMusicPlayer {
     } catch (e) {
       // 不再弹toast
     }
+  }
+
+  setSongByIndex(index: number) {
+    const song = this.songs[index];
+    if (song) {
+      this.songDetail = song;
+      this.song.musicId = song.musicId;
+      this.song.title = song.name;
+      this.song.artist = song.artist;
+      this.currentTime = 0;
+      this.isInitialized = false;
+      this.initAudioPlayer();
+    }
+  }
+
+  previousSong() {
+    if (this.songs.length === 0) return;
+    this.currentIndex = (this.currentIndex - 1 + this.songs.length) % this.songs.length;
+    this.setSongByIndex(this.currentIndex);
+  }
+
+  nextSong() {
+    if (this.songs.length === 0) return;
+    this.currentIndex = (this.currentIndex + 1) % this.songs.length;
+    this.setSongByIndex(this.currentIndex);
+  }
+
+  // 随机播放方法
+  private randomPlay() {
+    if (this.songs.length <= 1) return;
+    let nextIndex = this.currentIndex;
+    // 保证不会随机到当前这首
+    while (nextIndex === this.currentIndex && this.songs.length > 1) {
+      nextIndex = Math.floor(Math.random() * this.songs.length);
+    }
+    this.currentIndex = nextIndex;
+    this.setSongByIndex(this.currentIndex);
   }
 
   build() {
@@ -332,9 +382,16 @@ struct CloudMusicPlayer {
 
         // 播放控制按钮区
         Row() {
-          Image($r('app.media.music_random')).width(28).height(28).margin({ right: 16 })
-          Image($r('app.media.music_last')).width(28).height(28).margin({ left: 30 })
-          
+          // 随机/单曲循环切换按钮
+          Image(this.isRandomMode ? $r('app.media.music_random') : $r('app.media.repeat'))
+            .width(32)
+            .height(32)
+            .onClick(() => {
+              this.isRandomMode = !this.isRandomMode;
+            })
+          Image($r('app.media.music_last'))
+            .width(28).height(28).margin({ left: 30 })
+            .onClick(() => this.previousSong())
           if (this.isPlaying) {
             Image($r('app.media.music_stop'))
               .width(30)
@@ -346,8 +403,9 @@ struct CloudMusicPlayer {
               .margin({ left: 30, right: 30 })
               .onClick(() => this.togglePlay())
           }
-
-          Image($r('app.media.music_next')).width(28).height(28).margin({ right: 30 })
+          Image($r('app.media.music_next'))
+            .width(28).height(28).margin({ right: 30 })
+            .onClick(() => this.nextSong())
           Image($r('app.media.music_list')).width(28).height(28).margin({ left: 16 })
         }
         .width('100%').justifyContent(FlexAlign.Center).alignItems(VerticalAlign.Center)

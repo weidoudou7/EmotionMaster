@@ -15,7 +15,6 @@ import fs from '@ohos.file.fs';
 interface ErrorWithCode {
   code?: number;
 }
-
 @Entry
 @Component
 struct DynamicList {

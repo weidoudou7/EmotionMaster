@@ -436,6 +436,13 @@ export struct Chat {
         // 顶部信息栏 (Z-index: 1)
         Row() {
           // 左侧：智能体头像和名称/连接者信息
+          Image($r('app.media.back'))
+            .width(25)
+            .onClick(()=>{
+              router.pushUrl({
+                url: '/pages/FeaturedList'
+              });
+            })
           Row() {
             if (this.isFromCreateFigure && this.figureImageUrl) {
               // 如果是从CreateFigure页面来的，使用人物图片作为头像

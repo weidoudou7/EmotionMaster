@@ -91,4 +91,12 @@ public interface UserService {
      * @return 影响的行数
      */
     int insertUser(User user);
+
+    /**
+     *
+     * @param email 邮箱
+     * @return
+     */
+    UserInfoVO createOrLoginUserByEmail(String email);
+
 } 

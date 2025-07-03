@@ -19,7 +19,6 @@ class MessageItem {
   isOfficial?: boolean = false;
   isSystem?: boolean = false;
 }
-
 @Entry
 @Component
 export struct MessagePage {

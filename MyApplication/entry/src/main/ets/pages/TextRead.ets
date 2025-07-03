@@ -6,7 +6,6 @@ import worker from '@ohos.worker';
 //import thread from '@ohos.thread';
 //import { permission } from '@ohos.security';
 
-@Entry
 @Component
 struct Index {
   // 输入的文本内容

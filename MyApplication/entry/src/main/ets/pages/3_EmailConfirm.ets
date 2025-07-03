@@ -1,7 +1,6 @@
 import http from '@ohos.net.http';
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
-
 @Entry
 @Component
 struct EmailConfirmPage {
@@ -48,10 +47,11 @@ struct EmailConfirmPage {
         }
       }
     ).then((response) => {
+      promptAction.showToast({ message: JSON.stringify(response) });
       if (response.responseCode === 200) {
         promptAction.showToast({ message: response.result.toString() });
-        // 这里可以跳转到主页面
-        // router.pushUrl({ url: 'pages/你的主页面' });
+        // 跳转到主页面
+        router.push({ url: 'pages/BottomNavBar' });
       } else {
         promptAction.showToast({ message: '验证失败: ' + response.result.toString() });
       }

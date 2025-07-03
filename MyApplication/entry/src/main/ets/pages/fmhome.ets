@@ -231,7 +231,7 @@ export struct FMHomePage {
     }
   ];
 
-  private allMusicIds: string[] = ['1824045033', '202369', '447926071', '436346833', '33471531','186345'];
+  private allMusicIds: string[] = ['1824045033', '202369', '447926071', '436346833', '33471531','186345','2499704738','2491811886','1832581073','5043882','2600797312','2708984802'];
   @State randomSongs: MusicDetailVO[] = [];
   private musicDetailCache: Record<string, MusicDetailVO> = {};
 
@@ -303,7 +303,13 @@ export struct FMHomePage {
     this.stopAutoPlay()
   }
 
+  // 延迟函数，ms为毫秒
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   async fetchRandomSongs() {
+    // 随机打乱并取前3个id
     const ids = [...this.allMusicIds].sort(() => Math.random() - 0.5).slice(0, 3);
     const songs: MusicDetailVO[] = [];
     for (let id of ids) {
@@ -315,6 +321,8 @@ export struct FMHomePage {
           detail = await ApiService.getMusicDetail(id);
           detail.musicId = id;
           this.musicDetailCache[id] = detail;
+          // 每次请求后等待1秒，防止超过1QPS
+          await this.delay(1000);
         }
         songs.push(detail);
       } catch (e) {
@@ -670,7 +678,9 @@ export struct FMHomePage {
                       musicId: song.musicId,
                       musicTitle: song.name,
                       musicArtist: song.artist,
-                      musicDetail: songDetail
+                      musicDetail: songDetail,
+                      songs: this.randomSongs,      // 传递三首歌
+                      currentIndex: idx             // 当前点击的索引
                     }
                   })
                 })

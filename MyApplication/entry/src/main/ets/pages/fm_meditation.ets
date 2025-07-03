@@ -2,7 +2,6 @@ import router from '@ohos.router';
 
 const TIME_OPTIONS: number[] = [1, 5, 10, 30];
 const TIME_LABELS: string[] = ['1分钟', '5分钟', '10分钟', '30分钟'];
-
 @Entry
 @Component
 struct FMMeditationPage {

@@ -20,18 +20,14 @@
       "name": "MainAbility_label",
       "value": "心屿Harmony"
 
-
-
     },
     {
       "name": "reason_internet",
       "value": "应用需要联网播放音乐"
-
     },
     {
       "name": "reason_radioplaying",
       "value": "需要后台运行权限以支持朗读功能"
-
 
     }
   ]
