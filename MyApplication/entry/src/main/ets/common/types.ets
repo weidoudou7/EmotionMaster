@@ -131,3 +131,25 @@ export interface Conversation {
   lastActive: string;
   moodTag: string;
 }
+
+// 消息接口
+export interface Message {
+  id?: number;
+  conversationId: number;
+  senderType: string; // 'user' | 'ai'
+  content: string;
+  audioUrl?: string;
+  sentimentScore?: number;
+  topicTag?: string;
+  timestamp: string;
+}
+
+// 创建消息请求接口
+export interface CreateMessageRequest {
+  conversationId: number;
+  senderType: string;
+  content: string;
+  audioUrl?: string;
+  sentimentScore?: number;
+  topicTag?: string;
+}

@@ -86,5 +86,5 @@ public interface UserService {
     int insertUser(User user);
 
     UserInfoVO createOrLoginUserByEmail(String email);
-    
+
 } 

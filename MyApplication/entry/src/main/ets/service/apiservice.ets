@@ -1,6 +1,6 @@
 import { globalUserData } from '../models/userdata';
 import { Config } from '../common/config';
-import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult, CreateAiRoleRequest, GenerateRoleNameRequest, CreateConversationRequest, Conversation } from '../common/types';
+import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult, CreateAiRoleRequest, GenerateRoleNameRequest, CreateConversationRequest, Conversation, Message, CreateMessageRequest } from '../common/types';
 import {  AiRole } from '../common/types';
 import http from '@ohos.net.http';
 
@@ -902,6 +902,261 @@ export class ApiService {
       return response.data;
     } else {
       throw new Error(response.message || 'Failed to get ai role');
+    }
+  }
+
+  /**
+   * 保存消息到数据库
+   */
+  static async saveMessage(messageData: CreateMessageRequest): Promise<Message> {
+    try {
+      console.log('💬 ApiService.saveMessage 开始保存消息:', messageData);
+      console.log('💬 API_BASE_URL:', API_BASE_URL);
+      
+      const url = `${API_BASE_URL}/ai/message/save`;
+      console.log('💬 请求URL:', url);
+      
+      const requestBody: CreateMessageRequest = {
+        conversationId: messageData.conversationId,
+        senderType: messageData.senderType,
+        content: messageData.content,
+        audioUrl: messageData.audioUrl,
+        sentimentScore: messageData.sentimentScore,
+        topicTag: messageData.topicTag
+      };
+      
+      console.log('💬 请求体:', JSON.stringify(requestBody));
+      
+      const response = await ApiService.request<Message>(url, {
+        method: http.RequestMethod.POST,
+        body: JSON.stringify(requestBody)
+      });
+      
+      console.log('💬 API响应:', response);
+      
+      if (response.success) {
+        console.log('✅ 消息保存成功，返回数据:', response.data);
+        return response.data;
+      } else {
+        console.log('❌ 消息保存失败，API返回错误:', response.message);
+        throw new Error(response.message || 'Failed to save message');
+      }
+    } catch (error) {
+      console.error('❌ 保存消息失败:', error);
+      console.error('❌ 错误类型:', typeof error);
+      console.error('❌ 错误详情:', JSON.stringify(error));
+      
+      if (error instanceof Error) {
+        console.error('❌ 错误消息:', error.message);
+        console.error('❌ 错误堆栈:', error.stack);
+        throw error;
+      } else {
+        throw new Error('保存消息失败: 未知错误');
+      }
+    }
+  }
+
+  /**
+   * 根据会话ID获取消息列表
+   */
+  static async getMessagesByConversationId(conversationId: number): Promise<Message[]> {
+    try {
+      console.log('💬 ApiService.getMessagesByConversationId 开始获取消息列表');
+      console.log('💬 会话ID:', conversationId);
+      console.log('💬 API_BASE_URL:', API_BASE_URL);
+      
+      const url = `${API_BASE_URL}/ai/message/list?conversationId=${conversationId}`;
+      console.log('💬 请求URL:', url);
+      
+      const response = await ApiService.request<Message[]>(url);
+      
+      console.log('💬 API响应:', response);
+      
+      if (response.success) {
+        console.log('✅ 获取消息列表成功，返回数据:', response.data);
+        return response.data;
+      } else {
+        console.log('❌ 获取消息列表失败，API返回错误:', response.message);
+        throw new Error(response.message || 'Failed to get messages');
+      }
+    } catch (error) {
+      console.error('❌ 获取消息列表失败:', error);
+      console.error('❌ 错误类型:', typeof error);
+      console.error('❌ 错误详情:', JSON.stringify(error));
+      
+      if (error instanceof Error) {
+        console.error('❌ 错误消息:', error.message);
+        console.error('❌ 错误堆栈:', error.stack);
+        throw error;
+      } else {
+        throw new Error('获取消息列表失败: 未知错误');
+      }
+    }
+  }
+
+  /**
+   * 根据用户ID和AI角色ID查找对话
+   */
+  static async findConversationByUserAndRole(userId: number, aiRoleId: number): Promise<Conversation | null> {
+    try {
+      console.log('💬 ApiService.findConversationByUserAndRole 开始查找对话');
+      console.log('💬 用户ID:', userId);
+      console.log('💬 AI角色ID:', aiRoleId);
+      console.log('💬 API_BASE_URL:', API_BASE_URL);
+      
+      const url = `${API_BASE_URL}/ai/history/conversation/find?userId=${userId}&aiRoleId=${aiRoleId}`;
+      console.log('💬 请求URL:', url);
+      
+      const response = await ApiService.request<Conversation>(url);
+      
+      console.log('💬 API响应:', response);
+      
+      if (response.success) {
+        console.log('✅ 查找对话成功，返回数据:', response.data);
+        return response.data;
+      } else {
+        console.log('❌ 查找对话失败，API返回错误:', response.message);
+        // 如果找不到对话，返回null而不是抛出错误
+        if (response.message && (response.message.includes('not found') || response.message.includes('未找到'))) {
+          console.log('📝 对话不存在，返回null');
+          return null;
+        }
+        throw new Error(response.message || 'Failed to find conversation');
+      }
+    } catch (error) {
+      console.error('❌ 查找对话失败:', error);
+      console.error('❌ 错误类型:', typeof error);
+      console.error('❌ 错误详情:', JSON.stringify(error));
+      
+      if (error instanceof Error) {
+        console.error('❌ 错误消息:', error.message);
+        console.error('❌ 错误堆栈:', error.stack);
+        throw error;
+      } else {
+        throw new Error('查找对话失败: 未知错误');
+      }
+    }
+  }
+
+  /**
+   * 根据用户ID和AI角色ID查找或创建对话
+   */
+  static async findOrCreateConversation(userId: number, aiRoleId: number, title?: string): Promise<Conversation> {
+    try {
+      console.log('💬 ApiService.findOrCreateConversation 开始查找或创建对话');
+      console.log('💬 用户ID:', userId);
+      console.log('💬 AI角色ID:', aiRoleId);
+      console.log('💬 标题:', title);
+      
+      // 首先尝试查找现有对话
+      const existingConversation = await ApiService.findConversationByUserAndRole(userId, aiRoleId);
+      
+      if (existingConversation) {
+        console.log('✅ 找到现有对话:', existingConversation);
+        return existingConversation;
+      }
+      
+      console.log('📝 未找到现有对话，开始创建新对话...');
+      
+      // 如果没有找到，创建新对话
+      const conversationData: CreateConversationRequest = {
+        userId: userId,
+        aiRoleId: aiRoleId,
+        title: title || `与AI角色的对话`,
+        moodTag: 'normal'
+      };
+      
+      const newConversation = await ApiService.createConversation(conversationData);
+      console.log('✅ 创建新对话成功:', newConversation);
+      return newConversation;
+      
+    } catch (error) {
+      console.error('❌ 查找或创建对话失败:', error);
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error('查找或创建对话失败: 未知错误');
+      }
+    }
+  }
+
+  /**
+   * 分析对话情绪并更新情绪标签
+   */
+  static async analyzeConversationEmotion(conversationId: number): Promise<string> {
+    try {
+      console.log('💬 ApiService.analyzeConversationEmotion 开始分析对话情绪');
+      console.log('💬 会话ID:', conversationId);
+      console.log('💬 API_BASE_URL:', API_BASE_URL);
+      
+      const url = `${API_BASE_URL}/ai/analyze-emotion?conversationId=${conversationId}`;
+      console.log('💬 请求URL:', url);
+      
+      const response = await ApiService.request<string>(url, {
+        method: http.RequestMethod.POST
+      });
+      
+      console.log('💬 API响应:', response);
+      
+      if (response.success) {
+        console.log('✅ 情绪分析成功，返回数据:', response.data);
+        return response.data;
+      } else {
+        console.log('❌ 情绪分析失败，API返回错误:', response.message);
+        throw new Error(response.message || 'Failed to analyze emotion');
+      }
+    } catch (error) {
+      console.error('❌ 情绪分析失败:', error);
+      console.error('❌ 错误类型:', typeof error);
+      console.error('❌ 错误详情:', JSON.stringify(error));
+      
+      if (error instanceof Error) {
+        console.error('❌ 错误消息:', error.message);
+        console.error('❌ 错误堆栈:', error.stack);
+        throw error;
+      } else {
+        throw new Error('情绪分析失败: 未知错误');
+      }
+    }
+  }
+
+  /**
+   * 生成回复建议
+   */
+  static async generateReplySuggestions(conversationId: number): Promise<string[]> {
+    try {
+      console.log('💬 ApiService.generateReplySuggestions 开始生成回复建议');
+      console.log('💬 会话ID:', conversationId);
+      console.log('💬 API_BASE_URL:', API_BASE_URL);
+      
+      const url = `${API_BASE_URL}/ai/generate-replies?conversationId=${conversationId}`;
+      console.log('💬 请求URL:', url);
+      
+      const response = await ApiService.request<string[]>(url, {
+        method: http.RequestMethod.POST
+      });
+      
+      console.log('💬 API响应:', response);
+      
+      if (response.success) {
+        console.log('✅ 回复建议生成成功，返回数据:', response.data);
+        return response.data;
+      } else {
+        console.log('❌ 回复建议生成失败，API返回错误:', response.message);
+        throw new Error(response.message || 'Failed to generate reply suggestions');
+      }
+    } catch (error) {
+      console.error('❌ 回复建议生成失败:', error);
+      console.error('❌ 错误类型:', typeof error);
+      console.error('❌ 错误详情:', JSON.stringify(error));
+      
+      if (error instanceof Error) {
+        console.error('❌ 错误消息:', error.message);
+        console.error('❌ 错误堆栈:', error.stack);
+        throw error;
+      } else {
+        throw new Error('回复建议生成失败: 未知错误');
+      }
     }
   }
 }

@@ -25,6 +25,12 @@
         SELECT * FROM conversations WHERE ai_role_id = #{aiRoleId}
     </select>
 
+    <select id="selectByUserIdAndAiRoleId" resultMap="ConversationResultMap">
+        SELECT * FROM conversations 
+        WHERE user_id = #{userId} AND ai_role_id = #{aiRoleId}
+        LIMIT 1
+    </select>
+
     <select id="selectAll" resultMap="ConversationResultMap">
         SELECT * FROM conversations
     </select>
