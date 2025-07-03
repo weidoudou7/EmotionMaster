@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ai.companion.mapper.CommentMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="CommentResultMap" type="com.ai.companion.entity.Comment">
+        <id column="id" property="id"/>
+        <result column="ai_role_id" property="aiRoleId"/>
+        <result column="user_id" property="userId"/>
+        <result column="content" property="content"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="reply_count" property="replyCount"/>
+        <result column="root_comment_id" property="rootCommentId"/>
+        <result column="to_comment_id" property="toCommentId"/>
+        <result column="reply_to_user_id" property="replyToUserId"/>
+        <result column="reply_to_username" property="replyToUsername"/>
+        <result column="is_top" property="isTop"/>
+        <result column="is_author" property="isAuthor"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <!-- 关联查询字段 -->
+        <result column="username" property="username"/>
+        <result column="profile_image" property="profileImage"/>
+        <result column="total_replies" property="totalReplies"/>
+    </resultMap>
+
+    <!-- 分页获取顶级评论列表以及各自的子评论总数 -->
+    <select id="getRootCommentsWithReplyCount" resultMap="CommentResultMap">
+        SELECT 
+            c.*,
+            u.username,
+            u.profile_image,
+            (SELECT COUNT(*) FROM comments WHERE root_comment_id = c.id AND status = 'normal') as total_replies
+        FROM comments c
+        LEFT JOIN users u ON c.user_id = u.id
+        WHERE c.ai_role_id = #{aiRoleId} 
+            AND c.root_comment_id IS NULL 
+            AND c.status = 'normal'
+        ORDER BY c.is_top DESC, c.created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 根据顶级评论的id列表，获取他们各自前三条子评论 -->
+    <select id="getTopRepliesByRootCommentIds" resultMap="CommentResultMap">
+        SELECT 
+            c.*,
+            u.username,
+            u.profile_image
+        FROM comments c
+        LEFT JOIN users u ON c.user_id = u.id
+        WHERE c.root_comment_id IN 
+        <foreach collection="rootCommentIds" item="rootCommentId" open="(" separator="," close=")">
+            #{rootCommentId}
+        </foreach>
+            AND c.status = 'normal'
+            AND (
+                SELECT COUNT(*) 
+                FROM comments c2 
+                WHERE c2.root_comment_id = c.root_comment_id 
+                    AND c2.id &lt;= c.id
+                    AND c2.status = 'normal'
+            ) &lt;= 3
+        ORDER BY c.root_comment_id, c.created_at ASC
+    </select>
+
+    <!-- 根据root_comment_id分页获取子评论 -->
+    <select id="getRepliesByRootCommentId" resultMap="CommentResultMap">
+        SELECT 
+            c.*,
+            u.username,
+            u.profile_image
+        FROM comments c
+        LEFT JOIN users u ON c.user_id = u.id
+        WHERE c.root_comment_id = #{rootCommentId} 
+            AND c.status = 'normal'
+        ORDER BY c.created_at ASC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 插入新评论 -->
+    <insert id="insertComment" parameterType="com.ai.companion.entity.Comment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO comments (
+            ai_role_id, user_id, content, like_count, reply_count,
+            root_comment_id, to_comment_id, reply_to_user_id, reply_to_username,
+            is_top, is_author, status, created_at, updated_at
+        ) VALUES (
+            #{aiRoleId}, #{userId}, #{content}, #{likeCount}, #{replyCount},
+            #{rootCommentId}, #{toCommentId}, #{replyToUserId}, #{replyToUsername},
+            #{isTop}, #{isAuthor}, #{status}, NOW(), NOW()
+        )
+    </insert>
+
+    <!-- 根据ID查询评论 -->
+    <select id="getCommentById" resultMap="CommentResultMap">
+        SELECT 
+            c.*,
+            u.username,
+            u.profile_image
+        FROM comments c
+        LEFT JOIN users u ON c.user_id = u.id
+        WHERE c.id = #{id} AND c.status = 'normal'
+    </select>
+
+    <!-- 更新评论 -->
+    <update id="updateComment" parameterType="com.ai.companion.entity.Comment">
+        UPDATE comments 
+        SET content = #{content},
+            is_top = #{isTop},
+            is_author = #{isAuthor},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除评论（软删除） -->
+    <update id="deleteComment">
+        UPDATE comments 
+        SET status = 'deleted', updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 获取评论总数 -->
+    <select id="getCommentCount" resultType="int">
+        SELECT COUNT(*) 
+        FROM comments 
+        WHERE ai_role_id = #{aiRoleId}
+            AND status = 'normal'
+    </select>
+
+    <!-- 获取回复总数 -->
+    <select id="getReplyCount" resultType="int">
+        SELECT COUNT(*) 
+        FROM comments 
+        WHERE root_comment_id = #{rootCommentId} 
+            AND status = 'normal'
+    </select>
+
+    <update id="increaseReplyCount">
+        UPDATE comments SET reply_count = reply_count + 1 WHERE id = #{commentId}
+    </update>
+
+    <update id="decreaseReplyCount">
+        UPDATE comments SET reply_count = GREATEST(reply_count - 1, 0) WHERE id = #{commentId}
+    </update>
+
+</mapper> 
