@@ -5,6 +5,10 @@ import { CreateConversationRequest } from '../common/types';
 import { ReadStateCode, TextReader, TextReaderIcon } from '@kit.SpeechKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { Context } from '@ohos.arkui.UIContext';
+import abilityAccessCtrl from '@ohos.abilityAccessCtrl';
+import SpeechRecognizerManager from '../utils/SpeechRecognizerManager'
+import { Permissions } from '@kit.AbilityKit'
+import { AudioCapturerManager } from '../utils/AudioCapturerManager'
 
 interface ChatMessage {
   id: number;
@@ -90,6 +94,17 @@ export struct Chat {
 
   @State private createdAiRoleId: number = 0; // 新增：创建的AI角色ID
 
+  @State private isVoiceMode: boolean = false;
+  @State private isRecording: boolean = false;
+  @State private showRecordPanel: boolean = false;
+  @State private recordDuration: number = 0;
+  @State private isCancelRecord: boolean = false;
+  @State private touchStartY: number = 0;
+  @State private fileName: string = '';
+  @State private volumeLevel: number = 0; // 可选：用于声波动画
+  private recordTimer: number = 0;
+  private volumeTimer: number = 0;
+
   aboutToAppear() {
     // 获取路由参数
     const params = router.getParams() as ChatParams;
@@ -169,7 +184,6 @@ export struct Chat {
     this.chatData.forEach(item => {
       this.readStateMap.set(item.id, ReadStateCode.WAITING);
     });
-
   }
 
   // 新增：初始化朗读控件的方法
@@ -478,35 +492,69 @@ export struct Chat {
         // 底部输入区域 (Z-index: 4)
         Row() {
           // 左侧语音按钮
-          Image($r('app.media.voice_icon')) // TODO: 替换为实际的 ic_voice 图片资源
+          Image($r('app.media.voice_icon'))
             .width(26).height(26)
             .margin({ right: 8 })
+            .onClick(() => {
+              this.isVoiceMode = !this.isVoiceMode; // 切换语音/文本输入模式
+            })
 
-          // 输入框
-          TextInput({
-            text: this.inputText,
-            placeholder: '发送消息给' + this.agentName
-          })
-            .type(InputType.Normal)
-            .placeholderColor('#aaa')
-            .fontColor(Color.White)
-            .fontSize(16)
-            .layoutWeight(1) // 占据剩余空间
+          // 输入框或语音按钮
+          if (!this.isVoiceMode) {
+            // 文本输入模式
+            TextInput({
+              text: this.inputText,
+              placeholder: '发送消息给' + this.agentName
+            })
+              .type(InputType.Normal)
+              .placeholderColor('#aaa')
+              .fontColor(Color.White)
+              .fontSize(16)
+              .layoutWeight(1) // 占据剩余空间
+              .height(48)
+              .borderWidth(0) // 设置边框宽度为0，移除边框
+              .padding({ left: 16, right: 16 })
+              .margin({ right: 8 })
+              .onChange((text: string) => {
+                this.inputText = text;
+              })
+              .onFocus(() => {
+                this.isInputFocused = true;
+                // 新增：输入框获得焦点时滚动到底部
+                this.scrollToBottom();
+              })
+              .onBlur(() => {
+                this.isInputFocused = false;
+              })
+          } else {
+            // 语音输入模式
+            Button() {
+              Text(this.isRecording ? '松开发送' : '按住说话')
+                .fontColor(Color.White)
+                .fontSize(16)
+            }
+            .width('100%')
             .height(48)
-            .borderWidth(0) // 设置边框宽度为0，移除边框
-            .padding({ left: 16, right: 16 })
-            .margin({ right: 8 })
-            .onChange((text: string) => {
-              this.inputText = text;
+            .backgroundColor('rgba(0,0,0,0.3)')
+            .borderRadius(24)
+            .onTouch((event: TouchEvent) => {
+              if (event.type === TouchType.Down) {
+                this.touchStartY = event.touches[0].y;
+                this.isCancelRecord = false;
+                this.showRecordPanel = true;
+                this.startRecord();
+              } else if (event.type === TouchType.Move) {
+                if (this.touchStartY - event.touches[0].y > 50) {
+                  this.isCancelRecord = true;
+                } else {
+                  this.isCancelRecord = false;
+                }
+              } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                this.showRecordPanel = false;
+                this.stopAndSendRecord();
+              }
             })
-            .onFocus(() => {
-              this.isInputFocused = true;
-              // 新增：输入框获得焦点时滚动到底部
-              this.scrollToBottom();
-            })
-            .onBlur(() => {
-              this.isInputFocused = false;
-            })
+          }
 
           // 右侧加号按钮 (用于更多功能)
           Image($r('app.media.ic_add_circle')) // TODO: 替换为实际的 ic_add_circle 图片资源
@@ -560,6 +608,55 @@ export struct Chat {
       .alignItems(HorizontalAlign.Center)
       .zIndex(3) // 确保在最上层
       .align(Alignment.Bottom) // 确保对齐到 Stack 的底部
+
+
+      if (this.showRecordPanel) {
+
+        // 蒙层
+        Stack() {
+          // 半透明背景
+          Row() {} // 空Row
+            .backgroundColor('rgba(0,0,0,0.3)')
+            .width('100%')
+            .height('100%')
+
+          // 这里用一个动态宽度的矩形模拟声波
+          // 录音弹窗
+          Column() {
+            // 声波动画（可用简单动画或图片代替）
+            // 这里用一个动态宽度的矩形模拟声波
+            // let base = this.volumeLevel / 2 + 20;
+            // let heights: number[] = [1,2,3,4,5].map(() => Math.max(10, base + (Math.random() * 10 - 5)));
+
+            Row() {
+              ForEach([1,2,3,4,5], (i: number) => {
+                Blank()
+                  .width(6)
+                  .height(30)
+                  .backgroundColor(this.isCancelRecord ? '#ff4d4f' : '#00e0ff')
+                  .margin({ left: 2, right: 2 })
+              })
+            }
+            .margin({ bottom: 12 })
+
+            // 状态提示
+            Text(this.isCancelRecord ? '松开手指，取消发送' : '上滑取消')
+              .fontColor(this.isCancelRecord ? '#ff4d4f' : '#fff')
+              .fontSize(16)
+              .margin({ bottom: 8 })
+
+            // 实时时长
+            Text(`${this.recordDuration}"`)
+              .fontColor('#fff')
+              .fontSize(20)
+          }
+          .padding({ top: 40, bottom: 40, left: 30, right: 30 })
+          .backgroundColor('rgba(0,0,0,0.8)')
+          .borderRadius(16)
+          .align(Alignment.Center)
+        }
+        .zIndex(99)
+      }
     }
   }
 
@@ -705,4 +802,66 @@ export struct Chat {
           }
         })
      }
+
+  private async startRecord() {
+    this.isRecording = true;
+    this.recordDuration = 0;
+    this.fileName = Date.now().toString();
+    await AudioCapturerManager.startRecord(this.fileName);
+
+    this.recordTimer = setInterval(() => {
+      this.recordDuration += 1;
+      console.log('recordDuration:', this.recordDuration);
+    }, 1000);
+
+    // 可选：音量动画
+    // this.volumeTimer = setInterval(() => {
+    //   // 这里可用AudioCapturerManager.audioCapturer?.getAudioVolume()，如有实现
+    //   this.volumeLevel = Math.random() * 100; // demo用
+    // }, 100);
+  }
+
+  private async stopAndSendRecord() {
+    clearInterval(this.recordTimer);
+    clearInterval(this.volumeTimer);
+    this.isRecording = false;
+
+    await AudioCapturerManager.stopRecord();
+
+    if (this.isCancelRecord || this.recordDuration < 1) {
+      // 删除录音文件
+      // 可选：fs.unlinkSync(`${ctx.filesDir}/${this.fileName}.wav`);
+      this.recordDuration = 0;
+      this.isCancelRecord = false;
+      return;
+    }
+
+    // 录音文件转文本
+    this.recognizeAudioFile(this.fileName);
+
+    this.recordDuration = 0;
+    this.isCancelRecord = false;
+  }
+
+  private recognizeAudioFile(fileName: string) {
+    SpeechRecognizerManager.init2((res) => {
+      let text = res.result || '未识别到语音内容';
+      this.sendVoiceMessage(fileName, this.recordDuration, text);
+    }, fileName);
+  }
+
+  private sendVoiceMessage(fileName: string, duration: number, text: string) {
+    const newMessage: ChatMessage = {
+      id: this.chatData.length + 1,
+      isMe: true,
+      avatar: $r('app.media.splash'),
+      content: text ? `[语音] ${text}` : '[语音]',
+      time: new Date().toLocaleTimeString().slice(0, 5),
+      type: 'voice',
+      duration: duration,
+      // 可扩展：audioPath: `${ctx.filesDir}/${fileName}.wav`
+    };
+    this.chatData = [...this.chatData, newMessage];
+    this.scrollToBottom();
+  }
 }
