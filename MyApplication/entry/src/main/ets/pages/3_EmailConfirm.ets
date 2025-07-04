@@ -1,14 +1,18 @@
 import http from '@ohos.net.http';
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
+
 @Entry
 @Component
 struct EmailConfirmPage {
-  @State email: string = ''
+  @State email: string = ""
   @State code: string = ''
   @State agree: boolean = false
   @State canSendCode: boolean = true
   @State countdown: number = 0
+
+
+
 
   sendEmailCode() {
     if (!this.canSendCode) {
@@ -30,6 +34,8 @@ struct EmailConfirmPage {
     ).then((response) => {
       if (response.responseCode === 200) {
         promptAction.showToast({ message: response.result.toString() });
+        // 保存邮箱到本地
+        AppStorage.setOrCreate("user_email", this.email);
         // 开始倒计时
         this.canSendCode = false;
         this.countdown = 60;
@@ -123,7 +129,7 @@ struct EmailConfirmPage {
         .margin({ bottom: 40 })
 
       // 邮箱输入框
-      TextInput({ placeholder: '请输入QQ邮箱' })
+      TextInput({ placeholder: '请输入QQ邮箱', text: $$this.email })
         .placeholderColor('#6e6e6e')
         .type(InputType.Email)
         .fontSize(18)
@@ -136,6 +142,7 @@ struct EmailConfirmPage {
         .margin({ bottom: 20 })
         .onChange((value: string) => {
           this.email = value;
+          AppStorage.setOrCreate("user_email", value);
         })
 
       // 验证码输入框和获取验证码按钮

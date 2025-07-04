@@ -8,9 +8,6 @@ import http from '@ohos.net.http';
 // API基础配置 - 从配置文件获取
 const API_BASE_URL = Config.getApiBaseUrl();
 
-
-//const API_BASE_URL = 'http://10.128.156.25:8081/api';
-
 // 定义HTTP请求选项接口
 interface HttpRequestOptions {
   method?: http.RequestMethod;
@@ -308,7 +305,7 @@ export class ApiService {
    */
   static async chatWithAI(prompt: string, chatId: string, identity: string = 'default'): Promise<string> {
     try {
-      const url = `${API_BASE_URL}/ai/chat/${identity}?prompt=${encodeURIComponent(prompt)}&chatId=${encodeURIComponent(chatId)}`;
+    const url = `${API_BASE_URL}/ai/chat/${identity}?prompt=${encodeURIComponent(prompt)}&chatId=${encodeURIComponent(chatId)}`;
       
       console.log('发送AI聊天请求到:', url);
       console.log('用户输入:', prompt);
@@ -557,19 +554,19 @@ export class ApiService {
     console.log('🌐 请求URL:', `${API_BASE_URL}/dynamic/create/${userUID}`);
 
     try {
-      const response = await ApiService.request<Dynamic>(`${API_BASE_URL}/dynamic/create/${userUID}`, {
-        method: http.RequestMethod.POST,
-        body: JSON.stringify(dynamicData)
-      });
+    const response = await ApiService.request<Dynamic>(`${API_BASE_URL}/dynamic/create/${userUID}`, {
+      method: http.RequestMethod.POST,
+      body: JSON.stringify(dynamicData)
+    });
 
       console.log('🌐 API响应:', JSON.stringify(response));
 
-      if (response.success) {
+    if (response.success) {
         console.log('✅ 创建动态成功:', JSON.stringify(response.data));
-        return response.data;
-      } else {
+      return response.data;
+    } else {
         console.log('❌ 创建动态失败:', response.message);
-        throw new Error(response.message || 'Failed to create dynamic');
+      throw new Error(response.message || 'Failed to create dynamic');
       }
     } catch (error) {
       console.error('❌ ApiService.createDynamic 异常:', error);
@@ -708,7 +705,7 @@ export class ApiService {
   static async getFeatured4Types(): Promise<Record<string, AiRole[]>> {
     const response = await ApiService.request<Record<string, AiRole[]>>(`${API_BASE_URL}/ai/role/featured4types`);
     if (response.success !== false && response.data) {
-      return response.data;
+    return response.data;
     } else if (response.data) {
       return response.data;
     } else {

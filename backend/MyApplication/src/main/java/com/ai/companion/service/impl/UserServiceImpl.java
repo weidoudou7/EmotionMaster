@@ -288,15 +288,14 @@ public class UserServiceImpl implements UserService {
     }
     @Override
     public UserInfoVO createOrLoginUserByEmail(String email) {
-        // 1. 查询邮箱是否已存在
         User user = userMapper.selectByEmail(email);
         LocalDateTime now = LocalDateTime.now();
         if (user == null) {
-            // 2. 新用户注册
+            System.out.println("[用户注册] 插入新用户: " + email);
             String userUID = UUID.randomUUID().toString().replace("-", "");
             user = new User();
             user.setUserUID(userUID);
-            user.setUserName("用户" + userUID.substring(0, 6)); // 默认用户名
+            user.setUserName("用户" + userUID.substring(0, 6));
             user.setGender("未设置");
             user.setPrivacyVisible(false);
             user.setSignature("这个人很懒，什么都没留下~");
@@ -307,13 +306,11 @@ public class UserServiceImpl implements UserService {
             user.setUserAvatar("/avatars/default.png");
             userMapper.insertUser(user);
         } else {
-            // 3. 已注册用户，更新登录时间
+            System.out.println("[用户登录] 更新老用户登录时间: " + email);
             user.setUpdateTime(now);
             userMapper.updateUser(user);
         }
-        // 4. 返回VO
         return convertToVO(user);
-
     }
 
     /**
