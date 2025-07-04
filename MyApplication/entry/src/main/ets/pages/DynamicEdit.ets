@@ -7,11 +7,13 @@ import { CreateDynamicRequest } from '../common/types';
 import { NetworkUtils, CommonUtils } from '../common/utils';
 import { Config } from '../common/config';
 import promptAction from '@ohos.promptAction';
+import picker from '@ohos.file.picker';
+import fs from '@ohos.file.fs';
 
 @Component
 struct DynamicEdit {
   @State content: string = ''; // 动态内容
-  @State selectedImages: string[] = []; // 选中的图片
+  @State selectedImages: { uri: string, name: string }[] = []; // 选中的图片（文件uri和文件名）
   @State isSubmitting: boolean = false; // 是否正在提交
   @State userUID: string = globalUserData.userUID;
   @State isNetworkConnected: boolean = true; // 网络连接状态
@@ -26,26 +28,24 @@ struct DynamicEdit {
     this.isNetworkConnected = await NetworkUtils.checkNetworkConnection();
   }
 
-  // 选择图片
+  // 选择图片（支持多选，最多9张）
   async selectImages(): Promise<void> {
     try {
-      // 暂时使用占位图片，避免复杂的文件操作
-      const placeholderImages = [
-        'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+5Zu+54mHPC90ZXh0Pjwvc3ZnPg=='
-      ];
-      
-      // 模拟选择图片
-      const maxImages = 9 - this.selectedImages.length;
-      const imagesToAdd = Math.min(maxImages, placeholderImages.length);
-      
-      for (let i = 0; i < imagesToAdd; i++) {
-        this.selectedImages.push(placeholderImages[i]);
+      let photoPicker = new picker.PhotoViewPicker();
+      let photoSelectOptions: picker.PhotoSelectOptions = {
+        MIMEType: picker.PhotoViewMIMETypes.IMAGE_TYPE,
+        maxSelectNumber: 9 - this.selectedImages.length
+      };
+      let photoViewPicker = await photoPicker.select(photoSelectOptions);
+      if (photoViewPicker && photoViewPicker.photoUris && photoViewPicker.photoUris.length > 0) {
+        for (let uri of photoViewPicker.photoUris) {
+          // 获取文件名
+          const name = uri.split('/').pop() || 'image.jpg';
+          this.selectedImages.push({ uri, name });
+        }
+        promptAction.showToast({ message: `已添加${photoViewPicker.photoUris.length}张图片` });
       }
-      
-      promptAction.showToast({ message: `已添加${imagesToAdd}张图片` });
-      
     } catch (error) {
-      console.error('选择图片失败:', error);
       promptAction.showToast({ message: '选择图片失败' });
     }
   }
@@ -55,40 +55,50 @@ struct DynamicEdit {
     this.selectedImages.splice(index, 1);
   }
 
-  // 提交动态
+  // 提交动态（FormData上传）
   async submitDynamic(): Promise<void> {
     if (CommonUtils.isEmpty(this.content)) {
       promptAction.showToast({ message: '请输入动态内容' });
       return;
     }
-
     if (this.isSubmitting) {
       return;
     }
-
-    // 检查网络连接
     if (!this.isNetworkConnected) {
       NetworkUtils.showNetworkError();
       return;
     }
-
     try {
       this.isSubmitting = true;
-      
-      const dynamicData: CreateDynamicRequest = {
-        content: this.content.trim(),
-        images: this.selectedImages.length > 0 ? this.selectedImages : undefined
-      };
-
-      await ApiService.createDynamic(this.userUID, dynamicData);
-      
+      // 构建FormData
+      const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substr(2);
+      let body = '';
+      body += `--${boundary}\r\n`;
+      body += `Content-Disposition: form-data; name=\"content\"\r\n\r\n${this.content.trim()}\r\n`;
+      // 读取图片内容并拼接到body
+      for (let i = 0; i < this.selectedImages.length; i++) {
+        const img = this.selectedImages[i];
+        const fd = await fs.open(img.uri, fs.OpenMode.READ_ONLY);
+        const stat = await fs.stat(img.uri);
+        const buffer = new Uint8Array(stat.size);
+        await fs.read(fd.fd, buffer.buffer, { offset: 0 });
+        await fs.close(fd);
+        body += `--${boundary}\r\n`;
+        body += `Content-Disposition: form-data; name=\"images\"; filename=\"${img.name}\"\r\n`;
+        body += `Content-Type: image/jpeg\r\n\r\n`;
+        let str = '';
+        for (let j = 0; j < buffer.length; j++) {
+          str += String.fromCharCode(buffer[j]);
+        }
+        body += str;
+        body += '\r\n';
+      }
+      body += `--${boundary}--\r\n`;
+      await ApiService.createDynamicForm(this.userUID, body, boundary);
       promptAction.showToast({ message: '动态发布成功' });
-      
-      // 返回上一页
       let uiContext: UIContext = this.getUIContext();
       let router = uiContext.getRouter();
       router.back();
-      
     } catch (error) {
       console.error('发布动态失败:', error);
       promptAction.showToast({ message: '发布动态失败' });
@@ -160,10 +170,10 @@ struct DynamicEdit {
                   .margin({ bottom: 8 })
                 
                 Grid() {
-                  ForEach(this.selectedImages, (image: string, index: number) => {
+                  ForEach(this.selectedImages, (image: { uri: string, name: string }, index: number) => {
                     GridItem() {
                       Stack() {
-                        Image(image)
+                        Image(image.uri)
                           .width('100%')
                           .height(80)
                           .borderRadius(8)

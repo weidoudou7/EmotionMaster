@@ -1381,6 +1381,75 @@ export class ApiService {
       throw new Error(response.message || '检查点赞状态失败');
     }
   }
+
+  // multipart/form-data动态发布
+  static async createDynamicForm(userUID: string, body: string, boundary: string): Promise<string> {
+    const url = `${API_BASE_URL}/dynamic/create/${userUID}`;
+    const httpRequest = http.createHttp();
+    const requestOptions: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      header: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`
+      },
+      extraData: body,
+      readTimeout: Config.getTimeout(),
+      connectTimeout: Config.getTimeout()
+    };
+    const response = await httpRequest.request(url, requestOptions);
+    httpRequest.destroy();
+    if (response.responseCode !== 200) {
+      throw new Error(`HTTP error! status: ${response.responseCode}`);
+    }
+    return response.result as string;
+  }
+
+  // multipart/form-data头像上传
+  static async uploadAvatarForm(userUID: string, body: string, boundary: string): Promise<string> {
+    const url = `${API_BASE_URL}/user/${userUID}/avatar`;
+    console.log('[头像上传] 请求URL:', url);
+    const httpRequest = http.createHttp();
+    const requestOptions: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      header: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`
+      },
+      extraData: body,
+      readTimeout: Config.getTimeout(),
+      connectTimeout: Config.getTimeout()
+    };
+    console.log('[头像上传] 请求参数:', requestOptions);
+    const response = await httpRequest.request(url, requestOptions);
+    httpRequest.destroy();
+    console.log('[头像上传] 响应:', response);
+    if (response.responseCode !== 200) {
+      throw new Error(`HTTP error! status: ${response.responseCode}`);
+    }
+    return response.result as string;
+  }
+
+  // 头像上传（Base64方式）
+  static async uploadAvatarBase64(userUID: string, base64Data: string): Promise<string> {
+    const url = `${API_BASE_URL}/user/${userUID}/avatar/base64`;
+    console.log('[头像上传Base64] 请求URL:', url);
+    const httpRequest = http.createHttp();
+    const requestOptions: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      header: {
+        'Content-Type': 'application/json'
+      },
+      extraData: JSON.stringify({ imageData: base64Data }),
+      readTimeout: Config.getTimeout(),
+      connectTimeout: Config.getTimeout()
+    };
+    console.log('[头像上传Base64] 请求参数:', requestOptions);
+    const response = await httpRequest.request(url, requestOptions);
+    httpRequest.destroy();
+    console.log('[头像上传Base64] 响应:', response);
+    if (response.responseCode !== 200) {
+      throw new Error(`HTTP error! status: ${response.responseCode}`);
+    }
+    return response.result as string;
+  }
 }
 
 

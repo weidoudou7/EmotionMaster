@@ -8,10 +8,12 @@ import com.ai.companion.entity.vo.DynamicVO;
 import com.ai.companion.entity.vo.UserInfoVO;
 import com.ai.companion.service.DynamicService;
 import com.ai.companion.service.UserService;
+import com.ai.companion.service.ImageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/dynamic")
@@ -23,6 +25,9 @@ public class DynamicController {
     
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private ImageService imageService;
 
     /**
      * 创建新动态（使用CreateDynamicRequest）
@@ -280,5 +285,29 @@ public class DynamicController {
     @GetMapping("/health")
     public ApiResponse<String> health() {
         return ApiResponse.success("动态服务运行正常", "OK");
+    }
+
+    /**
+     * 新增：支持multipart/form-data的动态创建（多图上传）
+     */
+    @PostMapping("/create/{userUID}/multipart")
+    public ApiResponse<DynamicVO> createDynamicMultipart(
+            @PathVariable String userUID,
+            @RequestParam("content") String content,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
+        try {
+            List<String> imageUrls = new ArrayList<>();
+            if (images != null && !images.isEmpty()) {
+                // 复用图片批量上传逻辑
+                imageUrls = imageService.uploadImages(images, userUID).getImageUrls();
+            }
+            // 其他参数可根据需要扩展
+            Dynamic dynamic = dynamicService.createDynamic(userUID, content, imageUrls, List.of(), "public");
+            UserInfoVO userInfoVO = userService.getUserInfo(userUID);
+            DynamicVO dynamicVO = DynamicVO.fromDynamic(dynamic, userInfoVO);
+            return ApiResponse.success("动态创建成功", dynamicVO);
+        } catch (Exception e) {
+            return ApiResponse.error("动态创建失败: " + e.getMessage());
+        }
     }
 }

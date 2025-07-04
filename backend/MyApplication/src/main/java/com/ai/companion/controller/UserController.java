@@ -80,6 +80,9 @@ public class UserController {
             @PathVariable String userUID,
             @RequestParam("file") MultipartFile file) {
         try {
+            System.out.println("[头像上传] 文件名: " + file.getOriginalFilename());
+            System.out.println("[头像上传] 文件大小: " + file.getSize());
+            System.out.println("[头像上传] Content-Type: " + file.getContentType());
             String avatarUrl = userService.uploadAvatar(userUID, file);
             return ApiResponse.success("头像上传成功", avatarUrl);
         } catch (Exception e) {
