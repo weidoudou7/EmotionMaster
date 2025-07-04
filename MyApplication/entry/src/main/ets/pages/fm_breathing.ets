@@ -64,7 +64,6 @@ const BREATHING_PATTERNS: BreathingPattern[] = [
     bgColor: '#F3E5F5'
   }
 ];
-
 @Entry
 @Component
 struct FMBreathingPage {

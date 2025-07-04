@@ -1,8 +1,10 @@
 package com.ai.companion.controller;
 
+import com.ai.companion.entity.AiRole;
 import com.ai.companion.entity.Conversation;
 import com.ai.companion.entity.vo.ApiResponse;
 import com.ai.companion.entity.vo.MessageVO;
+import com.ai.companion.mapper.AiRoleMapper;
 import com.ai.companion.mapper.ConversationMapper;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
@@ -18,11 +20,13 @@ public class ChatHistoryController {
 
     private final ChatMemory chatMemory;
     private final ConversationMapper conversationMapper;
+    private final AiRoleMapper aiRoleMapper;
 
     @Autowired
-    public ChatHistoryController(ChatMemory chatMemory, ConversationMapper conversationMapper) {
+    public ChatHistoryController(ChatMemory chatMemory, ConversationMapper conversationMapper, AiRoleMapper aiRoleMapper) {
         this.chatMemory = chatMemory;
         this.conversationMapper = conversationMapper;
+        this.aiRoleMapper = aiRoleMapper;
     }
 
     /**
@@ -147,6 +151,31 @@ public class ChatHistoryController {
             return ApiResponse.success("查询成功", conversations);
         } catch (Exception e) {
             return ApiResponse.error("查询对话时发生错误: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 根据用户ID和AI角色ID查找对话
+     * GET /ai/history/conversation/find?userId=372&aiRoleId=1
+     */
+    @GetMapping("/conversation/find")
+    public ApiResponse<Conversation> findConversationByUserAndRole(@RequestParam Integer userId, @RequestParam Integer aiRoleId) {
+        try {
+            if (userId == null) {
+                return ApiResponse.error("用户ID不能为空");
+            }
+            if (aiRoleId == null) {
+                return ApiResponse.error("AI角色ID不能为空");
+            }
+
+            Conversation conversation = conversationMapper.selectByUserIdAndAiRoleId(userId, aiRoleId);
+            if (conversation != null) {
+                return ApiResponse.success("查找对话成功", conversation);
+            } else {
+                return ApiResponse.error("未找到对应的对话");
+            }
+        } catch (Exception e) {
+            return ApiResponse.error("查找对话时发生错误: " + e.getMessage());
         }
     }
 }

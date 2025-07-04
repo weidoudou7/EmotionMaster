@@ -2,7 +2,6 @@ import router from '@ohos.router';
 import { ApiService } from '../service/apiservice';
 import { AudioPlayerService, AudioPlayerState } from '../service/audioPlayer';
 import promptAction from '@ohos.promptAction';
-
 @Entry
 @Component
 struct MusicTestPage {

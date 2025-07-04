@@ -13,7 +13,7 @@ public interface ChatRecordService {
     /**
      * 获取或创建会话
      */
-    Conversation getOrCreateConversation(Integer userId, Integer aiRoleId, String chatId, String title, String mode);
+    Conversation getOrCreateConversation(Integer userId, String chatId, String title, String mode);
 
     /**
      * 保存一条消息（用户或AI）
@@ -24,4 +24,9 @@ public interface ChatRecordService {
      * 获取某会话的所有消息
      */
     List<Message> getMessagesByConversationId(Integer conversationId);
+
+    /**
+     * 更新会话的情绪标签
+     */
+    boolean updateConversationMoodTag(Integer conversationId, String moodTag);
 }

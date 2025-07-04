@@ -93,7 +93,6 @@ export struct Chat {
   };
 
   @State private createdAiRoleId: number = 0; // 新增：创建的AI角色ID
-
   @State private isVoiceMode: boolean = false;
   @State private isRecording: boolean = false;
   @State private showRecordPanel: boolean = false;
@@ -104,6 +103,9 @@ export struct Chat {
   @State private volumeLevel: number = 0; // 可选：用于声波动画
   private recordTimer: number = 0;
   private volumeTimer: number = 0;
+  @State private showExtraInputs: boolean = false; // 控制空白栏显示
+  @State private replySuggestions: string[] = ['', '', '']; // 回复建议数组
+  @State private isLoadingSuggestions: boolean = false; // 是否正在加载回复建议
 
   aboutToAppear() {
     // 获取路由参数
@@ -136,8 +138,6 @@ export struct Chat {
           time: new Date().toLocaleTimeString().slice(0, 5)
         };
         this.chatData = [welcomeMessage, ...this.chatData];
-        // 只有从CreateFigure页面来的才创建会话记录
-        this.createConversationRecord();
       } else if (this.figureName && this.figureImageUrl) {
         this.agentName = this.figureName;
         this.agentSubInfo = `${this.figureType}风格角色`;
@@ -166,11 +166,10 @@ export struct Chat {
       this.chatData = [welcomeMessage, ...this.chatData];
       
       console.log('治愈天使默认设置完成');
-      // 只有默认治愈天使时才创建会话记录
-      this.createConversationRecord();
     }
-    
-    // 新增：自动创建对话记录
+
+    // 每次进入chat时都调用createConversationRecord
+    console.log('=== 每次进入chat时都创建/查找对话记录 ===');
     this.createConversationRecord();
 
     // 新增：初始化时滚动到底部
@@ -270,6 +269,11 @@ export struct Chat {
       
       // 新增：滚动到AI回复消息
       this.scrollToBottom();
+
+      // 新增：在AI回复后延迟进行情绪分析（等待消息保存到数据库）
+      setTimeout(() => {
+        this.analyzeEmotion();
+      }, 2000); // 延迟2秒，确保消息已保存到数据库
     } catch (error) {
       console.error('AI回复失败:', error);
       
@@ -301,24 +305,20 @@ export struct Chat {
     try {
       console.log('开始创建对话记录...');
 
-      // 准备对话信息，符合CreateConversationRequest接口
-      const conversationData: CreateConversationRequest = {
-        userId: 405, //todo 默认用户ID，实际应用中应该从用户登录信息获取
-        aiRoleId: this.isFromCreateFigure && this.createdAiRoleId > 0 ? this.createdAiRoleId : 1, // 用新角色ID
-        title: `与${this.agentName}的对话`,
-        moodTag: 'normal' // 默认心情标签
-      };
+      const userId = 405; //todo 默认用户ID，实际应用中应该从用户登录信息获取
+      const aiRoleId = this.createdAiRoleId; //角色ID
+      const title = `与${this.agentName}的对话`;
 
-      console.log('对话数据:', conversationData);
+      console.log('查找或创建对话 - 用户ID:', userId, 'AI角色ID:', aiRoleId, '标题:', title);
 
-      // 调用API创建对话记录
-      const result = await ApiService.createConversation(conversationData);
-      console.log('对话记录创建成功:', result);
-
-      // 可以在这里保存返回的conversationId用于后续的消息记录
-      if (result && result.id) {
-        this.chatId = result.id.toString();
-        console.log('更新聊天ID:', this.chatId);
+      // 使用findOrCreateConversation方法，自动处理查找和创建逻辑
+      const conversation = await ApiService.findOrCreateConversation(userId, aiRoleId, title);
+      
+      if (conversation && conversation.id) {
+        this.chatId = conversation.id.toString();
+        console.log('对话ID已设置:', this.chatId);
+      } else {
+        console.error('对话创建失败，未获取到有效的对话ID');
       }
 
     } catch (error) {
@@ -341,6 +341,82 @@ export struct Chat {
         console.error('滚动到底部失败:', error);
       }
     }, 100); // 延迟100ms确保消息已渲染
+  }
+
+  /**
+   * 新增：分析对话情绪
+   */
+  private async analyzeEmotion(): Promise<void> {
+    try {
+      // 检查是否有有效的对话ID
+      if (!this.chatId || this.chatId === '0' || this.chatId === Date.now().toString()) {
+        console.log('对话ID无效，跳过情绪分析');
+        return;
+      }
+
+      // 检查消息数量，只有当消息数量达到一定数量时才进行分析
+      if (this.chatData.length < 4) { // 至少需要2轮对话（4条消息）
+        console.log('消息数量不足，跳过情绪分析');
+        return;
+      }
+
+      console.log('开始分析对话情绪，对话ID:', this.chatId, '消息数量:', this.chatData.length);
+      
+      // 调用情绪分析API
+      const emotionResult = await ApiService.analyzeConversationEmotion(parseInt(this.chatId));
+      
+      console.log('情绪分析结果:', emotionResult);
+      
+      // 可以在这里添加情绪显示逻辑，比如在界面上显示当前情绪
+      // 例如：this.currentEmotion = emotionResult;
+      
+    } catch (error) {
+      console.error('情绪分析失败:', error);
+      // 不显示错误提示，避免影响用户体验
+    }
+  }
+
+  /**
+   * 新增：生成回复建议
+   */
+  private async generateReplySuggestions(): Promise<void> {
+    try {
+      // 检查是否有有效的对话ID
+      if (!this.chatId || this.chatId === '0' || this.chatId === Date.now().toString()) {
+        console.log('对话ID无效，跳过生成回复建议');
+        return;
+      }
+
+      // 检查消息数量，只有当消息数量达到一定数量时才生成建议
+      if (this.chatData.length < 2) { // 至少需要1轮对话（2条消息）
+        console.log('消息数量不足，跳过生成回复建议');
+        return;
+      }
+
+      this.isLoadingSuggestions = true;
+      console.log('开始生成回复建议，对话ID:', this.chatId, '消息数量:', this.chatData.length);
+      
+      // 调用生成回复建议API
+      const suggestions = await ApiService.generateReplySuggestions(parseInt(this.chatId));
+      
+      console.log('回复建议生成结果:', suggestions);
+      
+      // 更新回复建议数组
+      if (suggestions && suggestions.length > 0) {
+        this.replySuggestions = suggestions.slice(0, 3); // 只取前3个建议
+        // 如果不足3个，用空字符串补齐
+        while (this.replySuggestions.length < 3) {
+          this.replySuggestions.push('');
+        }
+      }
+      
+    } catch (error) {
+      console.error('生成回复建议失败:', error);
+      // 设置默认回复建议
+      this.replySuggestions = ['我理解你的感受', '需要聊聊吗？', '我在这里陪着你'];
+    } finally {
+      this.isLoadingSuggestions = false;
+    }
   }
 
   build() {
@@ -372,6 +448,13 @@ export struct Chat {
         // 顶部信息栏 (Z-index: 1)
         Row() {
           // 左侧：智能体头像和名称/连接者信息
+          Image($r('app.media.back'))
+            .width(25)
+            .onClick(()=>{
+              router.pushUrl({
+                url: '/pages/FeaturedList'
+              });
+            })
           Row() {
             if (this.isFromCreateFigure && this.figureImageUrl) {
               // 如果是从CreateFigure页面来的，使用人物图片作为头像
@@ -436,6 +519,8 @@ export struct Chat {
 
           // 右侧按钮组
           Row() {
+
+
             // 菜单按钮
             Button() {
               Image($r('app.media.menu_icon')) // TODO: 替换为实际的 menu_icon 图片资源
@@ -559,9 +644,14 @@ export struct Chat {
           // 右侧加号按钮 (用于更多功能)
           Image($r('app.media.ic_add_circle')) // TODO: 替换为实际的 ic_add_circle 图片资源
             .width(30).height(30)
-            .onClick(() => {
-              // 加号按钮只负责打开更多功能面板，不发送消息
-              console.log('打开更多功能面板'); // 待实现
+            .onClick(async () => {
+              this.showExtraInputs = !this.showExtraInputs;
+              console.log('打开更多功能面板');
+              
+              // 如果打开面板，则生成回复建议
+              if (this.showExtraInputs) {
+                await this.generateReplySuggestions();
+              }
             })
             .margin({ right: 8 })
 
@@ -593,12 +683,127 @@ export struct Chat {
         .alignItems(VerticalAlign.Center)
         .zIndex(4)
         .borderRadius(35)
+
+        if (this.showExtraInputs) {
+          Column() {
+            // 第一个回复建议
+            Row() {
+              if (this.isLoadingSuggestions) {
+                LoadingProgress()
+                  .width(20).height(20)
+                  .color(Color.White)
+                  .margin({ right: 12 })
+                Text('正在生成回复建议...')
+                  .fontSize(16)
+                  .fontColor(Color.White)
+                  .fontWeight(FontWeight.Medium)
+              } else {
+                Text(this.replySuggestions[0] || '我理解你的感受')
+                  .fontSize(16)
+                  .fontColor(Color.White)
+                  .fontWeight(FontWeight.Medium)
+                  .maxLines(2)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
+              }
+            }
+            .width('100%')
+            .height(50)
+            .backgroundColor('rgba(255,255,255,0.08)')
+            .borderRadius(12)
+            .margin({ top: 4, bottom: 2 })
+            .padding({ left: 16, right: 16 })
+            .justifyContent(FlexAlign.Start)
+            .alignItems(VerticalAlign.Center)
+            .onClick(() => {
+              if (!this.isLoadingSuggestions && this.replySuggestions[0]) {
+                this.inputText = this.replySuggestions[0];
+                this.showExtraInputs = false;
+                console.log('选择回复建议1:', this.replySuggestions[0]);
+              }
+            })
+
+            // 第二个回复建议
+            Row() {
+              if (this.isLoadingSuggestions) {
+                LoadingProgress()
+                  .width(20).height(20)
+                  .color(Color.White)
+                  .margin({ right: 12 })
+                Text('正在生成回复建议...')
+                  .fontSize(16)
+                  .fontColor(Color.White)
+                  .fontWeight(FontWeight.Medium)
+              } else {
+                Text(this.replySuggestions[1] || '需要聊聊吗？')
+                  .fontSize(16)
+                  .fontColor(Color.White)
+                  .fontWeight(FontWeight.Medium)
+                  .maxLines(2)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
+              }
+            }
+            .width('100%')
+            .height(50)
+            .backgroundColor('rgba(255,255,255,0.08)')
+            .borderRadius(12)
+            .margin({ top: 2, bottom: 2 })
+            .padding({ left: 16, right: 16 })
+            .justifyContent(FlexAlign.Start)
+            .alignItems(VerticalAlign.Center)
+            .onClick(() => {
+              if (!this.isLoadingSuggestions && this.replySuggestions[1]) {
+                this.inputText = this.replySuggestions[1];
+                this.showExtraInputs = false;
+                console.log('选择回复建议2:', this.replySuggestions[1]);
+              }
+            })
+
+            // 第三个回复建议
+            Row() {
+              if (this.isLoadingSuggestions) {
+                LoadingProgress()
+                  .width(20).height(20)
+                  .color(Color.White)
+                  .margin({ right: 12 })
+                Text('正在生成回复建议...')
+                  .fontSize(16)
+                  .fontColor(Color.White)
+                  .fontWeight(FontWeight.Medium)
+              } else {
+                Text(this.replySuggestions[2] || '我在这里陪着你')
+                  .fontSize(16)
+                  .fontColor(Color.White)
+                  .fontWeight(FontWeight.Medium)
+                  .maxLines(2)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
+              }
+            }
+            .width('100%')
+            .height(50)
+            .backgroundColor('rgba(255,255,255,0.08)')
+            .borderRadius(12)
+            .margin({ top: 2, bottom: 4 })
+            .padding({ left: 16, right: 16 })
+            .justifyContent(FlexAlign.Start)
+            .alignItems(VerticalAlign.Center)
+            .onClick(() => {
+              if (!this.isLoadingSuggestions && this.replySuggestions[2]) {
+                this.inputText = this.replySuggestions[2];
+                this.showExtraInputs = false;
+                console.log('选择回复建议3:', this.replySuggestions[2]);
+              }
+            })
+          }
+          .width('100%')
+          .padding({ left: 24, right: 24 })
+        }
       }
       .width('100%')
       .height('100%')
       .justifyContent(FlexAlign.SpaceBetween) // 顶部底部内容分开
       .alignItems(HorizontalAlign.Center)
       .padding({ left:8,right:8, bottom: 30 }) // 移除top padding
+
 
       // 底部导航栏 (Z-index: 3)
       Column() {

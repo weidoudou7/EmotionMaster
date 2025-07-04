@@ -57,6 +57,18 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserInfoVO getUserInfoById(Integer userId) {
+        System.out.println("🔍 UserService: 正在查询用户ID: " + userId);
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            System.out.println("❌ UserService: 用户不存在，ID: " + userId);
+            throw new RuntimeException("用户不存在");
+        }
+        System.out.println("✅ UserService: 找到用户，ID: " + userId + ", 用户名: " + user.getUserName());
+        return convertToVO(user);
+    }
+
+    @Override
     public UserInfoVO updateUserInfo(String userUID, UpdateUserRequest request) {
         User user = userMapper.selectByUID(userUID);
         if (user == null) {
@@ -273,6 +285,32 @@ public class UserServiceImpl implements UserService {
             System.err.println("删除用户失败: " + e.getMessage());
             return false;
         }
+    }
+    @Override
+    public UserInfoVO createOrLoginUserByEmail(String email) {
+        User user = userMapper.selectByEmail(email);
+        LocalDateTime now = LocalDateTime.now();
+        if (user == null) {
+            System.out.println("[用户注册] 插入新用户: " + email);
+            String userUID = UUID.randomUUID().toString().replace("-", "");
+            user = new User();
+            user.setUserUID(userUID);
+            user.setUserName("用户" + userUID.substring(0, 6));
+            user.setGender("未设置");
+            user.setPrivacyVisible(false);
+            user.setSignature("这个人很懒，什么都没留下~");
+            user.setEmail(email);
+            user.setLevel(1);
+            user.setRegisterTime(now);
+            user.setUpdateTime(now);
+            user.setUserAvatar("/avatars/default.png");
+            userMapper.insertUser(user);
+        } else {
+            System.out.println("[用户登录] 更新老用户登录时间: " + email);
+            user.setUpdateTime(now);
+            userMapper.updateUser(user);
+        }
+        return convertToVO(user);
     }
 
     /**

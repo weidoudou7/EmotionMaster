@@ -37,6 +37,8 @@ export struct ChatCommentPage {
   @State private pendingDeleteCommentId: number | null = null; // 待删除的评论ID
   @State private deleteConfirmTimeout: number | null = null; // 删除确认超时定时器
 
+  @State totalCount:number = 0;
+
   aboutToAppear() {
     this.isActive = true;
     // 获取路由参数
@@ -79,7 +81,7 @@ export struct ChatCommentPage {
       const result = await ApiService.getCommentsByAiRoleId(this.aiRoleId, 1, 1000); // 一次性加载所有主评论
       const mainComments = result.comments;
       console.info(`[评论] 加载主评论完成，数量=${mainComments.length}`);
-      
+
               // 为每个主评论加载所有回复
         for (const mainComment of mainComments) {
           try {
@@ -426,7 +428,7 @@ export struct ChatCommentPage {
       Column() {
         // 顶部栏
         Row() {
-          Button('<')
+          Button('‹')
             .backgroundColor('transparent')
             .fontColor('#fff')
             .fontSize(24)
@@ -439,20 +441,6 @@ export struct ChatCommentPage {
             .fontWeight(FontWeight.Bold)
             .fontColor('#fff')
             .layoutWeight(1)
-          Button('...')
-            .backgroundColor('transparent')
-            .fontColor('#fff')
-            .fontSize(20)
-            .onClick(() => setTimeout(() => { 
-              if (!this.isActive) return; 
-              try {
-                if (this.isActive) {
-                  promptAction.showToast({ message: '功能正在开发中' }); 
-                }
-              } catch (error) {
-                console.error('显示Toast失败:', error);
-              }
-            }, 100))
         }
         .padding({ left: 12, right: 12, top: 12, bottom: 8 })
         .alignItems(VerticalAlign.Center)
@@ -715,7 +703,6 @@ export struct ChatCommentPage {
             placeholder: this.replyToComment ? `回复 @${this.replyToComment.username}` : '发送善意的评论',
             text: this.commentText
           })
-            .width('60%')
             .height(40)
             .backgroundColor('rgba(255, 254, 254, 0.05)')
             .fontColor('#fffcfcfc')
@@ -724,39 +711,10 @@ export struct ChatCommentPage {
             .onChange((value: string) => {
               this.commentText = value;
             })
+            .layoutWeight(1)
+
           Blank().width(8)
-          Button('😊')
-            .backgroundColor('transparent')
-            .fontColor('#fff')
-            .width(40)
-            .height(40)
-            .onClick(() => setTimeout(() => { 
-              if (!this.isActive) return; 
-              try {
-                if (this.isActive) {
-                  promptAction.showToast({ message: '功能正在开发中' }); 
-                }
-              } catch (error) {
-                console.error('显示Toast失败:', error);
-              }
-            }, 100))
-          Blank().width(8)
-          Button('🖼️')
-            .backgroundColor('transparent')
-            .fontColor('#fff')
-            .width(40)
-            .height(40)
-            .onClick(() => setTimeout(() => { 
-              if (!this.isActive) return; 
-              try {
-                if (this.isActive) {
-                  promptAction.showToast({ message: '功能正在开发中' }); 
-                }
-              } catch (error) {
-                console.error('显示Toast失败:', error);
-              }
-            }, 100))
-          Blank().width(8)
+
           Button('发送')
             .backgroundColor(this.commentText.trim() ? '#FFD700' : 'rgba(255,255,255,0.3)')
             .fontColor(this.commentText.trim() ? '#000' : 'rgba(255,255,255,0.5)')

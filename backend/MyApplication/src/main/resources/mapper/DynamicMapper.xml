@@ -49,6 +49,14 @@
         ORDER BY created_at DESC
     </select>
 
+    <!-- 获取所有公开的动态（分页） -->
+    <select id="getAllPublicDynamicsWithPagination" resultMap="DynamicResultMap">
+        SELECT * FROM user_dynamics 
+        WHERE visibility = 'public'
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
     <!-- 根据可见性获取动态 -->
     <select id="getDynamicsByVisibility" resultMap="DynamicResultMap">
         SELECT * FROM user_dynamics 

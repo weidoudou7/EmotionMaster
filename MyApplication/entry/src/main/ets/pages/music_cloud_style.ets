@@ -17,8 +17,9 @@ interface MusicCloudParams {
   musicTitle?: string;
   musicArtist?: string;
   musicDetail?: MusicDetailVO;
+  songs?: MusicDetailVO[];
+  currentIndex?: number;
 }
-
 @Entry
 @Component
 struct CloudMusicPlayer {
@@ -30,6 +31,9 @@ struct CloudMusicPlayer {
   @State isLoading: boolean = false;
   @State isInitialized: boolean = false;
   @State errorMessage: string = '';
+  @State isRandomMode: boolean = true; // true为随机播放，false为单曲循环
+  @State showVolumePanel: boolean = false;
+  @State volume: number = 1;
   
   private rotateTimerId: number = -1;
   private audioPlayerService: AudioPlayerService = new AudioPlayerService();
@@ -50,26 +54,32 @@ struct CloudMusicPlayer {
     coverUrl: ''
   };
 
+  @State songs: MusicDetailVO[] = [];
+  @State currentIndex: number = 0;
+
   aboutToAppear() {
-    // 获取路由参数
     const params = router.getParams() as MusicCloudParams;
-    if (params?.musicId) {
-      this.song.musicId = params.musicId;
-    }
-    if (params?.musicTitle) {
-      this.song.title = params.musicTitle;
-    }
-    if (params?.musicArtist) {
-      this.song.artist = params.musicArtist;
-    }
-    if (params?.musicDetail) {
-      this.songDetail = params.musicDetail;
+    if (params?.songs && params?.currentIndex !== undefined) {
+      this.songs = params.songs;
+      this.currentIndex = params.currentIndex;
+      this.setSongByIndex(this.currentIndex);
     } else {
-      this.fetchSongDetail();
+      if (params?.musicId) {
+        this.song.musicId = params.musicId;
+      }
+      if (params?.musicTitle) {
+        this.song.title = params.musicTitle;
+      }
+      if (params?.musicArtist) {
+        this.song.artist = params.musicArtist;
+      }
+      if (params?.musicDetail) {
+        this.songDetail = params.musicDetail;
+      } else {
+        this.fetchSongDetail();
+      }
     }
-    // 设置音频播放器回调
     this.setupAudioCallbacks();
-    // 初始化音频播放器
     this.initAudioPlayer();
   }
 
@@ -110,11 +120,16 @@ struct CloudMusicPlayer {
         });
       },
       
-      onComplete: () => {
+      onComplete: async () => {
         console.log('音频播放完成');
         this.isPlaying = false;
         this.currentTime = 0;
         this.stopRotate();
+        if (this.isRandomMode) {
+          await this.randomPlay();
+        } else {
+          await this.setSongByIndex(this.currentIndex); // 单曲循环
+        }
       }
     };
     
@@ -219,6 +234,43 @@ struct CloudMusicPlayer {
     } catch (e) {
       // 不再弹toast
     }
+  }
+
+  async setSongByIndex(index: number) {
+    const song = this.songs[index];
+    if (song) {
+      this.songDetail = song;
+      this.song.musicId = song.musicId;
+      this.song.title = song.name;
+      this.song.artist = song.artist;
+      this.currentTime = 0;
+      this.isInitialized = false;
+      await this.initAudioPlayer();
+      await this.audioPlayerService.play(); // 自动播放
+    }
+  }
+
+  previousSong() {
+    if (this.songs.length === 0) return;
+    this.currentIndex = (this.currentIndex - 1 + this.songs.length) % this.songs.length;
+    this.setSongByIndex(this.currentIndex);
+  }
+
+  nextSong() {
+    if (this.songs.length === 0) return;
+    this.currentIndex = (this.currentIndex + 1) % this.songs.length;
+    this.setSongByIndex(this.currentIndex);
+  }
+
+  // 随机播放方法
+  private async randomPlay() {
+    if (this.songs.length <= 1) return;
+    let nextIndex = this.currentIndex;
+    while (nextIndex === this.currentIndex && this.songs.length > 1) {
+      nextIndex = Math.floor(Math.random() * this.songs.length);
+    }
+    this.currentIndex = nextIndex;
+    await this.setSongByIndex(this.currentIndex); // 自动播放
   }
 
   build() {
@@ -332,9 +384,16 @@ struct CloudMusicPlayer {
 
         // 播放控制按钮区
         Row() {
-          Image($r('app.media.music_random')).width(28).height(28).margin({ right: 16 })
-          Image($r('app.media.music_last')).width(28).height(28).margin({ left: 30 })
-          
+          // 随机/单曲循环切换按钮
+          Image(this.isRandomMode ? $r('app.media.music_random') : $r('app.media.repeat'))
+            .width(32)
+            .height(32)
+            .onClick(() => {
+              this.isRandomMode = !this.isRandomMode;
+            })
+          Image($r('app.media.music_last'))
+            .width(28).height(28).margin({ left: 30 })
+            .onClick(() => this.previousSong())
           if (this.isPlaying) {
             Image($r('app.media.music_stop'))
               .width(30)
@@ -346,13 +405,62 @@ struct CloudMusicPlayer {
               .margin({ left: 30, right: 30 })
               .onClick(() => this.togglePlay())
           }
-
-          Image($r('app.media.music_next')).width(28).height(28).margin({ right: 30 })
+          Image($r('app.media.music_next'))
+            .width(28).height(28).margin({ right: 30 })
+            .onClick(() => this.nextSong())
           Image($r('app.media.music_list')).width(28).height(28).margin({ left: 16 })
+            .onClick(() => {
+              this.showVolumePanel = true;
+            })
         }
         .width('100%').justifyContent(FlexAlign.Center).alignItems(VerticalAlign.Center)
       }
       .width('100%').position({ y: 600 })
+
+      // 音量调节弹窗
+      if (this.showVolumePanel) {
+        Stack() {
+          // 半透明遮罩，点击关闭
+          Column() {}
+            .width('100%').height('100%')
+            .backgroundColor('rgba(0,0,0,0.3)')
+            .onClick(() => { this.showVolumePanel = false })
+          // 音量面板
+          Column() {
+            Text('音量调节')
+              .fontSize(18).fontColor('#fff').margin({ bottom: 12 })
+            Row() {
+              Slider({
+                value: this.volume,
+                min: 0,
+                max: 1,
+                step: 0.01
+              })
+                .width(200)
+                .selectedColor('#ffda7f')
+                .onChange((value: number) => {
+                  this.volume = value;
+                  this.audioPlayerService.setVolume(this.volume);
+                })
+              Text(Math.round(this.volume * 100) + '%')
+                .fontSize(16).fontColor('#fff').margin({ left: 12 })
+            }
+            Button('关闭')
+              .width(100).height(36)
+              .fontSize(16)
+              .fontColor('#121114')
+              .backgroundColor('#ffda7f')
+              .borderRadius(18)
+              .margin({ top: 16 })
+              .onClick(() => { this.showVolumePanel = false })
+          }
+          .width(280).backgroundColor('#232323').borderRadius(16)
+          .padding({ top: 24, bottom: 24, left: 24, right: 24 })
+          .position({ x: '50%', y: '60%' })
+          .translate({ x: -140, y: -80 })
+        }
+        .width('100%').height('100%').position({ x: 0, y: 0 })
+      }
     }
     .width('100%').height('100%').backgroundColor('#232323')
   }

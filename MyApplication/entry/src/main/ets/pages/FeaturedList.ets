@@ -1,6 +1,9 @@
 import router from '@ohos.router';
 import http from '@ohos.net.http';
-import { it } from '@ohos/hypium';
+import { Config } from '../common/config';
+import image from '@ohos.multimedia.image';
+import effectKit from '@ohos.effectKit';
+
 
 interface FeaturedPerson {
 
@@ -33,6 +36,7 @@ export struct FeaturedList {
   @State private errorMessage: string = '';
 
   @State private persons: FeaturedPerson[] = [];
+  @State private mainColors: number[] = [];
 
   aboutToAppear() {
     this.fetchFeaturedPersons();
@@ -47,7 +51,7 @@ export struct FeaturedList {
       console.log("开始请求特色人物数据...");
       let httpRequest = http.createHttp();
       const response = await httpRequest.request(
-        "http://localhost:8081/api/featured-people/all",
+        Config.getApiBaseUrl()+"/featured-people/all",
         {
           method: http.RequestMethod.GET,
           readTimeout: 60000,
@@ -79,6 +83,31 @@ export struct FeaturedList {
     }
   }
 
+  // 获取图片buffer，需根据实际图片资源类型实现
+  async getImageBuffer(imageUrl: string): Promise<Uint8Array> {
+    // 这里仅为示例，实际请根据你的图片加载方式实现
+    // 假设图片是网络图片，可以用http请求获取ArrayBuffer再转Uint8Array
+    let httpRequest = http.createHttp();
+    const response = await httpRequest.request(imageUrl, { method: http.RequestMethod.GET });
+    if (response.result instanceof ArrayBuffer) {
+      return new Uint8Array(response.result);
+    }
+    return new Uint8Array();
+  }
+
+  async getMainColorFromImage(imageUrl: string, index: number) {
+    const buffer: Uint8Array = await this.getImageBuffer(imageUrl);
+    const imageSource = image.createImageSource(buffer);
+    const pixelMap = await imageSource.createPixelMap();
+    effectKit.createColorPicker(pixelMap, (err, colorPicker) => {
+      if (!err) {
+        const color = colorPicker.getMainColorSync();
+        // 转为0xAARRGGBB格式
+        const colorInt = (color.alpha << 24) | (color.red << 16) | (color.green << 8) | color.blue;
+        this.mainColors[index] = colorInt;
+      }
+    });
+  }
 
   build() {
     Column() {
@@ -86,13 +115,16 @@ export struct FeaturedList {
       Grid() {
         ForEach(this.persons, (item: FeaturedPerson, index: number) => {
           GridItem() {
-            Column() {
+            Stack() {
               // 图片
               Image(item.avatarUrl)
                 .width('100%')
-                .aspectRatio(1.2)
+                .aspectRatio(0.9)
                 .borderRadius(12)
                 .objectFit(ImageFit.Cover)
+                .onAppear(() => {
+                  this.getMainColorFromImage(item.avatarUrl, index);
+                })
               // 内容区
               Column() {
                 Text(item.roleName)
@@ -104,32 +136,43 @@ export struct FeaturedList {
                   .textOverflow({ overflow: TextOverflow.Ellipsis })
                 Text(item.roleDescription)
                   .fontSize(13)
-                  .fontColor('#ccc')
+                  .fontColor(Color.White)
                   .maxLines(2)
                   .margin({ bottom: 2 })
                   .textOverflow({ overflow: TextOverflow.Ellipsis })
-                Row() {
+                // Row() {
                   // 作者头像
                   // Image(item.authorAvatar)
                   //   .width(20)
                   //   .height(20)
                   //   .borderRadius(10)
-                  Text('@' + item.roleAuthor)
-                    .fontSize(12)
-                    .fontColor('#aaa')
-                    .margin({ left: 4, right: 8 })
+                  // Text('@' + item.roleAuthor)
+                  //   .fontSize(12)
+                  //   .fontColor('#aaa')
+                  //   .margin({ left: 4, right: 8 })
                   // 浏览量
-                  Image($r('app.media.message_icon'))
-                    .width(14)
-                    .height(14)
-                  Text(item.viewCount.toString())
-                    .fontSize(12)
-                    .fontColor('#aaa')
-                    .margin({ left: 2 })
-                }
-                .alignItems(VerticalAlign.Center)
+                  // Image($r('app.media.message_icon'))
+                  //   .width(14)
+                  //   .height(14)
+                  // Text(item.viewCount.toString())
+                  //   .fontSize(12)
+                  //   .fontColor('#aaa')
+                  //   .margin({ left: 2 })
+                // }
+                // .alignItems(VerticalAlign.Center)
               }
-              .padding({ left: 8, right: 8, bottom: 8 })
+              .width('100%')
+              .linearGradient({
+                direction: GradientDirection.Bottom,
+                repeating: false,
+                colors: [
+                  [0x80000000, 0.0],
+                  [this.mainColors[index], 1.0]
+                ]
+              })
+              //.padding({ left: 8, right: 8, top: 8, bottom: 8 })
+              //.position({ y: '100%' })
+              .translate({ y: 63})
             }
             .backgroundColor('#232323')
             .borderRadius(16)
@@ -148,7 +191,8 @@ export struct FeaturedList {
                     figureType: item.roleType,
                     figureName: item.roleName,
                     isFromCreateFigure: true,
-                    description: item.roleDescription
+                    description: item.roleDescription,
+                    createdAiRoleId:item.id
                   }
                 });
                 // 重置状态

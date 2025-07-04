@@ -19,7 +19,7 @@ export default class MainAbility extends UIAbility {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
 
 
-    windowStage.loadContent('pages/BottomNavBar', (err) => {
+    windowStage.loadContent('pages/1_Light_splash', (err) => {
       // 设置键盘避免模式为OFFSET，解决键盘弹出时布局问题
       windowStage.getMainWindowSync().getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.OFFSET);
 

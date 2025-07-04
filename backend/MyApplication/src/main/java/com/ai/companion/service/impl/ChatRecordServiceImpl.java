@@ -21,23 +21,11 @@ public class ChatRecordServiceImpl implements ChatRecordService {
 
     @Override
     @Transactional   // 该注解表示该方法/类中的所有数据库操作要么全部成功（提交），要么全部失败（回滚），保证数据一致性。
-    public Conversation getOrCreateConversation(Integer userId, Integer aiRoleId, String chatId, String title, String mode) {
+    public Conversation getOrCreateConversation(Integer userId, String chatId, String title, String mode) {
         // ConservationId 为 ChatId
         Conversation conversation = null;
-        try{
-            Integer id = Integer.parseInt(chatId);
-            conversation = conversationMapper.selectById(id);
-        }catch (Exception ignored){
-            conversation = new Conversation();
-            conversation.setUserId(userId);
-            conversation.setAiRoleId(aiRoleId);
-            conversation.setTitle(title != null ? title : "新对话");
-            conversation.setTurns(0);
-            conversation.setStartTime(LocalDateTime.now());
-            conversation.setLastActive(LocalDateTime.now());
-            conversation.setMoodTag(null);
-            conversationMapper.insertConversation(conversation);
-        }
+        Integer id = Integer.parseInt(chatId);
+        conversation = conversationMapper.selectById(id);
         return conversation;
     }
 
@@ -59,5 +47,18 @@ public class ChatRecordServiceImpl implements ChatRecordService {
     @Override
     public List<Message> getMessagesByConversationId(Integer conversationId) {
         return messageMapper.selectByConversationId(conversationId);
+    }
+
+    @Override
+    @Transactional
+    public boolean updateConversationMoodTag(Integer conversationId, String moodTag) {
+        try {
+            int result = conversationMapper.updateMoodTag(conversationId, moodTag);
+            return result > 0;
+        } catch (Exception e) {
+            // 记录错误日志
+            System.err.println("更新会话情绪标签失败: " + e.getMessage());
+            return false;
+        }
     }
 }

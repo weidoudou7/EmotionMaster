@@ -36,6 +36,15 @@ public interface ConversationMapper {
         List<Conversation> selectByAiRoleId(@Param("aiRoleId") Integer aiRoleId);
 
         /**
+         * 根据用户ID和AI角色ID查询会话
+         * 
+         * @param userId   用户ID
+         * @param aiRoleId AI角色ID
+         * @return 会话实体
+         */
+        Conversation selectByUserIdAndAiRoleId(@Param("userId") Integer userId, @Param("aiRoleId") Integer aiRoleId);
+
+        /**
          * 查询所有会话
          * 
          * @return 会话列表

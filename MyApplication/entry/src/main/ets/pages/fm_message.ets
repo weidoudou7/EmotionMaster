@@ -19,7 +19,6 @@ class MessageItem {
   isOfficial?: boolean = false;
   isSystem?: boolean = false;
 }
-
 @Entry
 @Component
 export struct MessagePage {
@@ -122,55 +121,51 @@ export struct MessagePage {
         Column() {
           Row() {
             Text(this.weatherInfo.temperature)
-              .fontSize(64)
+              .fontSize(48)
               .fontWeight(FontWeight.Bold)
               .fontColor('#fff')
-              .margin({ left: 24, top: 18, bottom: 8, right: 12 })
+              .margin({ left: 16, top: 10, bottom: 4, right: 8 })
             Column() {
               Text(this.weatherInfo.city)
-                .fontSize(20)
+                .fontSize(16)
                 .fontWeight(FontWeight.Bold)
                 .fontColor('#fff')
-                .margin({ bottom: 2 })
+                .margin({ bottom: 1 })
               Text(this.weatherInfo.desc)
-                .fontSize(16)
+                .fontSize(13)
                 .fontColor('#fff')
-                .margin({ bottom: 2 })
+                .margin({ bottom: 1 })
             }
-            .margin({ top: 18 })
+            .margin({ top: 10 })
             Blank().width('1fr')
             Column() {
               Text(this.weatherInfo.icon)
-                .fontSize(48)
-                .margin({ top: 8, right: 24 })
+                .fontSize(32)
+                .margin({ top: 4, right: 12 })
             }
           }
           
           // 当前时间日期
           Column() {
             Text(this.currentTime)
-              .fontSize(32)
+              .fontSize(20)
               .fontColor('#fff')
               .fontWeight(FontWeight.Bold)
-              .margin({ top: 16, bottom: 8 })
+              .margin({ top: 8, bottom: 4 })
             Text(this.currentDate)
-              .fontSize(16)
+              .fontSize(12)
               .fontColor('#fff')
               .opacity(0.9)
-              .margin({ bottom: 16 })
+              .margin({ bottom: 8 })
           }
           .alignItems(HorizontalAlign.Center)
         }
         .width('100%')
-        .height(200)
-        .backgroundColor('#7ec6f5')
-        .linearGradient({
-          angle: 90,
-          colors: [[0x7ec6f5, 1], [0x4a90e2, 1]]
-        })
-        .borderRadius(32)
-        .margin({ left: 12, right: 12, top: 12, bottom: 18 })
-        .shadow({ radius: 12, color: '#00000022', offsetX: 0, offsetY: 4 })
+        .height(140)
+        .backgroundColor('rgba(34,34,34,0.7)')
+        .borderRadius(24)
+        .margin({ left: 8, right: 8, top: 8, bottom: 12 })
+        .shadow({ radius: 8, color: '#00000022', offsetX: 0, offsetY: 2 })
       }
       // 消息列表
       List() {

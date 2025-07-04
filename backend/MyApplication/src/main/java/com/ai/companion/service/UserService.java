@@ -18,6 +18,13 @@ public interface UserService {
     UserInfoVO getUserInfo(String userUID);
     
     /**
+     * 根据用户ID获取用户信息
+     * @param userId 用户ID
+     * @return 用户信息
+     */
+    UserInfoVO getUserInfoById(Integer userId);
+
+    /**
      * 更新用户信息
      * @param userUID 用户UID
      * @param request 更新请求
@@ -62,6 +69,7 @@ public interface UserService {
      * @return 用户统计信息
      */
     UserStatsVO getUserStats(String userUID);
+
     
     /**
      * 通过用户名关键词模糊搜索用户
@@ -83,4 +91,12 @@ public interface UserService {
      * @return 影响的行数
      */
     int insertUser(User user);
+
+    /**
+     *
+     * @param email 邮箱
+     * @return
+     */
+    UserInfoVO createOrLoginUserByEmail(String email);
+
 } 
