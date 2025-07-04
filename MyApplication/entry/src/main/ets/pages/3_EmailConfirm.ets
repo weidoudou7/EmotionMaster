@@ -7,8 +7,14 @@ struct EmailConfirmPage {
   @State email: string = ''
   @State code: string = ''
   @State agree: boolean = false
+  @State canSendCode: boolean = true
+  @State countdown: number = 0
 
   sendEmailCode() {
+    if (!this.canSendCode) {
+      return;
+    }
+    
     let httpRequest = http.createHttp();
     httpRequest.request(
       'http://121.36.225.8:8081/auth/send-code',
@@ -24,6 +30,10 @@ struct EmailConfirmPage {
     ).then((response) => {
       if (response.responseCode === 200) {
         promptAction.showToast({ message: response.result.toString() });
+        // 开始倒计时
+        this.canSendCode = false;
+        this.countdown = 60;
+        this.startCountdown();
       } else {
         promptAction.showToast({ message: '发送失败: ' + response.result.toString() });
       }
@@ -32,7 +42,24 @@ struct EmailConfirmPage {
     });
   }
 
+  startCountdown() {
+    if (this.countdown > 0) {
+      setTimeout(() => {
+        this.countdown--;
+        this.startCountdown();
+      }, 1000);
+    } else {
+      this.canSendCode = true;
+    }
+  }
+
   verifyEmailCode() {
+    // 检查用户是否勾选协议
+    if (!this.agree) {
+      promptAction.showToast({ message: '请先阅读并同意用户协议和隐私政策' });
+      return;
+    }
+    
     let httpRequest = http.createHttp();
     httpRequest.request(
       'http://121.36.225.8:8081/auth/verify-code',
@@ -126,14 +153,15 @@ struct EmailConfirmPage {
           .onChange((value: string) => {
             this.code = value;
           })
-        Button('获取验证码')
+        Button(this.canSendCode ? '获取验证码' : `${this.countdown}s`)
           .width(120)
           .height(44)
           .fontSize(16)
-          .fontColor('#121114')
-          .backgroundColor('#ffda7f')
+          .fontColor(this.canSendCode ? '#121114' : '#666')
+          .backgroundColor(this.canSendCode ? '#ffda7f' : '#333')
           .borderRadius(22)
           .margin({ left: 10 })
+          .enabled(this.canSendCode)
           .onClick(() => {
             this.sendEmailCode();
           })
