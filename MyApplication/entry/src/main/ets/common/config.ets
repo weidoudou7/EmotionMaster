@@ -23,14 +23,14 @@ export class Config {
   // 测试环境配置
   private static readonly TEST_CONFIG: EnvironmentConfig = {
     API_BASE_URL: 'http://192.168.1.100:8081/api', // 替换为您的局域网IP
-    TIMEOUT: 20000, // 10秒超时
+    TIMEOUT: 10000, // 10秒超时
     DEBUG: true
   };
 
   // 生产环境配置
   private static readonly PROD_CONFIG: EnvironmentConfig = {
     API_BASE_URL: 'https://your-domain.com/api', // 替换为您的生产域名
-    TIMEOUT: 20000, // 15秒超时
+    TIMEOUT: 15000, // 15秒超时
     DEBUG: false
   };
 
