@@ -10,10 +10,15 @@ import promptAction from '@ohos.promptAction';
 import picker from '@ohos.file.picker';
 import fs from '@ohos.file.fs';
 
+interface SelectedImage {
+  uri: string;
+  name: string;
+}
+
 @Component
 struct DynamicEdit {
   @State content: string = ''; // 动态内容
-  @State selectedImages: { uri: string, name: string }[] = []; // 选中的图片（文件uri和文件名）
+  @State selectedImages: SelectedImage[] = []; // 选中的图片（文件uri和文件名）
   @State isSubmitting: boolean = false; // 是否正在提交
   @State userUID: string = globalUserData.userUID;
   @State isNetworkConnected: boolean = true; // 网络连接状态
@@ -170,7 +175,7 @@ struct DynamicEdit {
                   .margin({ bottom: 8 })
                 
                 Grid() {
-                  ForEach(this.selectedImages, (image: { uri: string, name: string }, index: number) => {
+                  ForEach(this.selectedImages, (image: SelectedImage, index: number) => {
                     GridItem() {
                       Stack() {
                         Image(image.uri)

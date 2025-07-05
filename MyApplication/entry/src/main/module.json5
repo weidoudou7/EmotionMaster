@@ -13,20 +13,16 @@
         "reason": "$string:reason_internet"
       },
       {
-        "name": "ohos.permission.KEEP_BACKGROUND_RUNNING",
-        "reason":"$string:reason_radioplaying"
-      },
-      {
         "name": "ohos.permission.GET_NETWORK_INFO",
-        "reason": "$string:app_name"
+        "reason": "$string:reason_network_info"
       },
       {
         "name": "ohos.permission.GET_WIFI_INFO",
-        "reason": "$string:app_name"
+        "reason": "$string:reason_wifi_info"
       },
       {
         "name": "ohos.permission.MICROPHONE",
-        "reason": "$string:app_name",
+        "reason": "$string:reason_microphone",
         "usedScene": {
           "abilities": ["MainAbility"],
           "when": "always"
@@ -34,7 +30,7 @@
       },
       {
         "name": "ohos.permission.MEDIA_LOCATION",
-        "reason": "$string:app_name",
+        "reason": "$string:reason_media_location",
         "usedScene": {
           "abilities": ["MainAbility"],
           "when": "always"

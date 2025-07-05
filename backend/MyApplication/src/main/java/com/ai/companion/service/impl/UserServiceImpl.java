@@ -145,7 +145,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String uploadAvatarBase64(String userUID, String imageData) {
+        System.out.println("🖼️ [Service] 开始处理Base64头像上传");
+        System.out.println("🖼️ [Service] 用户UID: " + userUID);
+        
         if (imageData == null || imageData.trim().isEmpty()) {
+            System.out.println("❌ [Service] 图片数据为空");
             throw new RuntimeException("图片数据为空");
         }
 
@@ -153,11 +157,15 @@ public class UserServiceImpl implements UserService {
             // 解析base64数据
             String[] parts = imageData.split(",");
             if (parts.length != 2) {
+                System.out.println("❌ [Service] 无效的base64图片数据格式，parts长度: " + parts.length);
                 throw new RuntimeException("无效的base64图片数据格式");
             }
 
             String header = parts[0];
             String base64Data = parts[1];
+            
+            System.out.println("🖼️ [Service] Base64头部信息: " + header);
+            System.out.println("🖼️ [Service] Base64数据长度: " + base64Data.length());
 
             // 确定文件扩展名
             String extension = ".jpg"; // 默认扩展名
@@ -168,33 +176,52 @@ public class UserServiceImpl implements UserService {
             } else if (header.contains("image/webp")) {
                 extension = ".webp";
             }
+            
+            System.out.println("🖼️ [Service] 检测到的文件扩展名: " + extension);
 
             // 生成唯一文件名
             String filename = userUID + "_" + UUID.randomUUID().toString() + extension;
+            System.out.println("🖼️ [Service] 生成的文件名: " + filename);
 
             // 解码base64数据
             byte[] imageBytes = java.util.Base64.getDecoder().decode(base64Data);
+            System.out.println("🖼️ [Service] 解码后的图片字节数: " + imageBytes.length);
 
             // 保存文件
             Path uploadPath = Paths.get(AVATAR_UPLOAD_PATH);
+            System.out.println("🖼️ [Service] 上传目录路径: " + uploadPath.toAbsolutePath());
+            
             if (!Files.exists(uploadPath)) {
+                System.out.println("🖼️ [Service] 创建上传目录");
                 Files.createDirectories(uploadPath);
             }
 
             Path filePath = uploadPath.resolve(filename);
+            System.out.println("🖼️ [Service] 完整文件路径: " + filePath.toAbsolutePath());
+            
             Files.write(filePath, imageBytes);
+            System.out.println("🖼️ [Service] 文件写入成功，文件大小: " + Files.size(filePath) + " 字节");
 
             // 更新用户头像信息
             String avatarUrl = "/avatars/" + filename;
+            System.out.println("🖼️ [Service] 生成的相对URL: " + avatarUrl);
+            
             User user = userMapper.selectByUID(userUID);
             if (user != null) {
+                System.out.println("🖼️ [Service] 找到用户，更新头像URL");
                 user.setUserAvatar(avatarUrl);
                 user.setUpdateTime(LocalDateTime.now());
                 userMapper.updateUser(user);
+                System.out.println("🖼️ [Service] 用户头像URL已更新到数据库");
+            } else {
+                System.out.println("⚠️ [Service] 警告：未找到用户 " + userUID + "，无法更新数据库");
             }
 
+            System.out.println("🖼️ [Service] 头像上传完成，返回URL: " + avatarUrl);
             return avatarUrl;
         } catch (Exception e) {
+            System.out.println("❌ [Service] 头像上传失败: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("头像上传失败: " + e.getMessage());
         }
     }
