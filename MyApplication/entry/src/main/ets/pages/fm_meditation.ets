@@ -82,22 +82,21 @@ struct FMMeditationPage {
     Column() {
       // 顶部导航栏
       Row() {
-        Image($r('app.media.music_return'))
-          .width(36)
-          .height(36)
+        Image($r('app.media.back'))
+          .width(24)
           //.shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
           .onClick(() => router.back())
         Text('冥想')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1976D2')
+          .fontColor(Color.White)
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
         Blank().width(36)
       }
       .width('100%')
       .padding({ left: 20, right: 20, top: 12, bottom: 12 })
-      .backgroundColor('#fff')
+      .backgroundColor(Color.Black)
 
       // 主要内容区域
       Scroll() {
@@ -185,8 +184,8 @@ struct FMMeditationPage {
                 .fontColor(this.selectedTimeIndex === idx ? '#fff' : '#1976D2')
                 .backgroundColor(this.selectedTimeIndex === idx ? '#1976D2' : '#E3F2FD')
                 .borderRadius(16)
-                .fontSize(14)
-                .width(90)
+                .fontSize(12)
+                .width(75)
                 .height(36)
                 .margin({ right: 10 })
                 .onClick(() => {
@@ -208,12 +207,12 @@ struct FMMeditationPage {
           // 引导区
           Column() {
             Text('请找一个安静舒适的位置，闭上眼睛，跟随引导语进行冥想。')
-              .fontColor('#388E3C')
+              .fontColor('#ffda7f')
               .fontSize(16)
               .margin({ bottom: 2 })
               .textAlign(TextAlign.Center)
             Text('放松身体，感受每一次呼吸。')
-              .fontColor('#888')
+              .fontColor(Color.White)
               .fontSize(14)
               .textAlign(TextAlign.Center)
           }
@@ -224,8 +223,8 @@ struct FMMeditationPage {
           // 播放区
           Column() {
             Button(this.isPlaying ? '暂停' : '开始冥想')
-              .fontColor('#fff')
-              .backgroundColor('#4CAF50')
+              .fontColor(Color.Black)
+              .backgroundColor('#ffda7f')
               .borderRadius(28)
               .fontSize(20)
               .fontWeight(FontWeight.Bold)
@@ -241,12 +240,12 @@ struct FMMeditationPage {
               })
             Row() {
               Text(this.formatTime(this.elapsedSeconds))
-                .fontColor('#1976D2')
+                .fontColor('#888')
                 .fontSize(16)
                 .margin({ right: 10 })
               Progress({ value: this.progress*100 / this.duration })
                 .width('60%')
-                .color('#4CAF50')
+                .color('#ff08abea')
                 .backgroundColor('#E0E0E0')
                 .borderRadius(8)
               Text(this.formatTime(this.duration))
@@ -265,9 +264,9 @@ struct FMMeditationPage {
           Row() {
             Column() {
               Text('累计冥想')
-                .fontColor('#888').fontSize(13)
+                .fontColor(Color.White).fontSize(13)
               Text(`${Math.floor(this.elapsedSeconds / 60)} 分钟`)
-                .fontColor('#1976D2').fontWeight(FontWeight.Bold).fontSize(20)
+                .fontColor('#888').fontWeight(FontWeight.Bold).fontSize(20)
             }
             .layoutWeight(1)
           }
@@ -278,22 +277,25 @@ struct FMMeditationPage {
           Row() {
             Text('💡').fontSize(18).margin({ right: 8 })
             Text('温馨提示：冥想过程中如有杂念，不必焦虑，轻轻将注意力带回呼吸即可。')
-              .fontColor('#888')
+              .fontColor(Color.White)
               .fontSize(13)
+              .margin({right:10})
           }
-          .backgroundColor('#F5F7FA')
+          .backgroundColor('#888')
           .borderRadius(12)
-          .padding({ left: 16, right: 16, top: 10, bottom: 10 })
-          .margin({ bottom: 36 })
+          .padding({ left:16,right:16,top: 10, bottom: 10 })
+          .margin({ bottom: 36 ,right:10,left:10})
         }
         .width('100%')
         .alignItems(HorizontalAlign.Center)
       }
       .layoutWeight(1)
-      .backgroundColor('#F8F9FB')
+      .backgroundColor(Color.Black)
     }
     .width('100%')
     .height('100%')
+    .backgroundColor(Color.Black)
+    .expandSafeArea([SafeAreaType.SYSTEM])
   }
 
   private formatTime(seconds: number): string {

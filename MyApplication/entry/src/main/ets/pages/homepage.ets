@@ -274,7 +274,7 @@ export struct HomePage {
         Text('动态广场')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#333333')
+          .fontColor('#ffda7f')
         
         Blank()
         
@@ -303,8 +303,7 @@ export struct HomePage {
         })
       }
       .width('100%')
-      .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-      .backgroundColor(Color.White)
+      .padding({ left: 16, right: 16, top: 12 })
       .shadow({ radius: 2, color: '#00000010', offsetX: 0, offsetY: 1 })
       
       // 动态列表区域
@@ -439,6 +438,7 @@ export struct HomePage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5')
+    .backgroundColor('#181818')
+    .expandSafeArea([SafeAreaType.SYSTEM])
   }
 }
