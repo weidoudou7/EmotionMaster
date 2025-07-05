@@ -58,141 +58,141 @@ struct ColumnPage {
   @State currentTab: number = 0;
   private tabs: string[] = ['最新', '热门', '推荐'];
 
-  // 深度解析专栏文章
+  // 心理科普专栏文章
   private depthArticles: Article[] = [
     {
       id: '1',
-      title: '心理健康在现代社会的重要性',
-      subtitle: '探讨现代人面临的心理挑战及应对策略',
-      author: '心理学专家',
+      title: '焦虑症的识别与自我调节方法',
+      subtitle: '科学认识焦虑，掌握有效的缓解技巧',
+      author: '临床心理学专家',
       publishTime: '2024-01-15',
-      readTime: '8分钟',
-      tags: ['心理健康', '现代生活', '压力管理'],
+      readTime: '10分钟',
+      tags: ['焦虑症', '心理健康', '自我调节'],
       coverImage: $r('app.media.background'),
-      content: '在现代快节奏的生活中，心理健康问题日益突出。本文将从多个角度分析现代人面临的心理挑战，并提供实用的应对策略...',
-      icon: '🧠',
-      iconColor: '#1976D2',
-      bgColor: '#E3F2FD'
+      content: '焦虑是现代人最常见的心理健康问题之一。本文将从心理学角度深入解析焦虑的成因、表现和科学的调节方法，帮助读者更好地应对焦虑情绪...',
+      icon: '😰',
+      iconColor: '#FF5722',
+      bgColor: '#FFEBEE'
     },
     {
       id: '2',
-      title: '正念冥想的科学依据与实践方法',
-      subtitle: '基于神经科学研究的冥想指南',
-      author: '神经科学研究员',
+      title: '抑郁症的早期识别与预防',
+      subtitle: '了解抑郁信号，及时寻求专业帮助',
+      author: '精神科医生',
       publishTime: '2024-01-14',
       readTime: '12分钟',
-      tags: ['正念冥想', '神经科学', '心理健康'],
+      tags: ['抑郁症', '早期识别', '预防干预'],
       coverImage: $r('app.media.background'),
-      content: '正念冥想作为一种古老的心理练习方法，在现代神经科学研究中得到了越来越多的验证。本文将详细介绍其科学依据...',
-      icon: '🧘‍♀️',
-      iconColor: '#4CAF50',
-      bgColor: '#E8F5E8'
+      content: '抑郁症是一种常见的心理健康疾病，早期识别和干预至关重要。本文将详细介绍抑郁症的早期症状、风险因素和预防策略...',
+      icon: '😔',
+      iconColor: '#9C27B0',
+      bgColor: '#F3E5F5'
     },
     {
       id: '3',
-      title: '情绪管理的艺术：从认知到行动',
-      subtitle: '如何更好地理解和控制自己的情绪',
-      author: '情绪管理专家',
+      title: '压力管理：从生理到心理的全面解析',
+      subtitle: '科学理解压力，建立健康的应对机制',
+      author: '健康心理学专家',
       publishTime: '2024-01-13',
-      readTime: '10分钟',
-      tags: ['情绪管理', '认知行为', '自我提升'],
+      readTime: '15分钟',
+      tags: ['压力管理', '生理心理', '健康生活'],
       coverImage: $r('app.media.background'),
-      content: '情绪管理是每个人都需要掌握的重要技能。本文将从认知行为的角度，介绍如何更好地理解和控制自己的情绪...',
-      icon: '😊',
-      iconColor: '#FF9800',
-      bgColor: '#FFF3E0'
+      content: '压力是现代社会不可避免的一部分，但过度的压力会对身心健康造成严重影响。本文将从生理和心理两个维度，全面解析压力的影响机制和科学的管理方法...',
+      icon: '💪',
+      iconColor: '#2196F3',
+      bgColor: '#E3F2FD'
     }
   ];
 
-  // 技术分享专栏文章
+  // AI应用专栏文章
   private techArticles: Article[] = [
     {
       id: '1',
-      title: '鸿蒙开发实战：从零开始构建心理健康应用',
-      subtitle: '详细讲解鸿蒙应用开发流程和最佳实践',
-      author: '鸿蒙开发专家',
-      publishTime: '2024-01-15',
-      readTime: '15分钟',
-      tags: ['鸿蒙开发', 'ArkTS', '应用开发'],
-      coverImage: $r('app.media.background'),
-      content: '本文将从零开始，详细介绍如何使用鸿蒙HarmonyOS开发一个心理健康应用。包括项目搭建、UI设计、数据管理等核心内容...',
-      icon: '📱',
-      iconColor: '#4CAF50',
-      bgColor: '#E8F5E8'
-    },
-    {
-      id: '2',
-      title: 'ArkTS状态管理最佳实践',
-      subtitle: '深入理解鸿蒙应用的状态管理机制',
-      author: '前端架构师',
-      publishTime: '2024-01-14',
-      readTime: '12分钟',
-      tags: ['ArkTS', '状态管理', '架构设计'],
-      coverImage: $r('app.media.background'),
-      content: '状态管理是应用开发中的核心概念。本文将深入探讨ArkTS中的状态管理机制，包括@State、@Link、@Prop等装饰器的使用...',
-      icon: '⚙️',
-      iconColor: '#2196F3',
-      bgColor: '#E3F2FD'
-    },
-    {
-      id: '3',
-      title: '鸿蒙UI组件库设计与实现',
-      subtitle: '如何构建可复用的UI组件库',
-      author: 'UI工程师',
-      publishTime: '2024-01-13',
-      readTime: '10分钟',
-      tags: ['UI设计', '组件库', '鸿蒙开发'],
-      coverImage: $r('app.media.background'),
-      content: '优秀的UI组件库能够大大提高开发效率。本文将分享如何设计一个高质量的鸿蒙UI组件库，包括组件设计原则、实现技巧等...',
-      icon: '🎨',
-      iconColor: '#9C27B0',
-      bgColor: '#F3E5F5'
-    }
-  ];
-
-  // 行业观察专栏文章
-  private observeArticles: Article[] = [
-    {
-      id: '1',
-      title: '2024年心理健康行业发展趋势分析',
-      subtitle: '深度解读心理健康市场的新机遇与挑战',
-      author: '行业分析师',
+      title: 'AI心理咨询：技术与伦理的平衡',
+      subtitle: '探讨AI在心理咨询中的应用前景与挑战',
+      author: 'AI伦理专家',
       publishTime: '2024-01-15',
       readTime: '18分钟',
-      tags: ['行业分析', '市场趋势', '心理健康'],
+      tags: ['AI咨询', '伦理问题', '心理健康'],
       coverImage: $r('app.media.background'),
-      content: '随着人们对心理健康的重视程度不断提升，心理健康行业正在经历前所未有的发展机遇。本文将从多个维度分析2024年的行业趋势...',
-      icon: '📈',
-      iconColor: '#FF9800',
-      bgColor: '#FFF3E0'
-    },
-    {
-      id: '2',
-      title: 'AI技术在心理健康领域的应用前景',
-      subtitle: '探索人工智能如何改变心理健康服务',
-      author: 'AI研究员',
-      publishTime: '2024-01-14',
-      readTime: '14分钟',
-      tags: ['人工智能', '心理健康', '技术创新'],
-      coverImage: $r('app.media.background'),
-      content: '人工智能技术正在各个领域发挥重要作用，心理健康领域也不例外。本文将探讨AI在心理咨询、情绪识别、个性化治疗等方面的应用...',
+      content: 'AI技术在心理咨询领域的应用正在快速发展，但同时也带来了伦理和隐私保护等挑战。本文将深入探讨AI心理咨询的技术实现、应用场景和伦理考量...',
       icon: '🤖',
       iconColor: '#607D8B',
       bgColor: '#ECEFF1'
     },
     {
-      id: '3',
-      title: '数字化心理健康服务的商业模式创新',
-      subtitle: '从传统咨询到数字化服务的转型之路',
-      author: '商业模式专家',
-      publishTime: '2024-01-13',
-      readTime: '16分钟',
-      tags: ['商业模式', '数字化转型', '心理健康服务'],
+      id: '2',
+      title: '机器学习在情绪识别中的应用',
+      subtitle: '从语音到文字的智能情绪分析技术',
+      author: '机器学习专家',
+      publishTime: '2024-01-14',
+      readTime: '15分钟',
+      tags: ['机器学习', '情绪识别', 'AI技术'],
       coverImage: $r('app.media.background'),
-      content: '数字化正在重塑心理健康服务的商业模式。本文将分析传统心理健康服务向数字化转型的路径，以及新的商业机会...',
-      icon: '💡',
-      iconColor: '#FFC107',
-      bgColor: '#FFF8E1'
+      content: '情绪识别是AI心理健康应用的核心技术之一。本文将详细介绍机器学习在语音、文字、图像等多种模态情绪识别中的应用原理和技术实现...',
+      icon: '📊',
+      iconColor: '#FF9800',
+      bgColor: '#FFF3E0'
+    },
+    {
+      id: '3',
+      title: '自然语言处理在心理健康对话系统中的应用',
+      subtitle: '构建智能化的心理健康对话机器人',
+      author: 'NLP研究员',
+      publishTime: '2024-01-13',
+      readTime: '12分钟',
+      tags: ['NLP', '对话系统', '心理健康'],
+      coverImage: $r('app.media.background'),
+      content: '自然语言处理技术为心理健康对话系统提供了强大的技术支持。本文将探讨如何利用NLP技术构建智能化的心理健康对话机器人，提供个性化的心理支持...',
+      icon: '💬',
+      iconColor: '#4CAF50',
+      bgColor: '#E8F5E8'
+    }
+  ];
+
+  // 行业动态专栏文章
+  private observeArticles: Article[] = [
+    {
+      id: '1',
+      title: '2024年心理健康行业投资趋势报告',
+      subtitle: '资本视角下的心理健康市场发展机遇',
+      author: '投资分析师',
+      publishTime: '2024-01-15',
+      readTime: '20分钟',
+      tags: ['投资趋势', '市场分析', '心理健康'],
+      coverImage: $r('app.media.background'),
+      content: '心理健康行业正成为投资热点，本文将从资本视角分析2024年心理健康市场的投资趋势、热门赛道和未来发展机遇...',
+      icon: '💰',
+      iconColor: '#4CAF50',
+      bgColor: '#E8F5E8'
+    },
+    {
+      id: '2',
+      title: '全球心理健康政策法规最新动态',
+      subtitle: '各国心理健康政策对比与趋势分析',
+      author: '政策研究专家',
+      publishTime: '2024-01-14',
+      readTime: '16分钟',
+      tags: ['政策法规', '全球趋势', '心理健康'],
+      coverImage: $r('app.media.background'),
+      content: '各国政府越来越重视心理健康问题，纷纷出台相关政策法规。本文将对比分析全球主要国家的心理健康政策，探讨政策趋势对行业发展的影响...',
+      icon: '📋',
+      iconColor: '#2196F3',
+      bgColor: '#E3F2FD'
+    },
+    {
+      id: '3',
+      title: '心理健康服务标准化与质量监管',
+      subtitle: '建立行业标准，保障服务质量',
+      author: '行业监管专家',
+      publishTime: '2024-01-13',
+      readTime: '14分钟',
+      tags: ['标准化', '质量监管', '行业规范'],
+      coverImage: $r('app.media.background'),
+      content: '随着心理健康服务的普及，标准化和质量监管成为行业发展的重要议题。本文将探讨如何建立心理健康服务的行业标准和质量监管体系...',
+      icon: '🏛️',
+      iconColor: '#9C27B0',
+      bgColor: '#F3E5F5'
     }
   ];
 
@@ -209,13 +209,13 @@ struct ColumnPage {
       case 'depth':
         this.currentColumn = {
           id: '1',
-          name: '深度解析',
-          description: '深度分析行业趋势，解读热点话题，提供专业见解',
+          name: '心理科普',
+          description: 'AI心理健康知识深度解析，科学认识心理健康问题',
           coverImage: $r('app.media.background'),
           articleCount: 156,
           followerCount: 2847,
           isFollowed: false,
-          icon: '🔍',
+          icon: '🧠',
           iconColor: '#1976D2',
           bgColor: '#E3F2FD'
         };
@@ -224,13 +224,13 @@ struct ColumnPage {
       case 'tech':
         this.currentColumn = {
           id: '2',
-          name: '技术分享',
-          description: '分享鸿蒙开发技术，探讨前沿技术趋势',
+          name: 'AI应用',
+          description: 'AI技术在心理健康领域的应用与创新',
           coverImage: $r('app.media.background'),
           articleCount: 89,
           followerCount: 1567,
           isFollowed: false,
-          icon: '💻',
+          icon: '🤖',
           iconColor: '#4CAF50',
           bgColor: '#E8F5E8'
         };
@@ -239,13 +239,13 @@ struct ColumnPage {
       case 'observe':
         this.currentColumn = {
           id: '3',
-          name: '行业观察',
-          description: '观察行业动态，分析市场趋势，洞察未来发展',
+          name: '行业动态',
+          description: '心理健康行业最新趋势与政策动态观察',
           coverImage: $r('app.media.background'),
           articleCount: 203,
           followerCount: 3921,
           isFollowed: false,
-          icon: '📊',
+          icon: '📈',
           iconColor: '#FF9800',
           bgColor: '#FFF3E0'
         };
@@ -254,13 +254,13 @@ struct ColumnPage {
       default:
         this.currentColumn = {
           id: '1',
-          name: '深度解析',
-          description: '深度分析行业趋势，解读热点话题',
+          name: '心理科普',
+          description: 'AI心理健康知识深度解析',
           coverImage: $r('app.media.background'),
           articleCount: 156,
           followerCount: 2847,
           isFollowed: false,
-          icon: '🔍',
+          icon: '🧠',
           iconColor: '#1976D2',
           bgColor: '#E3F2FD'
         };
