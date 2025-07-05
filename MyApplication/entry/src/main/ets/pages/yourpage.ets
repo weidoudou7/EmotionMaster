@@ -6,7 +6,6 @@ import { ApiService } from '../service/apiservice';
 import { UserInfo, UserStats, Dynamic } from '../common/types';
 import promptAction from '@ohos.promptAction';
 import preferences from '@ohos.data.preferences';
-import { Config } from '../common/config';
 
 @Entry
 @Component
@@ -23,6 +22,14 @@ export struct YourPage {
   @State selectedAtticTab: string = '智能体' // 当前选中的阁楼标签页
   @State cardScale: number = 1.0; // 卡片缩放动画
   @State latestDynamic: Dynamic | null = null; // 最新动态
+  @State lastClickTime: number = 0; // 上次点击时间，用于双击检测
+
+  // 银河系动画状态
+  @State arcRotation: number = 0 // 圆弧旋转角度
+  @State starTwinkle: number = 0 // 星星闪烁效果
+  @State glowOpacity: number = 0.5 // 发光效果透明度
+  @State textOpacity: number = 0.8 // 文字透明度
+  @State nebulaOpacity: number = 0.3 // 星云透明度
 
   // 页面生命周期
   aboutToAppear() {
@@ -31,10 +38,41 @@ export struct YourPage {
     this.UID = globalUserData.userUID;
     this.ooo = globalUserData.isPrivacyVisible;
     
+    // 启动银河系动画
+    this.startGalaxyAnimations();
+    
     // 异步加载详细信息，不阻塞页面显示
     this.loadUserInfoAsync();
     this.loadUserStatsAsync();
     this.loadLatestDynamicAsync();
+  }
+
+  // 银河系动画
+  private startGalaxyAnimations() {
+    // 圆弧旋转动画
+    setInterval(() => {
+      this.arcRotation += 1.5
+    }, 50)
+    
+    // 星星闪烁动画
+    setInterval(() => {
+      this.starTwinkle += 0.1
+    }, 100)
+    
+    // 发光效果动画
+    setInterval(() => {
+      this.glowOpacity = this.glowOpacity === 0.5 ? 0.8 : 0.5
+    }, 1200)
+    
+    // 文字透明度动画
+    setInterval(() => {
+      this.textOpacity = this.textOpacity === 0.8 ? 1.0 : 0.8
+    }, 1800)
+    
+    // 星云透明度动画
+    setInterval(() => {
+      this.nebulaOpacity = this.nebulaOpacity === 0.3 ? 0.6 : 0.3
+    }, 3000)
   }
 
   // 异步加载用户信息（不阻塞页面显示）
@@ -45,23 +83,6 @@ export struct YourPage {
       this.yourname = userInfo.userName;
       this.UID = userInfo.userUID;
       this.ooo = userInfo.isPrivacyVisible;
-      
-      // 处理头像URL拼接
-      if (userInfo.userAvatar && userInfo.userAvatar.startsWith('/')) {
-        const apiBaseUrl = Config.getApiBaseUrl();
-        const serverBaseUrl = apiBaseUrl.replace('/api', ''); // 移除API路径
-        
-        // 检查并修正错误的路径
-        let correctedAvatarUrl = userInfo.userAvatar;
-        if (userInfo.userAvatar.startsWith('/images/')) {
-          console.log('👤 [YourPage] 检测到错误的/images/路径，修正为/avatars/');
-          correctedAvatarUrl = userInfo.userAvatar.replace('/images/', '/avatars/');
-        }
-        
-        const fullAvatarUrl = serverBaseUrl + correctedAvatarUrl;
-        console.log('👤 [YourPage] 拼接后的完整头像URL:', fullAvatarUrl);
-        this.userInfo.userAvatar = fullAvatarUrl;
-      }
     } catch (error) {
       console.error('加载用户信息失败:', error);
       // 不显示错误提示，避免影响用户体验
@@ -117,55 +138,59 @@ export struct YourPage {
   @Builder
   build() {
     Stack() {
-      // 渐变背景
-      Column() {
-        Blank().width('100%').height('100%')
-          .backgroundColor('#181818')
-          .expandSafeArea([SafeAreaType.SYSTEM])
+      // 深色渐变背景 - 改为纯黑色主题
+      Column()
+        .width('100%')
+        .height('100%')
+        .linearGradient({
+          direction: GradientDirection.Bottom,
+          colors: [['#000000', 0.0], ['#0a0a0a', 0.5], ['#1a1a1a', 1.0]]
+        })
+      
+      // 旋转的圆弧背景 - 改为黑色系装饰
+      Stack() {
+        // 多个同心圆弧轨道
+        ForEach([0, 1, 2, 3], (index: number) => {
+          Stack() {
+            // 圆弧轨道 - 改为深灰色
+            Column()
+              .width(250 + index * 60)
+              .height(250 + index * 60)
+              .borderRadius((250 + index * 60) / 2)
+              .border({ width: 1, color: `rgba(64, 64, 64, ${0.3 - index * 0.05})` })
+              .position({ x: '50%', y: '50%' })
+              .translate({ x: -(250 + index * 60) / 2, y: -(250 + index * 60) / 2 })
+            
+            // 旋转的圆弧点 - 改为白色系
+            Column()
+              .width(6)
+              .height(6)
+              .backgroundColor(`rgba(255, 255, 255, ${0.6 - index * 0.1})`)
+              .borderRadius(3)
+              .position({ x: '50%', y: '50%' })
+              .translate({ 
+                x: -3 + Math.cos((this.arcRotation + index * 90) * Math.PI / 180) * (125 + index * 30),
+                y: -3 + Math.sin((this.arcRotation + index * 90) * Math.PI / 180) * (125 + index * 30)
+              })
+          }
+        })
+        
+        // 外圈装饰点 - 改为银色系
+        ForEach([0, 1, 2, 3, 4, 5], (index: number) => {
+          Column()
+            .width(6)
+            .height(6)
+            .backgroundColor(`rgba(192, 192, 192, ${0.4 - index * 0.05})`)
+            .borderRadius(3)
+            .position({ x: '50%', y: '50%' })
+            .translate({ 
+              x: -3 + Math.cos((this.arcRotation * 0.5 + index * 60) * Math.PI / 180) * 120,
+              y: -3 + Math.sin((this.arcRotation * 0.5 + index * 60) * Math.PI / 180) * 120
+            })
+        })
       }
       .width('100%')
       .height('100%')
-      
-      // // 装饰性背景元素
-      // Column() {
-      //   // 顶部装饰元素
-      //   Row() {
-      //     Image($r('app.media.deroration_1'))
-      //       .width(200)
-      //       .height(200)
-      //       .opacity(0.1)
-      //       .position({ x: -100, y: -50 })
-      //     Image($r('app.media.deroration_2'))
-      //       .width(150)
-      //       .height(150)
-      //       .opacity(0.08)
-      //       .position({ x: 300, y: -30 })
-      //   }
-      //   .width('100%')
-      //   .height(60)
-      //
-      //   Blank().layoutWeight(1)
-      //
-      //   // 底部装饰元素
-      //   Row() {
-      //     Image($r('app.media.deroration_3'))
-      //       .width(180)
-      //       .height(180)
-      //       .opacity(0.08)
-      //       .position({ x: -80, y: 20 })
-      //     Image($r('app.media.deroration_4'))
-      //       .width(120)
-      //       .height(120)
-      //       .opacity(0.1)
-      //       .position({ x: 320, y: 40 })
-      //   }
-      //   .width('100%')
-      //   .height(80)
-      // }
-      // .width('100%')
-      // .height('100%')
-      // .position({ x: 0, y: 0 })
-      // .zIndex(1)
       
       // 主体内容
       Scroll() {
@@ -176,7 +201,14 @@ export struct YourPage {
             Row() {
               // 左侧：头像+名称+UID 卡片
               Stack() {
-                // 卡片
+                // 卡片背景发光效果
+                Column()
+                  .width('100%')
+                  .height('auto')
+                  .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+                  .borderRadius(20)
+                  .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
+                
                 Row() {
                   // 头像
                   Image(this.userInfo?.userAvatar ? this.userInfo.userAvatar : $r("app.media.image"))
@@ -206,328 +238,476 @@ export struct YourPage {
                       .fontSize(24)
                       .fontWeight(FontWeight.Bold)
                       .fontColor('#fff')
+                      .opacity(this.textOpacity)
                       .margin({ bottom: 2 })
                       .textAlign(TextAlign.Start)
                     Text(`UID: ${this.UID}`)
                       .fontSize(13)
                       .fontColor('rgba(255,255,255,0.6)')
+                      .opacity(this.textOpacity)
                       .margin({ bottom: 4 })
                       .textAlign(TextAlign.Start)
                     Text(`性别: ${this.userInfo?.gender || '未设置'}`)
                       .fontSize(13)
                       .fontColor('rgba(255,255,255,0.6)')
+                      .opacity(this.textOpacity)
                       .textAlign(TextAlign.Start)
                   }
-                  .alignItems(HorizontalAlign.Start)
-                  .width('70%')
+                  .layoutWeight(1)
+                  .justifyContent(FlexAlign.Start)
                 }
-                .width('100%')
-                .scale({ x: this.cardScale, y: this.cardScale })
-                .animation({
-                  duration: 200,
-                  curve: Curve.EaseInOut
-                })
-                .onClick(() => {
-                  this.cardScale = 0.98;
-                  setTimeout(() => {
-                    this.cardScale = 1.0;
-                  }, 200);
-                })
+                .padding({ left: 20, right: 20, top: 20, bottom: 20 })
               }
-              .width('70%')
-              .padding({ left: 16 })
-              
-              // 右侧小卡片
+              .width('100%')
+              .backgroundColor('rgba(255, 255, 255, 0.03)')
+              .borderRadius(20)
+              .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+              .shadow({ radius: 12, color: '#00000030', offsetX: 0, offsetY: 4 })
+              .layoutWeight(1)
+              .margin({ right: 12 })
+
+              // 右侧：按钮组
               Column() {
-                // 设置按钮
-                Button() {
-                  Image($r('app.media.setting'))
-                    .width(28)
-                    .height(28)
-                    .fillColor('#fff')
-                }
-                .width(48)
-                .height(23)
-                .backgroundColor('rgba(128,128,128,0)')
-                .borderRadius(24)
-                .margin({ bottom: 4 })
-                .onClick(() => {
-                  let uiContext: UIContext = this.getUIContext();
-                  let router = uiContext.getRouter();
-                  router.pushUrl({ url: 'pages/infopage' });
-                })
-                
-                // 动态按钮
-                Button() {
-                  Image($r('app.media.dynamic'))
-                    .width(28)
-                    .height(28)
-                    .fillColor('#fff')
-                }
-                .width(48)
-                .height(48)
-                .backgroundColor('rgba(128,128,128,0)')
-                .borderRadius(24)
-                .margin({ bottom: 4 })
-                .onClick(() => {
-                  let uiContext: UIContext = this.getUIContext();
-                  let router = uiContext.getRouter();
-                  router.pushUrl({ url: 'pages/DynamicList' });
-                })
-              }
-              .width('20%')
-              .height('100%')
-              .justifyContent(FlexAlign.End)
-              .alignItems(HorizontalAlign.Center)
-            }
-            .width('90%')
-            .height(100)
-            .margin({ top: 12, bottom: 2 })
-            
-            // 2. 个性签名和社交信息
-            Row() {
-              // 左侧：个性签名
-              Column() {
-                // 个性签名
-                Column() {
-                  Text('个性签名')
-                    .fontSize(15)
-                    .fontColor('#fff')
-                    .margin({ bottom: 8 })
-                  Text(this.userInfo?.signature || '这个人很懒，什么都没留下~')
-                    .fontSize(14)
-                    .fontColor('rgba(255,255,255,0.8)')
-                    .textAlign(TextAlign.Start)
-                    .maxLines(2)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                }
-                .alignItems(HorizontalAlign.Start)
-                .margin({ bottom: 4 })
-                
-                // 社交信息按钮
-                Row() {
-                  // 查找按钮放在最前面
-                  Button('查找')
-                    .width(80)
-                    .height(28)
-                    .fontSize(10)
-                    .backgroundColor('rgba(0,128,255,0)')
-                    .fontColor('#fff')
-                    .borderRadius(14)
-                    .margin({ right: 8 })
-                    .onClick(() => {
-                      let uiContext: UIContext = this.getUIContext();
-                      let router = uiContext.getRouter();
-                      router.pushUrl({ url: 'pages/searchpage' });
-                    })
+                // 查找按钮
+                Stack() {
+                  // 按钮背景发光效果
+                  Column()
+                    .width('100%')
+                    .height('100%')
+                    .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+                    .borderRadius(12)
+                    .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
                   
-                  ForEach([
-                    `关注:${this.userStats?.followingCount || 0}`,
-                    `粉丝:${this.userStats?.followerCount || 0}`,
-                    `好友:${this.userStats?.friendCount || 0}`
-                  ], (label: string, index: number) => {
-                    Button(label)
-                      .width(62)
-                      .height(28)
-                      .fontSize(10)
-                      .backgroundColor('rgba(128,128,128,0)')
-                      .fontColor('#fff')
-                      .borderRadius(14)
-                      .margin({ right: 6 })
-                      .onClick(() => {
-                        promptAction.showToast({ message: '好友功能正在开发中' });
-                      })
-                  })
-                }
-                .width('100%')
-                .justifyContent(FlexAlign.Start)
-              }
-              .width('70%')
-              .padding({ left: 16 })
-              
-              // 右侧空白区域，保持与头像卡片布局一致
-              Blank()
-                .width('20%')
-            }
-            .width('90%')
-            .margin({ bottom: 2 })
-            
-            // 3. 底部两个按钮
-            Row() {
-              // 左侧：按钮区域
-              Row() {
-                Column() {
-                  Button('我的阁楼')
-                    .fontSize(15)
-                    .backgroundColor('rgba(128,128,128,0)')
-                    .fontColor('#fff')
-                    .borderRadius(20)
-                    .onClick(() => {
-                      this.selectedTab = 'attic';
-                    })
-                  if (this.selectedTab === 'attic') {
-                    Divider()
-                      .width(80)
-                      .height(2)
-                      .color('#fff')
-                      .margin({ top: 2 })
-                  }
-                }
-                .margin({ right: 12 })
-                
-                Column() {
-                  Button('我的动态')
-                    .fontSize(15)
-                    .backgroundColor('rgba(128,128,128,0)')
-                    .fontColor('#fff')
-                    .borderRadius(20)
-                    .onClick(() => {
-                      this.selectedTab = 'dynamic';
-                    })
-                  if (this.selectedTab === 'dynamic') {
-                    Divider()
-                      .width(80)
-                      .height(2)
-                      .color('#fff')
-                      .margin({ top: 2 })
-                  }
-                }
-              }
-              .width('70%')
-              .padding({ left: 16 })
-              .justifyContent(FlexAlign.Start)
-              
-              // 右侧空白区域
-              Blank()
-                .width('20%')
-            }
-            .width('90%')
-            .margin({ bottom: 2 })
-            
-            // 4. 阁楼内容显示
-            Column() {
-              if (this.selectedTab === 'attic') {
-                // 阁楼五个标签页导航栏（支持滑动）
-                Scroll() {
-                  Row() {
-                    ForEach(["智能体", "故事", "时刻", "群聊", "记忆簿"], (tab: string, index: number) => {
-                      Column() {
-                        Button(tab)
-                          .fontSize(12)
-                          .backgroundColor('rgba(128,128,128,0)')
-                          .fontColor('#fff')
-                          .borderRadius(12)
-                          .padding({ left: 12, right: 12, top: 8, bottom: 8 })
-                          .onClick(() => {
-                            this.selectedAtticTab = tab;
-                          })
-                        if (this.selectedAtticTab === tab) {
-                          Divider()
-                            .width(40)
-                            .height(2)
-                            .color('#fff')
-                            .margin({ top: 2 })
-                        }
-                      }
-                      .margin({ right: 12 })
-                    })
+                  Column() {
+                    Text('🔍')
+                      .fontSize(20)
+                      .fontColor('#ffffff')
+                      .opacity(this.textOpacity)
                   }
                   .width('100%')
+                  .height('100%')
+                  .justifyContent(FlexAlign.Center)
+                  .alignItems(HorizontalAlign.Center)
                 }
-                .scrollable(ScrollDirection.Horizontal)
-                .scrollBar(BarState.Off)
-                .width('100%')
+                .width(50)
+                .height(50)
+                .backgroundColor('rgba(255, 255, 255, 0.03)')
+                .borderRadius(12)
+                .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+                .shadow({ radius: 6, color: '#00000020', offsetX: 0, offsetY: 2 })
+                .onClick(() => {
+                  let uiContext: UIContext = this.getUIContext();
+                  let router = uiContext.getRouter();
+                  router.pushUrl({ url: 'pages/searchpage' });
+                })
                 .margin({ bottom: 8 })
-                
-                // 阁楼内容显示区域
-                Column() {
-                  Text('没有可用的内容')
-                    .fontSize(16)
-                    .fontColor('rgba(255,255,255,0.5)')
-                    .textAlign(TextAlign.Center)
-                }
-                .width('100%')
-                .height(120)
-                .backgroundColor('rgba(255,255,255,0.08)')
-                .borderRadius(16)
-                .justifyContent(FlexAlign.Center)
-              } else if (this.selectedTab === 'dynamic') {
-                // 动态预览内容
-                Column() {
-                  Text('我的动态')
-                    .fontSize(18)
-                    .fontWeight(FontWeight.Bold)
-                    .fontColor('#fff')
-                    .margin({ bottom: 16 })
+
+                // 设置按钮
+                Stack() {
+                  // 按钮背景发光效果
+                  Column()
+                    .width('100%')
+                    .height('100%')
+                    .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+                    .borderRadius(12)
+                    .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
                   
-                  // 最近一条动态预览
-                  if (this.latestDynamic) {
-                    Column() {
-                      Text(this.latestDynamic.content.length > 50 ? 
-                        this.latestDynamic.content.substring(0, 50) + '...' : 
-                        this.latestDynamic.content)
-                        .fontSize(14)
-                        .fontColor('rgba(255,255,255,0.8)')
-                        .textAlign(TextAlign.Start)
-                        .margin({ bottom: 8 })
-                      Text(this.formatTime(this.latestDynamic.createTime))
-                        .fontSize(12)
-                        .fontColor('rgba(255,255,255,0.5)')
-                        .textAlign(TextAlign.Start)
-                    }
-                    .width('100%')
-                    .height(120)
-                    .backgroundColor('rgba(255,255,255,0.08)')
-                    .borderRadius(16)
-                    .padding(16)
-                    .justifyContent(FlexAlign.Start)
-                    .onClick(() => {
-                      let uiContext: UIContext = this.getUIContext();
-                      let router = uiContext.getRouter();
-                      router.pushUrl({ url: 'pages/DynamicList' });
-                    })
-                  } else {
-                    Column() {
-                      Text('还没有发布过动态')
-                        .fontSize(14)
-                        .fontColor('rgba(255,255,255,0.6)')
-                        .textAlign(TextAlign.Center)
-                      Text('点击发布第一条动态吧')
-                        .fontSize(12)
-                        .fontColor('rgba(255,255,255,0.4)')
-                        .textAlign(TextAlign.Center)
-                        .margin({ top: 8 })
-                    }
-                    .width('100%')
-                    .height(120)
-                    .backgroundColor('rgba(255,255,255,0.08)')
-                    .borderRadius(16)
-                    .padding(16)
-                    .justifyContent(FlexAlign.Center)
-                    .onClick(() => {
-                      let uiContext: UIContext = this.getUIContext();
-                      let router = uiContext.getRouter();
-                      router.pushUrl({ url: 'pages/DynamicList' });
-                    })
+                  Column() {
+                    Image($r('app.media.setting'))
+                      .width(20)
+                      .height(20)
+                      .fillColor('#ffffff')
+                      .opacity(this.textOpacity)
                   }
+                  .width('100%')
+                  .height('100%')
+                  .justifyContent(FlexAlign.Center)
+                  .alignItems(HorizontalAlign.Center)
                 }
-                .width('100%')
+                .width(50)
+                .height(50)
+                .backgroundColor('rgba(255, 255, 255, 0.03)')
+                .borderRadius(12)
+                .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+                .shadow({ radius: 6, color: '#00000020', offsetX: 0, offsetY: 2 })
+                .onClick(() => {
+                  let uiContext: UIContext = this.getUIContext();
+                  let router = uiContext.getRouter();
+                  router.pushUrl({ url: 'pages/ProfilePage' });
+                })
               }
             }
-            .width('90%')
-            .height('50%')
-            .margin({ bottom: 4 })
+            .width('100%')
+            .margin({ top: 20, left: 16, right: 16, bottom: 16 })
+
+            // 2. 用户统计信息卡片
+            Stack() {
+              // 统计卡片背景发光效果
+              Column()
+                .width('100%')
+                .height('auto')
+                .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+                .borderRadius(16)
+                .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
+              
+              Row() {
+                // 动态数量
+                Column() {
+                  Text(this.userStats?.dynamicCount?.toString() || '0')
+                    .fontSize(24)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor('#ffffff')
+                    .opacity(this.textOpacity)
+                  Text('动态')
+                    .fontSize(14)
+                    .fontColor('rgba(255,255,255,0.7)')
+                    .opacity(this.textOpacity)
+                }
+                .layoutWeight(1)
+                .justifyContent(FlexAlign.Center)
+
+                // 分隔线
+                Column()
+                  .width(1)
+                  .height(40)
+                  .backgroundColor('rgba(255,255,255,0.2)')
+                  .margin({ left: 16, right: 16 })
+
+                // 关注数量
+                Column() {
+                  Text(this.userStats?.followingCount?.toString() || '0')
+                    .fontSize(24)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor('#ffffff')
+                    .opacity(this.textOpacity)
+                  Text('关注')
+                    .fontSize(14)
+                    .fontColor('rgba(255,255,255,0.7)')
+                    .opacity(this.textOpacity)
+                }
+                .layoutWeight(1)
+                .justifyContent(FlexAlign.Center)
+
+                // 分隔线
+                Column()
+                  .width(1)
+                  .height(40)
+                  .backgroundColor('rgba(255,255,255,0.2)')
+                  .margin({ left: 16, right: 16 })
+
+                // 粉丝数量
+                Column() {
+                  Text(this.userStats?.followerCount?.toString() || '0')
+                    .fontSize(24)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor('#ffffff')
+                    .opacity(this.textOpacity)
+                  Text('粉丝')
+                    .fontSize(14)
+                    .fontColor('rgba(255,255,255,0.7)')
+                    .opacity(this.textOpacity)
+                }
+                .layoutWeight(1)
+                .justifyContent(FlexAlign.Center)
+              }
+              .padding({ top: 20, bottom: 20 })
+            }
+            .width('100%')
+            .backgroundColor('rgba(255, 255, 255, 0.03)')
+            .borderRadius(16)
+            .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+            .shadow({ radius: 8, color: '#00000020', offsetX: 0, offsetY: 2 })
+            .margin({ left: 16, right: 16, bottom: 16 })
           }
-          .width('100%')
+
+          // 下半部分：标签页切换
+          Column() {
+            // 标签页切换按钮
+            Row() {
+              Text('动态')
+                .fontSize(16)
+                .fontWeight(this.selectedTab === 'dynamic' ? FontWeight.Bold : FontWeight.Normal)
+                .fontColor(this.selectedTab === 'dynamic' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)')
+                .opacity(this.textOpacity)
+                .padding({ left: 20, right: 20, top: 12, bottom: 12 })
+                .backgroundColor(this.selectedTab === 'dynamic' ? 'rgba(255, 255, 255, 0.1)' : 'transparent')
+                .borderRadius(20)
+                .onClick(() => {
+                  // 双击检测：如果两次点击间隔小于300ms，则认为是双击
+                  const currentTime = Date.now();
+                  if (currentTime - this.lastClickTime < 300) {
+                    // 双击事件：跳转到dynamiclist页面
+                    let uiContext: UIContext = this.getUIContext();
+                    let router = uiContext.getRouter();
+                    router.pushUrl({ url: 'pages/DynamicList' });
+                    this.lastClickTime = 0; // 重置点击时间
+                  } else {
+                    // 单击事件：切换到动态标签页并显示动态内容
+                    this.selectedTab = 'dynamic';
+                    this.lastClickTime = currentTime;
+                  }
+                })
+              
+              Text('阁楼')
+                .fontSize(16)
+                .fontWeight(this.selectedTab === 'attic' ? FontWeight.Bold : FontWeight.Normal)
+                .fontColor(this.selectedTab === 'attic' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)')
+                .opacity(this.textOpacity)
+                .padding({ left: 20, right: 20, top: 12, bottom: 12 })
+                .backgroundColor(this.selectedTab === 'attic' ? 'rgba(255, 255, 255, 0.1)' : 'transparent')
+                .borderRadius(20)
+                .onClick(() => {
+                  this.selectedTab = 'attic';
+                })
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.SpaceEvenly)
+            .padding({ left: 16, right: 16, bottom: 16 })
+
+            // 动态标签页内容
+            if (this.selectedTab === 'dynamic') {
+              this.buildDynamicContent()
+            }
+
+            // 阁楼标签页内容
+            if (this.selectedTab === 'attic') {
+              this.buildAtticContent()
+            }
+          }
         }
         .width('100%')
-        .padding({ top: 0 })
+        .padding({ bottom: 20 })
       }
-      .scrollable(ScrollDirection.Vertical)
-      .scrollBar(BarState.Off)
       .width('100%')
       .height('100%')
-      .zIndex(2)
+      .scrollBar(BarState.Off)
+    }
+    .width('100%')
+    .height('100%')
+  }
+
+  // 构建动态内容
+  @Builder
+  buildDynamicContent() {
+    Column() {
+      if (this.latestDynamic) {
+        // 最新动态卡片
+        Stack() {
+          // 动态卡片背景发光效果
+          Column()
+            .width('100%')
+            .height('auto')
+            .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+            .borderRadius(16)
+            .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
+          
+          Column() {
+            // 动态头部信息
+            Row() {
+              Image(this.userInfo?.userAvatar ? this.userInfo.userAvatar : $r("app.media.image"))
+                .width(40)
+                .height(40)
+                .borderRadius(20)
+                .margin({ right: 12 })
+              
+              Column() {
+                Text(this.yourname)
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#ffffff')
+                  .opacity(this.textOpacity)
+                Text(this.formatTime(this.latestDynamic.createTime))
+                  .fontSize(12)
+                  .fontColor('rgba(255,255,255,0.6)')
+                  .opacity(this.textOpacity)
+              }
+              .layoutWeight(1)
+              .justifyContent(FlexAlign.Start)
+            }
+            .margin({ bottom: 12 })
+
+            // 动态内容
+            Text(this.latestDynamic.content)
+              .fontSize(14)
+              .fontColor('#ffffff')
+              .opacity(this.textOpacity)
+              .textAlign(TextAlign.Start)
+              .margin({ bottom: 12 })
+
+            // 动态底部操作栏
+            Row() {
+              Text('❤️')
+                .fontSize(16)
+                .margin({ right: 8 })
+              Text('💬')
+                .fontSize(16)
+                .margin({ right: 8 })
+              Text('📤')
+                .fontSize(16)
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.Start)
+          }
+          .padding({ left: 16, right: 16, top: 16, bottom: 16 })
+        }
+        .width('100%')
+        .backgroundColor('rgba(255, 255, 255, 0.03)')
+        .borderRadius(16)
+        .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+        .shadow({ radius: 8, color: '#00000020', offsetX: 0, offsetY: 2 })
+        .margin({ left: 16, right: 16, bottom: 12 })
+        .onClick(() => {
+          // 点击动态卡片时跳转到dynamiclist页面
+          let uiContext: UIContext = this.getUIContext();
+          let router = uiContext.getRouter();
+          router.pushUrl({ url: 'pages/DynamicList' });
+        })
+      } else {
+        // 空状态
+        Stack() {
+          // 空状态背景发光效果
+          Column()
+            .width('100%')
+            .height('auto')
+            .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+            .borderRadius(16)
+            .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
+          
+          Column() {
+            Text('📝')
+              .fontSize(48)
+              .margin({ bottom: 16 })
+            Text('还没有动态')
+              .fontSize(16)
+              .fontColor('#ffffff')
+              .opacity(this.textOpacity)
+              .margin({ bottom: 8 })
+            Text('发布你的第一条动态吧')
+              .fontSize(14)
+              .fontColor('rgba(255,255,255,0.6)')
+              .opacity(this.textOpacity)
+          }
+          .padding({ top: 40, bottom: 40 })
+        }
+        .width('100%')
+        .backgroundColor('rgba(255, 255, 255, 0.03)')
+        .borderRadius(16)
+        .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+        .shadow({ radius: 8, color: '#00000020', offsetX: 0, offsetY: 2 })
+        .margin({ left: 16, right: 16, bottom: 12 })
+        .onClick(() => {
+          // 点击空状态时跳转到dynamiclist页面
+          let uiContext: UIContext = this.getUIContext();
+          let router = uiContext.getRouter();
+          router.pushUrl({ url: 'pages/DynamicList' });
+        })
+      }
+    }
+  }
+
+  // 构建阁楼内容
+  @Builder
+  buildAtticContent() {
+    Column() {
+      // 阁楼子标签页
+      Row() {
+        Text('智能体')
+          .fontSize(14)
+          .fontWeight(this.selectedAtticTab === '智能体' ? FontWeight.Bold : FontWeight.Normal)
+          .fontColor(this.selectedAtticTab === '智能体' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)')
+          .opacity(this.textOpacity)
+          .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+          .backgroundColor(this.selectedAtticTab === '智能体' ? 'rgba(255, 255, 255, 0.1)' : 'transparent')
+          .borderRadius(16)
+          .onClick(() => {
+            this.selectedAtticTab = '智能体';
+          })
+        
+        Text('收藏')
+          .fontSize(14)
+          .fontWeight(this.selectedAtticTab === '收藏' ? FontWeight.Bold : FontWeight.Normal)
+          .fontColor(this.selectedAtticTab === '收藏' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)')
+          .opacity(this.textOpacity)
+          .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+          .backgroundColor(this.selectedAtticTab === '收藏' ? 'rgba(255, 255, 255, 0.1)' : 'transparent')
+          .borderRadius(16)
+          .onClick(() => {
+            this.selectedAtticTab = '收藏';
+          })
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.SpaceEvenly)
+      .padding({ left: 16, right: 16, bottom: 16 })
+
+      // 智能体内容
+      if (this.selectedAtticTab === '智能体') {
+        Stack() {
+          // 智能体背景发光效果
+          Column()
+            .width('100%')
+            .height('auto')
+            .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+            .borderRadius(16)
+            .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
+          
+          Column() {
+            Text('🤖')
+              .fontSize(48)
+              .margin({ bottom: 16 })
+            Text('我的智能体')
+              .fontSize(16)
+              .fontColor('#ffffff')
+              .opacity(this.textOpacity)
+              .margin({ bottom: 8 })
+            Text('创建和管理你的AI智能体')
+              .fontSize(14)
+              .fontColor('rgba(255,255,255,0.6)')
+              .opacity(this.textOpacity)
+          }
+          .padding({ top: 40, bottom: 40 })
+        }
+        .width('100%')
+        .backgroundColor('rgba(255, 255, 255, 0.03)')
+        .borderRadius(16)
+        .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+        .shadow({ radius: 8, color: '#00000020', offsetX: 0, offsetY: 2 })
+        .margin({ left: 16, right: 16, bottom: 12 })
+      }
+
+      // 收藏内容
+      if (this.selectedAtticTab === '收藏') {
+        Stack() {
+          // 收藏背景发光效果
+          Column()
+            .width('100%')
+            .height('auto')
+            .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+            .borderRadius(16)
+            .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
+          
+          Column() {
+            Text('⭐')
+              .fontSize(48)
+              .margin({ bottom: 16 })
+            Text('我的收藏')
+              .fontSize(16)
+              .fontColor('#ffffff')
+              .opacity(this.textOpacity)
+              .margin({ bottom: 8 })
+            Text('查看你收藏的内容')
+              .fontSize(14)
+              .fontColor('rgba(255,255,255,0.6)')
+              .opacity(this.textOpacity)
+          }
+          .padding({ top: 40, bottom: 40 })
+        }
+        .width('100%')
+        .backgroundColor('rgba(255, 255, 255, 0.03)')
+        .borderRadius(16)
+        .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+        .shadow({ radius: 8, color: '#00000020', offsetX: 0, offsetY: 2 })
+        .margin({ left: 16, right: 16, bottom: 12 })
+      }
     }
   }
 } 

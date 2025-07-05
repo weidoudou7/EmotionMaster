@@ -32,8 +32,6 @@ struct CloudMusicPlayer {
   @State isInitialized: boolean = false;
   @State errorMessage: string = '';
   @State isRandomMode: boolean = true; // true为随机播放，false为单曲循环
-  @State showVolumePanel: boolean = false;
-  @State volume: number = 1;
   
   private rotateTimerId: number = -1;
   private audioPlayerService: AudioPlayerService = new AudioPlayerService();
@@ -120,15 +118,15 @@ struct CloudMusicPlayer {
         });
       },
       
-      onComplete: async () => {
+      onComplete: () => {
         console.log('音频播放完成');
         this.isPlaying = false;
         this.currentTime = 0;
         this.stopRotate();
         if (this.isRandomMode) {
-          await this.randomPlay();
+          this.randomPlay();
         } else {
-          await this.setSongByIndex(this.currentIndex); // 单曲循环
+          this.setSongByIndex(this.currentIndex); // 单曲循环
         }
       }
     };
@@ -236,7 +234,7 @@ struct CloudMusicPlayer {
     }
   }
 
-  async setSongByIndex(index: number) {
+  setSongByIndex(index: number) {
     const song = this.songs[index];
     if (song) {
       this.songDetail = song;
@@ -245,8 +243,7 @@ struct CloudMusicPlayer {
       this.song.artist = song.artist;
       this.currentTime = 0;
       this.isInitialized = false;
-      await this.initAudioPlayer();
-      await this.audioPlayerService.play(); // 自动播放
+      this.initAudioPlayer();
     }
   }
 
@@ -263,14 +260,15 @@ struct CloudMusicPlayer {
   }
 
   // 随机播放方法
-  private async randomPlay() {
+  private randomPlay() {
     if (this.songs.length <= 1) return;
     let nextIndex = this.currentIndex;
+    // 保证不会随机到当前这首
     while (nextIndex === this.currentIndex && this.songs.length > 1) {
       nextIndex = Math.floor(Math.random() * this.songs.length);
     }
     this.currentIndex = nextIndex;
-    await this.setSongByIndex(this.currentIndex); // 自动播放
+    this.setSongByIndex(this.currentIndex);
   }
 
   build() {
@@ -409,58 +407,10 @@ struct CloudMusicPlayer {
             .width(28).height(28).margin({ right: 30 })
             .onClick(() => this.nextSong())
           Image($r('app.media.music_list')).width(28).height(28).margin({ left: 16 })
-            .onClick(() => {
-              this.showVolumePanel = true;
-            })
         }
         .width('100%').justifyContent(FlexAlign.Center).alignItems(VerticalAlign.Center)
       }
       .width('100%').position({ y: 600 })
-
-      // 音量调节弹窗
-      if (this.showVolumePanel) {
-        Stack() {
-          // 半透明遮罩，点击关闭
-          Column() {}
-            .width('100%').height('100%')
-            .backgroundColor('rgba(0,0,0,0.3)')
-            .onClick(() => { this.showVolumePanel = false })
-          // 音量面板
-          Column() {
-            Text('音量调节')
-              .fontSize(18).fontColor('#fff').margin({ bottom: 12 })
-            Row() {
-              Slider({
-                value: this.volume,
-                min: 0,
-                max: 1,
-                step: 0.01
-              })
-                .width(200)
-                .selectedColor('#ffda7f')
-                .onChange((value: number) => {
-                  this.volume = value;
-                  this.audioPlayerService.setVolume(this.volume);
-                })
-              Text(Math.round(this.volume * 100) + '%')
-                .fontSize(16).fontColor('#fff').margin({ left: 12 })
-            }
-            Button('关闭')
-              .width(100).height(36)
-              .fontSize(16)
-              .fontColor('#121114')
-              .backgroundColor('#ffda7f')
-              .borderRadius(18)
-              .margin({ top: 16 })
-              .onClick(() => { this.showVolumePanel = false })
-          }
-          .width(280).backgroundColor('#232323').borderRadius(16)
-          .padding({ top: 24, bottom: 24, left: 24, right: 24 })
-          .position({ x: '50%', y: '60%' })
-          .translate({ x: -140, y: -80 })
-        }
-        .width('100%').height('100%').position({ x: 0, y: 0 })
-      }
     }
     .width('100%').height('100%').backgroundColor('#232323')
   }

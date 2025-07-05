@@ -14,6 +14,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.awt.Color;
+import java.io.InputStream;
+import java.net.URL;
+
 @RestController
 @RequestMapping("/ai/role")
 public class AIRoleController {
@@ -213,6 +219,6 @@ public class AIRoleController {
         } else {
             return ApiResponse.error("未找到该AI角色");
         }
-    }
+    }}
 
-}
+

@@ -3,6 +3,7 @@
 
 // 用户信息接口
 export interface UserInfo {
+  id?: number; // 用户ID（数据库主键）
   userName: string;
   userUID: string;
   userAvatar: string;
@@ -137,6 +138,7 @@ export interface CommentItem {
 
 // 创建AI角色请求接口
 export interface CreateAiRoleRequest {
+  userId?: number;
   roleName: string;
   roleDescription: string;
   roleType: string;
@@ -190,4 +192,20 @@ export interface CreateMessageRequest {
   audioUrl?: string;
   sentimentScore?: number;
   topicTag?: string;
+}
+
+// 角色类型统计结果接口
+export interface RoleTypeStatistics {
+  roleType: string;
+  count: number;
+  percentage: number;
+}
+
+// 用户角色偏好分析结果接口
+export interface UserRolePreferenceAnalysis {
+  totalConversations: number;
+  roleTypeCounts: RoleTypeStatistics[];
+  mostPreferredRoleType: string;
+  mostPreferredCount: number;
+  analysis: string;
 }

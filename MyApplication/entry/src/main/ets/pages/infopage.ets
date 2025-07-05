@@ -8,18 +8,12 @@ import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
 import { UserInfo } from '../common/types';
 import { BottomNavBar } from './BottomNavBar';
-import { Config } from '../common/config';
-
-interface AvatarResponse {
-  data?: string;
-}
 
 @Entry
 @Component
 export struct InfoPage {
   @State userAvatar: Resource | string = $r("app.media.image"); // 用户头像
   @State selectedImageUri: string = ''; // 选择的图片URI
-  @State selectedImageName: string = '';
   @State userName: string = globalUserData.userName; // 用户名称
   @State userUID: string = globalUserData.userUID; // 用户UID
   @State isPrivacyVisible: boolean = globalUserData.isPrivacyVisible; // 用户隐私是否可见
@@ -71,57 +65,59 @@ export struct InfoPage {
   // 头像选择器
   async selectAvatar() {
     try {
+      console.log('开始选择头像...');
       let photoPicker = new picker.PhotoViewPicker();
       let photoSelectOptions: picker.PhotoSelectOptions = {
         MIMEType: picker.PhotoViewMIMETypes.IMAGE_TYPE,
         maxSelectNumber: 1
       };
-      let photoViewPicker = await photoPicker.select(photoSelectOptions);
-      if (photoViewPicker && photoViewPicker.photoUris && photoViewPicker.photoUris.length > 0) {
-        this.selectedImageUri = photoViewPicker.photoUris[0];
-        this.selectedImageName = this.selectedImageUri.split('/').pop() || 'avatar.jpg';
-        promptAction.showToast({ message: '已选择头像' });
-      }
-    } catch (error) {
-      promptAction.showToast({ message: '选择头像失败' });
-    }
-  }
 
-  // 头像上传（Base64方式）
-  async uploadAvatar() {
-    if (!this.selectedImageUri) {
-      promptAction.showToast({ message: '请先选择头像' });
-      return;
-    }
-    try {
-      this.isLoading = true;
-      // 读取图片并转为Base64
-      const base64Data = await this.uriToBase64(this.selectedImageUri);
-      const result = await ApiService.uploadAvatarBase64(this.userUID, base64Data);
-      // 解析后端返回的新头像URL
-      let avatarUrl: string = '';
-      try {
-        const resObj: AvatarResponse = typeof result === 'string' ? JSON.parse(result) : result;
-        avatarUrl = resObj?.data || '';
-      } catch (e) {
-        avatarUrl = '';
+      console.log('打开图片选择器...');
+      let photoViewPicker = await photoPicker.select(photoSelectOptions);
+
+      if (photoViewPicker && photoViewPicker.photoUris && photoViewPicker.photoUris.length > 0) {
+        console.log('用户选择了图片:', photoViewPicker.photoUris[0]);
+        this.selectedImageUri = photoViewPicker.photoUris[0];
+
+        // 显示加载状态
+        promptAction.showToast({ message: '正在处理图片...' });
+
+        // 本地处理图片，转换为base64格式用于显示
+        const base64Data = await this.uriToBase64(this.selectedImageUri);
+        if (base64Data) {
+          console.log('图片处理成功，大小:', base64Data.length, '字符');
+
+          // 直接更新本地显示，不调用后端
+          this.userAvatar = this.selectedImageUri;
+
+          // 更新全局用户数据
+          globalUserData.updateUserAvatar(base64Data);
+
+          promptAction.showToast({ message: '头像更新成功' });
+        } else {
+          promptAction.showToast({ message: '图片处理失败' });
+        }
+      } else {
+        console.log('用户取消了图片选择');
       }
-      // 如果是相对路径，拼接服务器地址
-      if (avatarUrl && avatarUrl.startsWith('/')) {
-        avatarUrl = Config.getApiBaseUrl().replace(/\/$/, '') + avatarUrl;
-      }
-      if (avatarUrl) {
-        this.userAvatar = avatarUrl;
-      }
-      promptAction.showToast({ message: '头像上传成功' });
-      this.selectedImageUri = '';
-      this.selectedImageName = '';
-      this.loadUserInfoAsync();
     } catch (error) {
-      console.error('[头像上传Base64] error:', error);
-      promptAction.showToast({ message: '头像上传失败' });
-    } finally {
-      this.isLoading = false;
+      console.error('选择头像失败:', error);
+      // 检查错误对象是否有code属性
+      if (error && typeof error === 'object') {
+        const errorObj = error as Record<string, number>;
+        const errorCode = errorObj.code;
+        if (errorCode === 201) {
+          promptAction.showToast({ message: '用户取消了图片选择' });
+        } else if (errorCode === 2018203) {
+          promptAction.showToast({ message: '权限不足，请在设置中授予相册访问权限' });
+        } else if (errorCode !== undefined) {
+          promptAction.showToast({ message: `选择图片失败，错误代码: ${errorCode}` });
+        } else {
+          promptAction.showToast({ message: '选择头像失败' });
+        }
+      } else {
+        promptAction.showToast({ message: '选择头像失败' });
+      }
     }
   }
 
@@ -324,8 +320,10 @@ export struct InfoPage {
       // 渐变背景
       Column() {
         Blank().width('100%').height('100%')
-          .backgroundColor('#181818')
-          .expandSafeArea([SafeAreaType.SYSTEM])
+          .linearGradient({
+            direction: GradientDirection.Bottom,
+            colors: [['#1a1a2e', 0.0], ['#16213e', 0.5], ['#0f3460', 1.0]]
+          })
       }
       .width('100%')
       .height('100%')
@@ -344,15 +342,22 @@ export struct InfoPage {
           Column() {
             // 页面标题区域
             Row() {
-                Image($r('app.media.back'))
+              Button() {
+                Image($r('app.media.return'))
                   .width(24)
                   .height(24)
-                  .margin({ right: 16 })
-                  .onClick(() => {
-                    let uiContext: UIContext = this.getUIContext();
-                    let router = uiContext.getRouter();
-                    router.back();
-                  })
+                  .fillColor('#fff')
+              }
+              .width(40)
+              .height(40)
+              .backgroundColor('rgba(255,255,255,0.1)')
+              .borderRadius(20)
+              .margin({ right: 16 })
+              .onClick(() => {
+                let uiContext: UIContext = this.getUIContext();
+                let router = uiContext.getRouter();
+                router.back();
+              })
 
               Text('个人信息')
                 .fontSize(24)
@@ -393,6 +398,7 @@ export struct InfoPage {
                       curve: Curve.EaseInOut
                     })
                 }
+
                 // 相机图标
                 Image($r('app.media.camera'))
                   .width(32)
@@ -404,34 +410,19 @@ export struct InfoPage {
               }
               .width(120)
               .height(120)
-              // 点击头像选择新图片
-              .onClick(() => {
-                this.avatarScale = 0.95;
-                setTimeout(() => {
-                  this.avatarScale = 1.0;
-                  this.selectAvatar();
-                }, 120);
-              })
-              // 新增：头像下方显示"保存头像"按钮
-              if (this.selectedImageUri) {
-                Button('保存头像')
-                  .width(120)
-                  .height(36)
-                  .fontSize(16)
-                  .fontColor('#fff')
-                  .backgroundColor('#2980B9')
-                  .borderRadius(18)
-                  .margin({ top: 12 })
-                  .onClick(() => {
-                    this.uploadAvatar();
-                  })
-              }
             }
             .width('90%')
             .padding(24)
             .backgroundColor('rgba(255,255,255,0.1)')
             .borderRadius(20)
             .margin({ bottom: 20 })
+            .onClick(() => {
+              this.avatarScale = 0.95;
+              setTimeout(() => {
+                this.avatarScale = 1.0;
+                this.selectAvatar();
+              }, 120);
+            })
 
             // 用户信息卡片列表
             Column({ space: 16 }) {

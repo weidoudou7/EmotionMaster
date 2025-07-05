@@ -3,6 +3,7 @@ import promptAction from '@ohos.promptAction'
 import http from '@ohos.net.http'
 import { ApiService } from '../service/apiservice'
 import { globalUserData } from '../models/userdata'
+import { getUserId } from '../common/constants'
 
 // 定义路由参数接口
 interface RouteParams {
@@ -51,8 +52,10 @@ struct FigureResultPage {
       Column() {
         // 顶部栏
         Row() {
-          Image($r('app.media.back'))
-            .width(22)
+          Button('<')
+            .backgroundColor('transparent')
+            .fontColor('#fff')
+            .fontSize(24)
             .onClick(() => router.back())
           Blank().width(10)
           Text('生成结果')
@@ -173,8 +176,10 @@ struct FigureResultPage {
       // 显示保存中提示
       this.showToast('正在保存AI角色...');
 
+
       // 调用API保存AI角色到数据库
       const newAiRole = await ApiService.createAiRole({
+        userId: getUserId() || undefined, // 如果全局用户ID为空，则不传递
         roleName: generatedRoleName,
         roleDescription: selectedDescription,
         roleType: selectedStyle,

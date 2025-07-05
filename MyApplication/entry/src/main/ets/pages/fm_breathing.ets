@@ -411,18 +411,24 @@ struct FMBreathingPage {
     Column() {
       // 顶部导航
       Row() {
-        Image($r('app.media.back'))
-          .width(24)
+        Image($r('app.media.music_return'))
+          .width(36)
+          .height(36)
           //.shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
           .onClick(() => router.back())
         Text('呼吸训练')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
-          .fontColor(Color.White)
+          .fontColor('#1976D2')
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
-        Image($r('app.media.threePoint'))
-          .width(24)
+        Button('⚙️')
+          .fontSize(18)
+          .fontColor('#1976D2')
+          .backgroundColor('#fff')
+          .borderRadius(18)
+          .width(36)
+          .height(36)
           .shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
           .onClick(() => this.showSettings = true)
       }
@@ -438,7 +444,7 @@ struct FMBreathingPage {
               Text('选择呼吸模式')
                 .fontSize(16)
                 .fontWeight(FontWeight.Bold)
-                .fontColor(Color.Gray)
+                .fontColor('#333')
                 .margin({ bottom: 12 })
               
               ForEach(BREATHING_PATTERNS, (pattern: BreathingPattern, idx: number) => {
@@ -482,7 +488,7 @@ struct FMBreathingPage {
               Text('训练时长')
                 .fontSize(16)
                 .fontWeight(FontWeight.Bold)
-                .fontColor(Color.Gray)
+                .fontColor('#333')
                 .margin({ bottom: 12 })
               
               // 第一行：1、3、5分钟
@@ -723,7 +729,6 @@ struct FMBreathingPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(Color.Black)
-    .expandSafeArea([SafeAreaType.SYSTEM])
+    .backgroundColor('#F8F9FB')
   }
 } 
