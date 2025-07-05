@@ -4,12 +4,13 @@ import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest
 import {  AiRole } from '../common/types';
 import http from '@ohos.net.http';
 
+// 定义错误对象接口
+interface ErrorWithCode {
+  code?: number;
+}
 
 // API基础配置 - 从配置文件获取
 const API_BASE_URL = Config.getApiBaseUrl();
-
-
-//const API_BASE_URL = 'http://10.128.156.25:8081/api';
 
 // 定义HTTP请求选项接口
 interface HttpRequestOptions {
@@ -154,8 +155,8 @@ export class ApiService {
         console.error('🌐 error(非Error类型):', JSON.stringify(error));
       }
       try {
-        if (typeof error === 'object' && error !== null) {
-          const errObj = error as Record<string, string>;
+        if (error && (error as Record<string, string | number | boolean>).constructor === Object) {
+          const errObj = error as Record<string, string | number | boolean>;
           Object.keys(errObj).forEach((key) => {
             console.error(`🌐 error[${key}]:`, errObj[key]);
           });
@@ -168,7 +169,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw error;
       } else {
-        throw new Error('未知错误: ' + JSON.stringify(error));
+        throw new Error(String(error));
       }
     }
   }
@@ -177,18 +178,35 @@ export class ApiService {
    * 获取用户信息
    */
   static async getUserInfo(userUID: string): Promise<UserInfo> {
-    const response = await ApiService.request<UserInfo>(`${API_BASE_URL}/user/${userUID}`);
-    if (response.success) {
-      // 同步到前端全局状态
-      globalUserData.updateUserName(response.data.userName);
-      globalUserData.updateUserUID(response.data.userUID);
-      globalUserData.updateUserAvatar(response.data.userAvatar);
-      if (response.data.isPrivacyVisible !== globalUserData.isPrivacyVisible) {
-        globalUserData.togglePrivacy();
+    try {
+      console.log('👤 [ApiService] 开始获取用户信息');
+      console.log('👤 [ApiService] 用户UID:', userUID);
+      console.log('👤 [ApiService] 请求URL:', `${API_BASE_URL}/user/${userUID}`);
+      
+      const response = await ApiService.request<UserInfo>(`${API_BASE_URL}/user/${userUID}`);
+      
+      console.log('👤 [ApiService] 后端响应:', response);
+      console.log('👤 [ApiService] 响应成功状态:', response.success);
+      console.log('👤 [ApiService] 用户头像URL:', response.data?.userAvatar);
+      
+      if (response.success) {
+        // 同步到前端全局状态
+        console.log('👤 [ApiService] 更新全局用户信息');
+        globalUserData.updateUserName(response.data.userName);
+        globalUserData.updateUserUID(response.data.userUID);
+        globalUserData.updateUserAvatar(response.data.userAvatar);
+        if (response.data.isPrivacyVisible !== globalUserData.isPrivacyVisible) {
+          globalUserData.togglePrivacy();
+        }
+        console.log('👤 [ApiService] 用户信息获取成功');
+        return response.data;
+      } else {
+        console.log('❌ [ApiService] 获取用户信息失败:', response.message);
+        throw new Error(response.message || 'Failed to get user info');
       }
-      return response.data;
-    } else {
-      throw new Error(response.message || 'Failed to get user info');
+    } catch (error) {
+      console.error('❌ [ApiService] 获取用户信息异常:', error);
+      throw new Error('获取用户信息失败: ' + (error instanceof Error ? error.message : String(error)));
     }
   }
 
@@ -228,28 +246,41 @@ export class ApiService {
   }
 
   /**
-   * 上传用户头像 (简化版本，使用base64)
+   * 上传头像（Base64格式）
    */
   static async uploadAvatar(userUID: string, imageData: string): Promise<string> {
     try {
+      console.log('🖼️ [ApiService] 开始上传头像');
+      console.log('🖼️ [ApiService] 用户UID:', userUID);
+      console.log('🖼️ [ApiService] 图片数据长度:', imageData.length);
+      console.log('🖼️ [ApiService] 请求URL:', `${API_BASE_URL}/user/${userUID}/avatar/base64`);
+      
       const response = await ApiService.request<string>(`${API_BASE_URL}/user/${userUID}/avatar/base64`, {
         method: http.RequestMethod.POST,
         body: JSON.stringify({ imageData: imageData })
       });
 
+      console.log('🖼️ [ApiService] 后端响应:', response);
+      console.log('🖼️ [ApiService] 响应成功状态:', response.success);
+      console.log('🖼️ [ApiService] 响应数据:', response.data);
+      console.log('🖼️ [ApiService] 响应消息:', response.message);
+
       if (response.success) {
         // 同步到前端全局状态
+        console.log('🖼️ [ApiService] 更新全局用户头像:', response.data);
         globalUserData.updateUserAvatar(response.data);
+        console.log('🖼️ [ApiService] 头像上传成功，返回URL:', response.data);
         return response.data;
       } else {
+        console.log('❌ [ApiService] 头像上传失败:', response.message);
         throw new Error(response.message || 'Failed to upload avatar');
       }
     } catch (error) {
-      console.error('头像上传失败:', error);
+      console.error('❌ [ApiService] 头像上传异常:', error);
       if (error instanceof Error) {
         throw error;
       } else {
-        throw new Error('未知错误: ' + JSON.stringify(error));
+        throw new Error(String(error));
       }
     }
   }
@@ -308,7 +339,7 @@ export class ApiService {
    */
   static async chatWithAI(prompt: string, chatId: string, identity: string = 'default'): Promise<string> {
     try {
-      const url = `${API_BASE_URL}/ai/chat/${identity}?prompt=${encodeURIComponent(prompt)}&chatId=${encodeURIComponent(chatId)}`;
+    const url = `${API_BASE_URL}/ai/chat/${identity}?prompt=${encodeURIComponent(prompt)}&chatId=${encodeURIComponent(chatId)}`;
       
       console.log('发送AI聊天请求到:', url);
       console.log('用户输入:', prompt);
@@ -347,7 +378,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw new Error(`AI聊天失败: ${error.message}`);
       } else {
-        throw new Error('未知错误: ' + JSON.stringify(error));
+        throw new Error(String(error));
       }
     }
   }
@@ -396,7 +427,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw new Error(`特色聊天失败: ${error.message}`);
       } else {
-        throw new Error('特色聊天失败: 未知错误');
+        throw new Error(String(error));
       }
     }
   }
@@ -450,8 +481,8 @@ export class ApiService {
       console.error('错误详情:', JSON.stringify(error));
       
       // 检查是否是超时错误
-      if (error && typeof error === 'object') {
-        const errorObj = error as Record<string, string | number>;
+      if (error && (error as ErrorWithCode).constructor === Object) {
+        const errorObj = error as ErrorWithCode;
         if (errorObj.code === 2300028) {
           throw new Error('生成描述超时，请稍后重试。AI生成需要较长时间，请耐心等待。');
         }
@@ -460,7 +491,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw new Error(`生成描述失败: ${error.message}`);
       } else {
-        throw new Error('生成描述失败: 未知错误');
+        throw new Error(String(error));
       }
     }
   }
@@ -506,8 +537,8 @@ export class ApiService {
       console.error('错误详情:', JSON.stringify(error));
       
       // 检查是否是超时错误
-      if (error && typeof error === 'object') {
-        const errorObj = error as Record<string, string | number>;
+      if (error && (error as ErrorWithCode).constructor === Object) {
+        const errorObj = error as ErrorWithCode;
         if (errorObj.code === 2300028) {
           throw new Error('生成图片超时，请稍后重试。AI生成需要较长时间，请耐心等待。');
         }
@@ -516,7 +547,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw new Error(`生成图片失败: ${error.message}`);
       } else {
-        throw new Error('生成图片失败: 未知错误');
+        throw new Error(String(error));
       }
     }
   }
@@ -557,26 +588,26 @@ export class ApiService {
     console.log('🌐 请求URL:', `${API_BASE_URL}/dynamic/create/${userUID}`);
 
     try {
-      const response = await ApiService.request<Dynamic>(`${API_BASE_URL}/dynamic/create/${userUID}`, {
-        method: http.RequestMethod.POST,
-        body: JSON.stringify(dynamicData)
-      });
+    const response = await ApiService.request<Dynamic>(`${API_BASE_URL}/dynamic/create/${userUID}`, {
+      method: http.RequestMethod.POST,
+      body: JSON.stringify(dynamicData)
+    });
 
       console.log('🌐 API响应:', JSON.stringify(response));
 
-      if (response.success) {
+    if (response.success) {
         console.log('✅ 创建动态成功:', JSON.stringify(response.data));
-        return response.data;
-      } else {
+      return response.data;
+    } else {
         console.log('❌ 创建动态失败:', response.message);
-        throw new Error(response.message || 'Failed to create dynamic');
+      throw new Error(response.message || 'Failed to create dynamic');
       }
     } catch (error) {
       console.error('❌ ApiService.createDynamic 异常:', error);
       if (error instanceof Error) {
         throw error;
       } else {
-        throw new Error('未知错误: ' + JSON.stringify(error));
+        throw new Error(String(error));
       }
     }
   }
@@ -708,7 +739,7 @@ export class ApiService {
   static async getFeatured4Types(): Promise<Record<string, AiRole[]>> {
     const response = await ApiService.request<Record<string, AiRole[]>>(`${API_BASE_URL}/ai/role/featured4types`);
     if (response.success !== false && response.data) {
-      return response.data;
+    return response.data;
     } else if (response.data) {
       return response.data;
     } else {
@@ -866,7 +897,7 @@ export class ApiService {
         console.error('❌ 错误堆栈:', error.stack);
         throw error;
       } else {
-        throw new Error('创建AI角色失败: 未知错误');
+        throw new Error(String(error));
       }
     }
   }
@@ -913,7 +944,7 @@ export class ApiService {
         console.error('❌ 错误堆栈:', error.stack);
         throw error;
       } else {
-        throw new Error('生成角色名称失败: 未知错误');
+        throw new Error(String(error));
       }
     }
   }
@@ -962,7 +993,7 @@ export class ApiService {
         console.error('❌ 错误堆栈:', error.stack);
         throw error;
       } else {
-        throw new Error('创建对话失败: 未知错误');
+        throw new Error(String(error));
       }
     }
   }
@@ -1039,7 +1070,7 @@ export class ApiService {
         console.error('❌ 错误堆栈:', error.stack);
         throw error;
       } else {
-        throw new Error('保存消息失败: 未知错误');
+        throw new Error(String(error));
       }
     }
   }
@@ -1077,7 +1108,7 @@ export class ApiService {
         console.error('❌ 错误堆栈:', error.stack);
         throw error;
       } else {
-        throw new Error('获取消息列表失败: 未知错误');
+        throw new Error(String(error));
       }
     }
   }
@@ -1121,7 +1152,7 @@ export class ApiService {
         console.error('❌ 错误堆栈:', error.stack);
         throw error;
       } else {
-        throw new Error('查找对话失败: 未知错误');
+        throw new Error(String(error));
       }
     }
   }
@@ -1163,7 +1194,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw error;
       } else {
-        throw new Error('查找或创建对话失败: 未知错误');
+        throw new Error(String(error));
       }
     }
   }
@@ -1203,7 +1234,7 @@ export class ApiService {
         console.error('❌ 错误堆栈:', error.stack);
         throw error;
       } else {
-        throw new Error('情绪分析失败: 未知错误');
+        throw new Error(String(error));
       }
     }
   }
@@ -1243,7 +1274,7 @@ export class ApiService {
         console.error('❌ 错误堆栈:', error.stack);
         throw error;
       } else {
-        throw new Error('回复建议生成失败: 未知错误');
+        throw new Error(String(error));
       }
     }
   }
@@ -1379,6 +1410,97 @@ export class ApiService {
       return response.data;
     } else {
       throw new Error(response.message || '检查点赞状态失败');
+    }
+  }
+
+  // multipart/form-data动态发布
+  static async createDynamicForm(userUID: string, body: string, boundary: string): Promise<string> {
+    const url = `${API_BASE_URL}/dynamic/create/${userUID}`;
+    const httpRequest = http.createHttp();
+    const requestOptions: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      header: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`
+      },
+      extraData: body,
+      readTimeout: Config.getTimeout(),
+      connectTimeout: Config.getTimeout()
+    };
+    const response = await httpRequest.request(url, requestOptions);
+    httpRequest.destroy();
+    if (response.responseCode !== 200) {
+      throw new Error(`HTTP error! status: ${response.responseCode}`);
+    }
+    return response.result as string;
+  }
+
+  // multipart/form-data头像上传
+  static async uploadAvatarForm(userUID: string, body: string, boundary: string): Promise<string> {
+    const url = `${API_BASE_URL}/user/${userUID}/avatar`;
+    console.log('[头像上传] 请求URL:', url);
+    const httpRequest = http.createHttp();
+    const requestOptions: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      header: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`
+      },
+      extraData: body,
+      readTimeout: Config.getTimeout(),
+      connectTimeout: Config.getTimeout()
+    };
+    console.log('[头像上传] 请求参数:', requestOptions);
+    const response = await httpRequest.request(url, requestOptions);
+    httpRequest.destroy();
+    console.log('[头像上传] 响应:', response);
+    if (response.responseCode !== 200) {
+      throw new Error(`HTTP error! status: ${response.responseCode}`);
+    }
+    return response.result as string;
+  }
+
+  // 头像上传（Base64方式）
+  static async uploadAvatarBase64(userUID: string, base64Data: string): Promise<string> {
+    try {
+      console.log('🖼️ [ApiService] 开始上传头像Base64');
+      console.log('🖼️ [ApiService] 用户UID:', userUID);
+      console.log('🖼️ [ApiService] 图片数据长度:', base64Data.length);
+      
+      const url = `${API_BASE_URL}/user/${userUID}/avatar/base64`;
+      console.log('🖼️ [ApiService] 请求URL:', url);
+      
+      const httpRequest = http.createHttp();
+      const requestOptions: http.HttpRequestOptions = {
+        method: http.RequestMethod.POST,
+        header: {
+          'Content-Type': 'application/json'
+        },
+        extraData: JSON.stringify({ imageData: base64Data }),
+        readTimeout: Config.getTimeout(),
+        connectTimeout: Config.getTimeout()
+      };
+      
+      console.log('🖼️ [ApiService] 请求参数:', requestOptions);
+      const response = await httpRequest.request(url, requestOptions);
+      httpRequest.destroy();
+      
+      console.log('🖼️ [ApiService] 响应状态码:', response.responseCode);
+      console.log('🖼️ [ApiService] 响应内容:', response.result);
+      
+      if (response.responseCode !== 200) {
+        console.log('❌ [ApiService] 头像上传失败，状态码:', response.responseCode);
+        throw new Error(`HTTP error! status: ${response.responseCode}`);
+      }
+      
+      const result = response.result as string;
+      console.log('🖼️ [ApiService] 头像上传成功，返回结果:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ [ApiService] 头像上传Base64异常:', error);
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
   }
 }

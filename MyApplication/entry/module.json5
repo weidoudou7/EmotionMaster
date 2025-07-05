@@ -5,7 +5,9 @@
     ],
     "network": {
       "cleartextTraffic": true
-    }
+    },
+    "compatibleSdkVersion": "5",
+    "targetPlatformVersion": "5"
   },
   "pages": [
     "pages/yourpage",

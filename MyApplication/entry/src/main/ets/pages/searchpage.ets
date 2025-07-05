@@ -1,7 +1,8 @@
 import { BusinessError } from '@kit.BasicServicesKit';
-import promptAction from '@ohos.promptAction';
+import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
-import { SearchUserResult } from '../common/types';
+import { UserInfo, SearchUserResult } from '../common/types';
+import promptAction from '@ohos.promptAction';
 import { Config } from '../common/config';
 
 @Entry
@@ -34,6 +35,23 @@ export struct SearchPage {
       const result = await ApiService.searchUser(this.searchText.trim());
       
       if (result) {
+        // 处理头像URL拼接
+        if (result.userAvatar && result.userAvatar.startsWith('/')) {
+          const apiBaseUrl = Config.getApiBaseUrl();
+          const serverBaseUrl = apiBaseUrl.replace('/api', ''); // 移除API路径
+          
+          // 检查并修正错误的路径
+          let correctedAvatarUrl = result.userAvatar;
+          if (result.userAvatar.startsWith('/images/')) {
+            console.log('🔍 [SearchPage] 检测到错误的/images/路径，修正为/avatars/');
+            correctedAvatarUrl = result.userAvatar.replace('/images/', '/avatars/');
+          }
+          
+          const fullAvatarUrl = serverBaseUrl + correctedAvatarUrl;
+          console.log('🔍 [SearchPage] 拼接后的完整头像URL:', fullAvatarUrl);
+          result.userAvatar = fullAvatarUrl;
+        }
+        
         this.searchResult = result;
         promptAction.showToast({ message: `找到用户: ${result.userName}` });
       } else {

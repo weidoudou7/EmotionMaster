@@ -95,6 +95,7 @@ export struct LoadingPage {
         .width('100%')
         .height('100%')
         .objectFit(ImageFit.Cover)
+        .expandSafeArea([SafeAreaType.SYSTEM])
       
       // 方案A：隐藏Image组件预加载所有图片
       ForEach(this.generatedUrls, (url: string, idx: number) => {

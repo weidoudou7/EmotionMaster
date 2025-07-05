@@ -1,6 +1,7 @@
 // DynamicList.ets
 // 动态展示页面
 
+import { BusinessError } from '@kit.BasicServicesKit';
 import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
 import { Dynamic, CreateDynamicRequest } from '../common/types';
@@ -10,6 +11,7 @@ import { BottomNavBar } from './BottomNavBar';
 import preferences from '@ohos.data.preferences';
 import picker from '@ohos.file.picker';
 import fs from '@ohos.file.fs';
+import { Config } from '../common/config';
 
 // 类型声明
 interface ErrorWithCode {
@@ -63,6 +65,25 @@ struct DynamicList {
       const dynamics = this.showAllDynamics
         ? await ApiService.getUserDynamics(this.userUID)
         : await ApiService.getUserPublicDynamics(this.userUID);
+      
+      // 处理动态中的头像URL拼接
+      dynamics.forEach(dynamic => {
+        if (dynamic.userAvatar && dynamic.userAvatar.startsWith('/')) {
+          const apiBaseUrl = Config.getApiBaseUrl();
+          const serverBaseUrl = apiBaseUrl.replace('/api', ''); // 移除API路径
+          
+          // 检查并修正错误的路径
+          let correctedAvatarUrl = dynamic.userAvatar;
+          if (dynamic.userAvatar.startsWith('/images/')) {
+            console.log('📝 [DynamicList] 检测到错误的/images/路径，修正为/avatars/');
+            correctedAvatarUrl = dynamic.userAvatar.replace('/images/', '/avatars/');
+          }
+          
+          const fullAvatarUrl = serverBaseUrl + correctedAvatarUrl;
+          console.log('📝 [DynamicList] 拼接后的完整头像URL:', fullAvatarUrl);
+          dynamic.userAvatar = fullAvatarUrl;
+        }
+      });
       
       // 按时间顺序排序（最新的在前）
       this.dynamics = dynamics.sort((a, b) => {
@@ -346,54 +367,56 @@ struct DynamicList {
       // 渐变背景 - 与 yourpage 保持一致
       Column() {
         Blank().width('100%').height('100%')
-          .linearGradient({
-            direction: GradientDirection.Bottom,
-            colors: [['#1a1a2e', 0.0], ['#16213e', 0.3], ['#0f3460', 0.7], ['#533483', 1.0]]
-          })
+          .backgroundColor(Color.Black)
+          .expandSafeArea([SafeAreaType.SYSTEM])
+          // .linearGradient({
+          //   direction: GradientDirection.Bottom,
+          //   colors: [['#1a1a2e', 0.0], ['#16213e', 0.3], ['#0f3460', 0.7], ['#533483', 1.0]]
+          // })
       }
       .width('100%')
       .height('100%')
       
       // 装饰性背景元素 - 与 yourpage 保持一致
-      Column() {
-        // 顶部装饰元素
-        Row() {
-          Image($r('app.media.deroration_1'))
-            .width(200)
-            .height(200)
-            .opacity(0.1)
-            .position({ x: -100, y: -50 })
-          Image($r('app.media.deroration_2'))
-            .width(150)
-            .height(150)
-            .opacity(0.08)
-            .position({ x: 300, y: -30 })
-        }
-        .width('100%')
-        .height(60)
-        
-        Blank().layoutWeight(1)
-        
-        // 底部装饰元素
-        Row() {
-          Image($r('app.media.deroration_3'))
-            .width(180)
-            .height(180)
-            .opacity(0.08)
-            .position({ x: -80, y: 20 })
-          Image($r('app.media.deroration_4'))
-            .width(120)
-            .height(120)
-            .opacity(0.1)
-            .position({ x: 320, y: 40 })
-        }
-        .width('100%')
-        .height(80)
-      }
-      .width('100%')
-      .height('100%')
-      .position({ x: 0, y: 0 })
-      .zIndex(1)
+      // Column() {
+      //   // 顶部装饰元素
+      //   Row() {
+      //     Image($r('app.media.deroration_1'))
+      //       .width(200)
+      //       .height(200)
+      //       .opacity(0.1)
+      //       .position({ x: -100, y: -50 })
+      //     Image($r('app.media.deroration_2'))
+      //       .width(150)
+      //       .height(150)
+      //       .opacity(0.08)
+      //       .position({ x: 300, y: -30 })
+      //   }
+      //   .width('100%')
+      //   .height(60)
+      //
+      //   Blank().layoutWeight(1)
+      //
+      //   // 底部装饰元素
+      //   Row() {
+      //     Image($r('app.media.deroration_3'))
+      //       .width(180)
+      //       .height(180)
+      //       .opacity(0.08)
+      //       .position({ x: -80, y: 20 })
+      //     Image($r('app.media.deroration_4'))
+      //       .width(120)
+      //       .height(120)
+      //       .opacity(0.1)
+      //       .position({ x: 320, y: 40 })
+      //   }
+      //   .width('100%')
+      //   .height(80)
+      // }
+      // .width('100%')
+      // .height('100%')
+      // .position({ x: 0, y: 0 })
+      // .zIndex(1)
       
       // 主体内容
       Column() {
@@ -401,7 +424,7 @@ struct DynamicList {
         Row() {
           // 返回按钮
           Button() {
-            Image($r('app.media.return'))
+            Image($r('app.media.back'))
               .width(24)
               .height(24)
               .fillColor('#fff')
@@ -424,7 +447,7 @@ struct DynamicList {
             .fontColor('#fff')
             .layoutWeight(1)
             .textAlign(TextAlign.Center)
-            .margin({ right: 56 }) // 为返回按钮留出空间
+
           
           // 发布按钮
           Button() {
@@ -503,7 +526,6 @@ struct DynamicList {
           .height('100%')
           .backgroundColor('rgba(255,255,255,0.05)')
           .borderRadius(16)
-          .margin({ left: 16, right: 16, bottom: 16 })
           .padding(16)
         }
         .onRefreshing(() => {
