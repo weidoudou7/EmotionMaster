@@ -106,8 +106,14 @@ export struct Chat {
   @State private showExtraInputs: boolean = false; // 控制空白栏显示
   @State private replySuggestions: string[] = ['', '', '']; // 回复建议数组
   @State private isLoadingSuggestions: boolean = false; // 是否正在加载回复建议
+  @State private hasMicrophonePermission: boolean = false; // 新增：麦克风权限状态
 
   aboutToAppear() {
+    console.log('当前环境:', this.isVirtualMachine() ? '虚拟机' : '真机');
+    
+    // 检查麦克风权限
+    this.checkMicrophonePermission();
+    
     // 获取路由参数
     const params = router.getParams() as ChatParams;
     if (params) {
@@ -1008,44 +1014,120 @@ export struct Chat {
         })
      }
 
+  // 检查麦克风权限
+  private async checkMicrophonePermission(): Promise<void> {
+    try {
+      // 直接尝试申请权限，如果已授权会直接返回成功
+      const granted = await this.requestMicrophonePermission();
+      this.hasMicrophonePermission = granted;
+      console.log('麦克风权限状态:', this.hasMicrophonePermission ? '已授权' : '未授权');
+    } catch (error) {
+      console.error('权限检查失败:', error);
+      this.hasMicrophonePermission = false;
+    }
+  }
+
+  // 申请麦克风权限
+  private async requestMicrophonePermission(): Promise<boolean> {
+    let atManager = abilityAccessCtrl.createAtManager();
+    try {
+      await atManager.requestPermissionsFromUser(globalThis.abilityContext, ['ohos.permission.MICROPHONE']);
+      // 权限申请成功，假设用户已授权
+      return true;
+    } catch (error) {
+      console.error('申请麦克风权限失败:', error);
+      return false;
+    }
+  }
+
   private async startRecord() {
+    // 检查麦克风权限
+    if (!this.hasMicrophonePermission) {
+      console.log('麦克风权限未授权，尝试申请权限...');
+      const granted = await this.requestMicrophonePermission();
+      if (!granted) {
+        console.error('麦克风权限申请失败，无法录音');
+        // 可以显示提示信息
+        return;
+      }
+    }
+
     this.isRecording = true;
     this.recordDuration = 0;
     this.fileName = Date.now().toString();
-    await AudioCapturerManager.startRecord(this.fileName);
+    
+    // 虚拟机环境：模拟录音
+    if (this.isVirtualMachine()) {
+      console.log('虚拟机环境，使用模拟录音');
+      // 模拟录音文件生成
+      this.simulateRecord();
+    } else {
+      // 真机环境：真实录音
+      try {
+        await AudioCapturerManager.startRecord(this.fileName);
+        console.log('录音开始成功');
+      } catch (error) {
+        console.error('录音开始失败:', error);
+        this.isRecording = false;
+        return;
+      }
+    }
 
     this.recordTimer = setInterval(() => {
       this.recordDuration += 1;
       console.log('recordDuration:', this.recordDuration);
     }, 1000);
+  }
 
-    // 可选：音量动画
-    // this.volumeTimer = setInterval(() => {
-    //   // 这里可用AudioCapturerManager.audioCapturer?.getAudioVolume()，如有实现
-    //   this.volumeLevel = Math.random() * 100; // demo用
-    // }, 100);
+  // 检测是否为虚拟机环境
+  private isVirtualMachine(): boolean {
+    // 可以通过设备型号、环境变量等判断
+    // 这里简单返回true，表示虚拟机环境
+    return true; // 虚拟机中设为true，真机中设为false
+  }
+
+  // 模拟录音功能
+  private simulateRecord() {
+    // 模拟录音文件生成
+    console.log('模拟录音文件生成:', this.fileName);
   }
 
   private async stopAndSendRecord() {
     clearInterval(this.recordTimer);
-    clearInterval(this.volumeTimer);
     this.isRecording = false;
 
-    await AudioCapturerManager.stopRecord();
+    if (this.isVirtualMachine()) {
+      // 虚拟机环境：模拟录音结束
+      console.log('虚拟机环境，模拟录音结束');
+    } else {
+      // 真机环境：真实录音结束
+      await AudioCapturerManager.stopRecord();
+    }
 
     if (this.isCancelRecord || this.recordDuration < 1) {
-      // 删除录音文件
-      // 可选：fs.unlinkSync(`${ctx.filesDir}/${this.fileName}.wav`);
       this.recordDuration = 0;
       this.isCancelRecord = false;
       return;
     }
 
-    // 录音文件转文本
-    this.recognizeAudioFile(this.fileName);
+    // 虚拟机环境：模拟语音识别
+    if (this.isVirtualMachine()) {
+      this.simulateVoiceRecognition();
+    } else {
+      // 真机环境：真实语音识别
+      this.recognizeAudioFile(this.fileName);
+    }
 
     this.recordDuration = 0;
     this.isCancelRecord = false;
+  }
+
+  // 模拟语音识别
+  private simulateVoiceRecognition() {
+    // 模拟识别结果
+    const mockText = '这是模拟的语音识别结果';
+    console.log('模拟语音识别结果:', mockText);
+    this.sendVoiceMessage(this.fileName, this.recordDuration, mockText);
   }
 
   private recognizeAudioFile(fileName: string) {
@@ -1056,17 +1138,24 @@ export struct Chat {
   }
 
   private sendVoiceMessage(fileName: string, duration: number, text: string) {
-    const newMessage: ChatMessage = {
-      id: this.chatData.length + 1,
-      isMe: true,
-      avatar: $r('app.media.splash'),
-      content: text ? `[语音] ${text}` : '[语音]',
-      time: new Date().toLocaleTimeString().slice(0, 5),
-      type: 'voice',
-      duration: duration,
-      // 可扩展：audioPath: `${ctx.filesDir}/${fileName}.wav`
-    };
-    this.chatData = [...this.chatData, newMessage];
-    this.scrollToBottom();
+    // 语音识别完成后，自动调用sendMessage进行AI对话
+    if (text && text !== '未识别到语音内容') {
+      // 将识别出的文本作为用户输入，调用sendMessage
+      this.inputText = text; // 设置输入文本
+      this.sendMessage(); // 调用AI对话
+    } else {
+      // 如果识别失败，显示语音消息
+      const newMessage: ChatMessage = {
+        id: this.chatData.length + 1,
+        isMe: true,
+        avatar: $r('app.media.splash'),
+        content: '[语音] 未识别到语音内容',
+        time: new Date().toLocaleTimeString().slice(0, 5),
+        type: 'voice',
+        duration: duration,
+      };
+      this.chatData = [...this.chatData, newMessage];
+      this.scrollToBottom();
+    }
   }
 }
