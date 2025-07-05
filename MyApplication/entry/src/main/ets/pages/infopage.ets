@@ -47,37 +47,23 @@ export struct InfoPage {
   // 异步加载用户信息（不阻塞页面显示）
   async loadUserInfoAsync() {
     try {
-      console.log('👤 [Frontend] 开始加载用户信息');
-      console.log('👤 [Frontend] 用户UID:', this.userUID);
-      
       const userInfo = await ApiService.getUserInfo(this.userUID);
-      console.log('👤 [Frontend] 获取到的用户信息:', userInfo);
-      
       this.userInfo = userInfo;
       this.userName = userInfo.userName;
       this.isPrivacyVisible = userInfo.isPrivacyVisible;
 
       // 处理头像显示
-      console.log('👤 [Frontend] 处理头像显示逻辑');
-      console.log('👤 [Frontend] 后端返回的头像URL:', userInfo.userAvatar);
-      
       if (userInfo.userAvatar && userInfo.userAvatar !== '/avatars/default.png') {
         // 如果有后端头像，使用后端头像
-        console.log('👤 [Frontend] 检测到有效头像URL，使用后端头像');
-        console.log('👤 [Frontend] 设置userAvatar为:', userInfo.userAvatar);
         this.userAvatar = userInfo.userAvatar;
         this.selectedImageUri = ''; // 清空本地选择的图片
       } else {
         // 使用默认头像
-        console.log('👤 [Frontend] 使用默认头像');
         this.userAvatar = $r("app.media.image");
         this.selectedImageUri = ''; // 清空本地选择的图片
       }
-      
-      console.log('👤 [Frontend] 最终userAvatar值:', this.userAvatar);
-      console.log('👤 [Frontend] 用户信息加载完成');
     } catch (error) {
-      console.error('❌ [Frontend] 加载用户信息失败:', error);
+      console.error('加载用户信息失败:', error);
       // 不显示错误提示，避免影响用户体验
     }
   }
@@ -109,59 +95,30 @@ export struct InfoPage {
     }
     try {
       this.isLoading = true;
-      console.log('🖼️ [Frontend] 开始头像上传流程');
-      console.log('🖼️ [Frontend] 选择的图片URI:', this.selectedImageUri);
-      
       // 读取图片并转为Base64
       const base64Data = await this.uriToBase64(this.selectedImageUri);
-      console.log('🖼️ [Frontend] Base64数据长度:', base64Data.length);
-      console.log('🖼️ [Frontend] Base64数据前缀:', base64Data.substring(0, 50) + '...');
-      
       const result = await ApiService.uploadAvatarBase64(this.userUID, base64Data);
-      console.log('🖼️ [Frontend] 后端返回的原始结果:', result);
-      
       // 解析后端返回的新头像URL
       let avatarUrl: string = '';
       try {
-        const resObj: AvatarResponse = (result as string).startsWith ? JSON.parse(result as string) : result as AvatarResponse;
-        console.log('🖼️ [Frontend] 解析后的响应对象:', resObj);
+        const resObj: AvatarResponse = typeof result === 'string' ? JSON.parse(result) : result;
         avatarUrl = resObj?.data || '';
-        console.log('🖼️ [Frontend] 从响应中提取的URL:', avatarUrl);
       } catch (e) {
-        console.log('🖼️ [Frontend] 解析响应失败，使用原始结果:', result);
         avatarUrl = '';
       }
-      
       // 如果是相对路径，拼接服务器地址
       if (avatarUrl && avatarUrl.startsWith('/')) {
-        const baseUrl = Config.getApiBaseUrl().replace(/\/$/, '');
-        const fullUrl = baseUrl + avatarUrl;
-        console.log('🖼️ [Frontend] 检测到相对路径，进行拼接');
-        console.log('🖼️ [Frontend] 基础URL:', baseUrl);
-        console.log('🖼️ [Frontend] 相对路径:', avatarUrl);
-        console.log('🖼️ [Frontend] 拼接后的完整URL:', fullUrl);
-        avatarUrl = fullUrl;
-      } else {
-        console.log('🖼️ [Frontend] URL不是相对路径，直接使用:', avatarUrl);
+        avatarUrl = Config.getApiBaseUrl().replace(/\/$/, '') + avatarUrl;
       }
-      
       if (avatarUrl) {
-        console.log('🖼️ [Frontend] 设置新的头像URL:', avatarUrl);
         this.userAvatar = avatarUrl;
-        console.log('🖼️ [Frontend] userAvatar已更新为:', this.userAvatar);
-      } else {
-        console.log('⚠️ [Frontend] 警告：avatarUrl为空，无法更新头像');
       }
-      
       promptAction.showToast({ message: '头像上传成功' });
       this.selectedImageUri = '';
       this.selectedImageName = '';
-      
-      console.log('🖼️ [Frontend] 开始刷新用户信息');
       this.loadUserInfoAsync();
-      console.log('🖼️ [Frontend] 头像上传流程完成');
     } catch (error) {
-      console.error('❌ [Frontend] 头像上传失败:', error);
+      console.error('[头像上传Base64] error:', error);
       promptAction.showToast({ message: '头像上传失败' });
     } finally {
       this.isLoading = false;
@@ -170,29 +127,30 @@ export struct InfoPage {
 
   // 将图片URI转换为base64格式
   async uriToBase64(uri: string): Promise<string> {
-    const context: object = this;
-    let fileHandle: fs.File | undefined = undefined;
     try {
       console.log('开始转换图片为base64:', uri);
-      fileHandle = await fs.open(uri, fs.OpenMode.READ_ONLY);
+      // 打开文件
+      const fd = await fs.open(uri, fs.OpenMode.READ_ONLY);
       const stat = await fs.stat(uri);
       const buffer = new ArrayBuffer(stat.size);
-      await fs.read(fileHandle.fd, buffer, { offset: 0 });
-      await fs.close(fileHandle);
+      await fs.read(fd.fd, buffer, { offset: 0 });
+      await fs.close(fd);
+
+      // 转换为base64
       const base64 = this.arrayBufferToBase64(buffer);
+
+      // 获取mimeType
       const extension = uri.split('.').pop()?.toLowerCase() || 'jpeg';
       let mimeType = 'image/jpeg';
       if (extension === 'png') mimeType = 'image/png';
       else if (extension === 'gif') mimeType = 'image/gif';
       else if (extension === 'webp') mimeType = 'image/webp';
+
       const result = `data:${mimeType};base64,${base64}`;
       console.log('图片转换完成，大小:', stat.size, '字节');
       return result;
     } catch (error) {
-      if (fileHandle !== undefined) {
-        await fs.close(fileHandle);
-      }
-      console.error('转换图片失败:', error instanceof Error ? error.message : String(error));
+      console.error('转换图片失败:', error);
       return '';
     }
   }
@@ -442,14 +400,6 @@ export struct InfoPage {
                     .animation({
                       duration: 120,
                       curve: Curve.EaseInOut
-                    })
-                    .onAppear(() => {
-                      console.log('🖼️ [Image] 头像组件渲染，URL:', this.userAvatar);
-                      console.log('🖼️ [Image] 头像组件类型:', typeof this.userAvatar);
-                    })
-                    .onError((error) => {
-                      console.error('❌ [Image] 头像加载失败:', error);
-                      console.error('❌ [Image] 失败的URL:', this.userAvatar);
                     })
                 }
                 // 相机图标

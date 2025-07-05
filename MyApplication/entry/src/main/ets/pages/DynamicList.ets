@@ -1,6 +1,7 @@
 // DynamicList.ets
 // 动态展示页面
 
+import { BusinessError } from '@kit.BasicServicesKit';
 import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
 import { Dynamic, CreateDynamicRequest } from '../common/types';
@@ -10,6 +11,7 @@ import { BottomNavBar } from './BottomNavBar';
 import preferences from '@ohos.data.preferences';
 import picker from '@ohos.file.picker';
 import fs from '@ohos.file.fs';
+import { Config } from '../common/config';
 
 // 类型声明
 interface ErrorWithCode {
@@ -63,6 +65,25 @@ struct DynamicList {
       const dynamics = this.showAllDynamics
         ? await ApiService.getUserDynamics(this.userUID)
         : await ApiService.getUserPublicDynamics(this.userUID);
+      
+      // 处理动态中的头像URL拼接
+      dynamics.forEach(dynamic => {
+        if (dynamic.userAvatar && dynamic.userAvatar.startsWith('/')) {
+          const apiBaseUrl = Config.getApiBaseUrl();
+          const serverBaseUrl = apiBaseUrl.replace('/api', ''); // 移除API路径
+          
+          // 检查并修正错误的路径
+          let correctedAvatarUrl = dynamic.userAvatar;
+          if (dynamic.userAvatar.startsWith('/images/')) {
+            console.log('📝 [DynamicList] 检测到错误的/images/路径，修正为/avatars/');
+            correctedAvatarUrl = dynamic.userAvatar.replace('/images/', '/avatars/');
+          }
+          
+          const fullAvatarUrl = serverBaseUrl + correctedAvatarUrl;
+          console.log('📝 [DynamicList] 拼接后的完整头像URL:', fullAvatarUrl);
+          dynamic.userAvatar = fullAvatarUrl;
+        }
+      });
       
       // 按时间顺序排序（最新的在前）
       this.dynamics = dynamics.sort((a, b) => {

@@ -6,6 +6,7 @@ import { ApiService } from '../service/apiservice';
 import { UserInfo, UserStats, Dynamic } from '../common/types';
 import promptAction from '@ohos.promptAction';
 import preferences from '@ohos.data.preferences';
+import { Config } from '../common/config';
 
 @Entry
 @Component
@@ -44,6 +45,23 @@ export struct YourPage {
       this.yourname = userInfo.userName;
       this.UID = userInfo.userUID;
       this.ooo = userInfo.isPrivacyVisible;
+      
+      // 处理头像URL拼接
+      if (userInfo.userAvatar && userInfo.userAvatar.startsWith('/')) {
+        const apiBaseUrl = Config.getApiBaseUrl();
+        const serverBaseUrl = apiBaseUrl.replace('/api', ''); // 移除API路径
+        
+        // 检查并修正错误的路径
+        let correctedAvatarUrl = userInfo.userAvatar;
+        if (userInfo.userAvatar.startsWith('/images/')) {
+          console.log('👤 [YourPage] 检测到错误的/images/路径，修正为/avatars/');
+          correctedAvatarUrl = userInfo.userAvatar.replace('/images/', '/avatars/');
+        }
+        
+        const fullAvatarUrl = serverBaseUrl + correctedAvatarUrl;
+        console.log('👤 [YourPage] 拼接后的完整头像URL:', fullAvatarUrl);
+        this.userInfo.userAvatar = fullAvatarUrl;
+      }
     } catch (error) {
       console.error('加载用户信息失败:', error);
       // 不显示错误提示，避免影响用户体验

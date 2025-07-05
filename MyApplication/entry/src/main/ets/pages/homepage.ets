@@ -2,6 +2,7 @@
 import { ApiService } from '../service/apiservice';
 import { globalUserData } from '../models/userdata';
 import { Dynamic } from '../models/aidata';
+import { Config } from '../common/config';
 
 @Entry
 @Component
@@ -36,6 +37,25 @@ export struct HomePage {
       
       const newDynamics = await ApiService.getAllPublicDynamics(this.currentPage, this.pageSize)
       console.log('✅ 获取到动态数据:', newDynamics.length, '条')
+
+      // 处理动态中的头像URL拼接
+      newDynamics.forEach(dynamic => {
+        if (dynamic.userAvatar && dynamic.userAvatar.startsWith('/')) {
+          const apiBaseUrl = Config.getApiBaseUrl();
+          const serverBaseUrl = apiBaseUrl.replace('/api', ''); // 移除API路径
+          
+          // 检查并修正错误的路径
+          let correctedAvatarUrl = dynamic.userAvatar;
+          if (dynamic.userAvatar.startsWith('/images/')) {
+            console.log('📝 [HomePage] 检测到错误的/images/路径，修正为/avatars/');
+            correctedAvatarUrl = dynamic.userAvatar.replace('/images/', '/avatars/');
+          }
+          
+          const fullAvatarUrl = serverBaseUrl + correctedAvatarUrl;
+          console.log('📝 [HomePage] 拼接后的完整头像URL:', fullAvatarUrl);
+          dynamic.userAvatar = fullAvatarUrl;
+        }
+      });
 
       if (isRefresh) {
         this.dynamics = newDynamics
