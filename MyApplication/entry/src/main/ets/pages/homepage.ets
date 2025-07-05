@@ -2,7 +2,6 @@
 import { ApiService } from '../service/apiservice';
 import { globalUserData } from '../models/userdata';
 import { Dynamic } from '../models/aidata';
-import { Config } from '../common/config';
 
 @Entry
 @Component
@@ -37,25 +36,6 @@ export struct HomePage {
       
       const newDynamics = await ApiService.getAllPublicDynamics(this.currentPage, this.pageSize)
       console.log('✅ 获取到动态数据:', newDynamics.length, '条')
-
-      // 处理动态中的头像URL拼接
-      newDynamics.forEach(dynamic => {
-        if (dynamic.userAvatar && dynamic.userAvatar.startsWith('/')) {
-          const apiBaseUrl = Config.getApiBaseUrl();
-          const serverBaseUrl = apiBaseUrl.replace('/api', ''); // 移除API路径
-          
-          // 检查并修正错误的路径
-          let correctedAvatarUrl = dynamic.userAvatar;
-          if (dynamic.userAvatar.startsWith('/images/')) {
-            console.log('📝 [HomePage] 检测到错误的/images/路径，修正为/avatars/');
-            correctedAvatarUrl = dynamic.userAvatar.replace('/images/', '/avatars/');
-          }
-          
-          const fullAvatarUrl = serverBaseUrl + correctedAvatarUrl;
-          console.log('📝 [HomePage] 拼接后的完整头像URL:', fullAvatarUrl);
-          dynamic.userAvatar = fullAvatarUrl;
-        }
-      });
 
       if (isRefresh) {
         this.dynamics = newDynamics
@@ -274,7 +254,7 @@ export struct HomePage {
         Text('动态广场')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#ffda7f')
+          .fontColor('#333333')
         
         Blank()
         
@@ -303,7 +283,8 @@ export struct HomePage {
         })
       }
       .width('100%')
-      .padding({ left: 16, right: 16, top: 12 })
+      .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+      .backgroundColor(Color.White)
       .shadow({ radius: 2, color: '#00000010', offsetX: 0, offsetY: 1 })
       
       // 动态列表区域
@@ -438,7 +419,6 @@ export struct HomePage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#181818')
-    .expandSafeArea([SafeAreaType.SYSTEM])
+    .backgroundColor('#F5F5F5')
   }
 }

@@ -62,11 +62,6 @@ export struct FMHomePage {
   private tabBarHeight: number = 68; // 标签栏总高度 (8+60)
   private targetOffset: number = 15; // tab下方15像素
 
-  @State selected:boolean = true;
-  @State music:boolean = false;
-  @State column:boolean = false;
-  @State tool:boolean = false;
-
   // 预定义温馨问候语
   private greetings: string[] = [
     '早安，今天也要照顾好自己哦！',
@@ -88,7 +83,6 @@ export struct FMHomePage {
   @State greetingIndex: number = Math.floor(Math.random() * 15);
   @State greetingAnimOpacity: number = 1.0;
   @State greetingAnimTranslateY: number = 0;
-  @State greetingTimer: number = -1;
 
   // 定义三种情绪卡片
   private emotionCards: EmotionCard[] = [
@@ -298,61 +292,15 @@ export struct FMHomePage {
     }
   }
 
-  // 封装切换问候语的动画方法
-  private switchGreeting() {
-    let newIndex = this.greetingIndex
-    while (newIndex === this.greetingIndex) {
-      newIndex = Math.floor(Math.random() * this.greetings.length)
-    }
-    // 先淡出和下移
-    animateTo({ duration: 180, curve: Curve.EaseOut }, () => {
-      this.greetingAnimOpacity = 0;
-      this.greetingAnimTranslateY = 20;
-    })
-    setTimeout(() => {
-      this.greetingIndex = newIndex;
-      // 再淡入和上移
-      animateTo({ duration: 220, curve: Curve.EaseIn }, () => {
-        this.greetingAnimOpacity = 1.0;
-        this.greetingAnimTranslateY = 0;
-      })
-    }, 180)
-  }
-
-  private startGreetingAutoSwitch() {
-    this.stopGreetingAutoSwitch();
-    this.greetingTimer = setInterval(() => {
-      this.switchGreeting();
-    }, 5000); // 5秒切换一次
-  }
-
-  private stopGreetingAutoSwitch() {
-    if (this.greetingTimer !== -1) {
-      clearInterval(this.greetingTimer);
-      this.greetingTimer = -1;
-    }
-  }
-
   // 页面生命周期
   aboutToAppear() {
     this.startAutoPlay();
     this.fetchRandomSongs();
-    this.startGreetingAutoSwitch();
-    // 初次进入时做一次淡入动画
-    this.greetingAnimOpacity = 0;
-    this.greetingAnimTranslateY = 20;
-    setTimeout(() => {
-      animateTo({ duration: 400, curve: Curve.EaseIn }, () => {
-        this.greetingAnimOpacity = 1.0;
-        this.greetingAnimTranslateY = 0;
-      })
-    }, 100);
   }
 
   aboutToDisappear() {
     // 页面消失时停止自动轮播
     this.stopAutoPlay()
-    this.stopGreetingAutoSwitch();
   }
 
   // 延迟函数，ms为毫秒
@@ -389,52 +337,54 @@ export struct FMHomePage {
       // 渐变背景
       Column() {
         Blank().width('100%').height('100%')
-          .backgroundColor('#181818')
-          .expandSafeArea([SafeAreaType.SYSTEM])
+          .linearGradient({
+            direction: GradientDirection.Bottom,
+            colors: [['#1a1a2e', 0.0], ['#16213e', 0.3], ['#0f3460', 0.7], ['#533483', 1.0]]
+          })
       }
       .width('100%')
       .height('100%')
       
-      // // 装饰性背景元素
-      // Column() {
-      //   // 顶部装饰元素
-      //   Row() {
-      //     Image($r('app.media.deroration_1'))
-      //       .width(200)
-      //       .height(200)
-      //       .opacity(0.1)
-      //       .position({ x: -100, y: -50 })
-      //     Image($r('app.media.deroration_2'))
-      //       .width(150)
-      //       .height(150)
-      //       .opacity(0.08)
-      //       .position({ x: 300, y: -30 })
-      //   }
-      //   .width('100%')
-      //   .height(60)
-      //
-      //   Blank().layoutWeight(1)
-      //
-      //   // 底部装饰元素
-      //   Row() {
-      //     Image($r('app.media.deroration_3'))
-      //       .width(180)
-      //       .height(180)
-      //       .opacity(0.08)
-      //       .position({ x: -80, y: 20 })
-      //     Image($r('app.media.deroration_4'))
-      //       .width(120)
-      //       .height(120)
-      //       .opacity(0.1)
-      //       .position({ x: 320, y: 40 })
-      //   }
-      //   .width('100%')
-      //   .height(80)
-      // }
-      // .width('100%')
-      // .height('100%')
-      // .position({ x: 0, y: 0 })
-      // .zIndex(1)
+      // 装饰性背景元素
+      Column() {
+        // 顶部装饰元素
+        Row() {
+          Image($r('app.media.deroration_1'))
+            .width(200)
+            .height(200)
+            .opacity(0.1)
+            .position({ x: -100, y: -50 })
+          Image($r('app.media.deroration_2'))
+            .width(150)
+            .height(150)
+            .opacity(0.08)
+            .position({ x: 300, y: -30 })
+        }
+        .width('100%')
+        .height(60)
+        
+        Blank().layoutWeight(1)
+        
+        // 底部装饰元素
+        Row() {
+          Image($r('app.media.deroration_3'))
+            .width(180)
+            .height(180)
+            .opacity(0.08)
+            .position({ x: -80, y: 20 })
+          Image($r('app.media.deroration_4'))
+            .width(120)
+            .height(120)
+            .opacity(0.1)
+            .position({ x: 320, y: 40 })
+        }
+        .width('100%')
+        .height(80)
+      }
+      .width('100%')
+      .height('100%')
+      .position({ x: 0, y: 0 })
+      .zIndex(1)
       
       // 主体内容
       Column() {
@@ -442,7 +392,7 @@ export struct FMHomePage {
         Row() {
           Text(this.greetings[this.greetingIndex])
             .fontSize(18)
-            .fontColor('#ffda7f')
+            .fontColor('#fff')
             .fontWeight(FontWeight.Bold)
             .margin({ left: 16, top: 12, bottom: 8 })
             .layoutWeight(1)
@@ -452,13 +402,30 @@ export struct FMHomePage {
             .fontSize(15)
             .fontColor('rgba(255,255,255,0.6)')
             .margin({ right: 16 })
-            .onClick(() => this.switchGreeting())
+            .onClick(() => {
+              let newIndex = this.greetingIndex
+              while (newIndex === this.greetingIndex) {
+                newIndex = Math.floor(Math.random() * this.greetings.length)
+              }
+              // 先淡出和下移
+              animateTo({ duration: 180, curve: Curve.EaseOut }, () => {
+                this.greetingAnimOpacity = 0;
+                this.greetingAnimTranslateY = 20;
+              })
+              setTimeout(() => {
+                this.greetingIndex = newIndex;
+                // 再淡入和上移
+                animateTo({ duration: 220, curve: Curve.EaseIn }, () => {
+                  this.greetingAnimOpacity = 1.0;
+                  this.greetingAnimTranslateY = 0;
+                })
+              }, 180)
+            })
         }
         .width('100%')
         
         // 顶部搜索栏
         Row() {
-          Blank().layoutWeight(1)
           TextInput({ placeholder: '系统' })
             .width('90%')
             .height(40)
@@ -467,7 +434,6 @@ export struct FMHomePage {
             .borderRadius(20)
             .padding({ left: 20 })
             .border({ width: 1, color: 'rgba(255,255,255,0.2)' })
-          Blank().layoutWeight(1)
         }
         .width('100%')
         .padding({ top: 4, bottom: 8 })
@@ -486,11 +452,7 @@ export struct FMHomePage {
             }
             .onClick(() => { 
               this.activeTab = idx
-              // this.scrollToSection(idx)
-              if(idx === 0){this.selected = true;this.music = false; this.column = false; this.tool = false}
-              if(idx === 1){this.selected = false;this.music = true; this.column = false; this.tool = false}
-              if(idx === 2){this.selected = false;this.music = false; this.column = true; this.tool = false}
-              if(idx === 3){this.selected = false;this.music = false; this.column = false; this.tool = true}
+              this.scrollToSection(idx)
             })
             .layoutWeight(1)
             .justifyContent(FlexAlign.Center)
@@ -674,129 +636,117 @@ export struct FMHomePage {
             .margin({ top: 8, bottom: 20 })
             .border({ width: 1, color: 'rgba(255,255,255,0.1)' })
 
-            if(this.selected){
-              // 精选区
-              this.BuildSection('精选推荐', this.selectedItems)
-            }
-
-            if(this.music){
-              // 音乐电台区
-              Column() {
-                Text('音乐电台')
-                  .fontColor('#0D9FFB')
-                  .fontSize(18)
-                  .fontWeight(FontWeight.Bold)
-                  .margin({ bottom: 16, top: 24 })
-                ForEach(this.randomSongs, (song: MusicDetailVO, idx: number) => {
-                  Row() {
-                    Image(song.coverUrl)
-                      .width(56).height(56)
-                      .borderRadius(8)
-                      .margin({ right: 12 })
-                    Column() {
-                      Text(song.name)
-                        .fontColor('#fff')
-                        .fontSize(16)
-                        .fontWeight(FontWeight.Bold)
-                        .maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                      Text(song.artist)
-                        .fontColor('rgba(255,255,255,0.7)')
-                        .fontSize(13)
-                        .margin({ top: 2 })
-                    }
-                    .layoutWeight(1)
+            // 精选区
+            this.BuildSection('精选推荐', this.selectedItems)
+            // 音乐电台区
+            Column() {
+              Text('音乐电台')
+                .fontColor('#0D9FFB')
+                .fontSize(18)
+                .fontWeight(FontWeight.Bold)
+                .margin({ bottom: 16, top: 24 })
+              ForEach(this.randomSongs, (song: MusicDetailVO, idx: number) => {
+                Row() {
+                  Image(song.coverUrl)
+                    .width(56).height(56)
+                    .borderRadius(8)
+                    .margin({ right: 12 })
+                  Column() {
+                    Text(song.name)
+                      .fontColor('#fff')
+                      .fontSize(16)
+                      .fontWeight(FontWeight.Bold)
+                      .maxLines(1)
+                      .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    Text(song.artist)
+                      .fontColor('rgba(255,255,255,0.7)')
+                      .fontSize(13)
+                      .margin({ top: 2 })
                   }
-                  .width('100%')
-                  .padding({ top: 8, bottom: 8 })
-                  .backgroundColor('transparent')
-                  .borderRadius(16)
-                  .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 2 })
-                  .onClick(() => {
-                    const songDetail = this.musicDetailCache[song.musicId] || song;
+                  .layoutWeight(1)
+                }
+                .width('100%')
+                .padding({ top: 8, bottom: 8 })
+                .backgroundColor('transparent')
+                .borderRadius(16)
+                .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 2 })
+                .onClick(() => {
+                  const songDetail = this.musicDetailCache[song.musicId] || song;
+                  router.pushUrl({
+                    url: 'pages/music_cloud_style',
+                    params: {
+                      musicId: song.musicId,
+                      musicTitle: song.name,
+                      musicArtist: song.artist,
+                      musicDetail: songDetail,
+                      songs: this.randomSongs,      // 传递三首歌
+                      currentIndex: idx             // 当前点击的索引
+                    }
+                  })
+                })
+              }, (song: MusicDetailVO) => song.name)
+            }
+            // 专栏区
+            this.BuildSection('专栏文章', this.columnItems)
+            // 工具区
+            Column() {
+              Text('心理健康工具')
+                .fontColor('#0D9FFB')
+                .fontSize(18)
+                .fontWeight(FontWeight.Bold)
+                .margin({ bottom: 16, top: 24 })
+              // 工具区纵向列表展示
+              ForEach(this.toolList, (tool: ToolItem, idx: number) => {
+                Row() {
+                  // 工具图标区域
+                  Row() {
+                    Text(this.getToolIcon(tool.title))
+                      .fontSize(28)
+                      .fontColor(tool.color)
+                  }
+                  .width(56)
+                  .height(56)
+                  .backgroundColor(tool.bgColor)
+                  .borderRadius(8)
+                  .justifyContent(FlexAlign.Center)
+                  .alignItems(VerticalAlign.Center)
+                  .margin({ right: 12 })
+                  // 工具信息
+                  Column() {
+                    Text(tool.title)
+                      .fontColor('#fff')
+                      .fontSize(16)
+                      .fontWeight(FontWeight.Bold)
+                      .maxLines(1)
+                      .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    Text(tool.desc)
+                      .fontColor('rgba(255,255,255,0.7)')
+                      .fontSize(13)
+                      .margin({ top: 2 })
+                  }
+                  .layoutWeight(1)
+                }
+                .width('100%')
+                .padding({ top: 8, bottom: 8 })
+                .backgroundColor('transparent')
+                .borderRadius(16)
+                .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 2 })
+                .onClick(() => {
+                  console.log('点击了工具:', tool.title)
+                  if (tool.route) {
                     router.pushUrl({
-                      url: 'pages/music_cloud_style',
+                      url: tool.route,
                       params: {
-                        musicId: song.musicId,
-                        musicTitle: song.name,
-                        musicArtist: song.artist,
-                        musicDetail: songDetail,
-                        songs: this.randomSongs,      // 传递三首歌
-                        currentIndex: idx             // 当前点击的索引
+                        toolName: tool.title,
+                        toolType: this.getToolType(tool.title)
                       }
                     })
-                  })
-                }, (song: MusicDetailVO) => song.name)
-              }
-            }
-
-            if(this.column){
-              // 专栏区
-              this.BuildSection('专栏文章', this.columnItems)
-            }
-
-            if(this.tool){
-              // 工具区
-              Column() {
-                Text('心理健康工具')
-                  .fontColor('#0D9FFB')
-                  .fontSize(18)
-                  .fontWeight(FontWeight.Bold)
-                  .margin({ bottom: 16, top: 24 })
-                // 工具区纵向列表展示
-                ForEach(this.toolList, (tool: ToolItem, idx: number) => {
-                  Row() {
-                    // 工具图标区域
-                    Row() {
-                      Text(this.getToolIcon(tool.title))
-                        .fontSize(28)
-                        .fontColor(tool.color)
-                    }
-                    .width(56)
-                    .height(56)
-                    .backgroundColor(tool.bgColor)
-                    .borderRadius(8)
-                    .justifyContent(FlexAlign.Center)
-                    .alignItems(VerticalAlign.Center)
-                    .margin({ right: 12 })
-                    // 工具信息
-                    Column() {
-                      Text(tool.title)
-                        .fontColor('#fff')
-                        .fontSize(16)
-                        .fontWeight(FontWeight.Bold)
-                        .maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                      Text(tool.desc)
-                        .fontColor('rgba(255,255,255,0.7)')
-                        .fontSize(13)
-                        .margin({ top: 2 })
-                    }
-                    .layoutWeight(1)
                   }
-                  .width('100%')
-                  .padding({ top: 8, bottom: 8 })
-                  .backgroundColor('transparent')
-                  .borderRadius(16)
-                  .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 2 })
-                  .onClick(() => {
-                    console.log('点击了工具:', tool.title)
-                    if (tool.route) {
-                      router.pushUrl({
-                        url: tool.route,
-                        params: {
-                          toolName: tool.title,
-                          toolType: this.getToolType(tool.title)
-                        }
-                      })
-                    }
-                  })
-                }, (tool: ToolItem) => tool.title)
-              }
-              .width('100%')
-              .margin({ bottom: 40 })
+                })
+              }, (tool: ToolItem) => tool.title)
             }
-
+            .width('100%')
+            .margin({ bottom: 40 })
           }
           .width('100%')
           .padding({ left: 16, right: 16, bottom: 80 })

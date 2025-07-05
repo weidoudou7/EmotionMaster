@@ -29,21 +29,9 @@ public class UserController {
     @GetMapping("/{userUID}")
     public ApiResponse<UserInfoVO> getUserInfo(@PathVariable String userUID) {
         try {
-            System.out.println("👤 ========== 获取用户信息请求开始 ==========");
-            System.out.println("👤 请求用户UID: " + userUID);
-            
             UserInfoVO userInfo = userService.getUserInfo(userUID);
-            
-            System.out.println("👤 用户名称: " + userInfo.getUserName());
-            System.out.println("👤 用户头像URL: " + userInfo.getUserAvatar());
-            System.out.println("👤 前端需要拼接的完整头像URL: http://localhost:8080" + userInfo.getUserAvatar());
-            System.out.println("👤 ========== 获取用户信息请求成功 ==========");
-            
             return ApiResponse.success("获取用户信息成功", userInfo);
         } catch (Exception e) {
-            System.out.println("❌ ========== 获取用户信息请求失败 ==========");
-            System.out.println("❌ 错误信息: " + e.getMessage());
-            System.out.println("❌ ========== 获取用户信息请求失败 ==========");
             return ApiResponse.error("获取用户信息失败: " + e.getMessage());
         }
     }
@@ -92,9 +80,6 @@ public class UserController {
             @PathVariable String userUID,
             @RequestParam("file") MultipartFile file) {
         try {
-            System.out.println("[头像上传] 文件名: " + file.getOriginalFilename());
-            System.out.println("[头像上传] 文件大小: " + file.getSize());
-            System.out.println("[头像上传] Content-Type: " + file.getContentType());
             String avatarUrl = userService.uploadAvatar(userUID, file);
             return ApiResponse.success("头像上传成功", avatarUrl);
         } catch (Exception e) {
@@ -113,25 +98,9 @@ public class UserController {
             @PathVariable String userUID,
             @RequestBody AvatarUploadRequest request) {
         try {
-            System.out.println("🖼️ ========== 头像上传Base64请求开始 ==========");
-            System.out.println("🖼️ 用户UID: " + userUID);
-            System.out.println("🖼️ 图片数据长度: " + (request.getImageData() != null ? request.getImageData().length() : 0));
-            System.out.println("🖼️ 图片数据前缀: " + (request.getImageData() != null && request.getImageData().length() > 50 ? request.getImageData().substring(0, 50) + "..." : "null"));
-            
             String avatarUrl = userService.uploadAvatarBase64(userUID, request.getImageData());
-            
-            System.out.println("🖼️ 后端生成的相对URL: " + avatarUrl);
-            System.out.println("🖼️ 前端需要拼接的完整URL示例: http://localhost:8080" + avatarUrl);
-            System.out.println("🖼️ 或者: " + System.getProperty("server.port", "8080") + avatarUrl);
-            System.out.println("🖼️ 返回给前端的URL: " + avatarUrl);
-            System.out.println("🖼️ ========== 头像上传Base64请求成功 ==========");
-            
             return ApiResponse.success("头像上传成功", avatarUrl);
         } catch (Exception e) {
-            System.out.println("❌ ========== 头像上传Base64请求失败 ==========");
-            System.out.println("❌ 错误信息: " + e.getMessage());
-            System.out.println("❌ 错误堆栈: " + e.getStackTrace()[0]);
-            System.out.println("❌ ========== 头像上传Base64请求失败 ==========");
             return ApiResponse.error("头像上传失败: " + e.getMessage());
         }
     }

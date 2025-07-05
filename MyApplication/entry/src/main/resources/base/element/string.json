@@ -19,26 +19,16 @@
     {
       "name": "MainAbility_label",
       "value": "心屿Harmony"
+
     },
     {
       "name": "reason_internet",
       "value": "应用需要联网播放音乐"
     },
     {
-      "name": "reason_network_info",
-      "value": "需要获取网络状态以优化音乐播放体验"
-    },
-    {
-      "name": "reason_wifi_info",
-      "value": "需要获取WiFi信息以提供更好的网络连接"
-    },
-    {
-      "name": "reason_microphone",
-      "value": "需要麦克风权限以支持语音聊天功能"
-    },
-    {
-      "name": "reason_media_location",
-      "value": "需要媒体位置权限以提供个性化音乐推荐"
+      "name": "reason_radioplaying",
+      "value": "需要后台运行权限以支持朗读功能"
+
     }
   ]
 }

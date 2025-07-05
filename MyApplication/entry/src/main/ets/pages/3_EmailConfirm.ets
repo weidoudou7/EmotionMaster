@@ -1,96 +1,123 @@
 import http from '@ohos.net.http';
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
-
+import { ApiService } from '../service/apiservice';
+import { setUserId } from '../common/constants';
 @Entry
 @Component
 struct EmailConfirmPage {
-  @State email: string = ""
+  @State email: string = ''
   @State code: string = ''
   @State agree: boolean = false
-  @State canSendCode: boolean = true
-  @State countdown: number = 0
 
-
-
-
-  sendEmailCode() {
-    if (!this.canSendCode) {
+  async sendEmailCode() {
+    // 检查邮箱是否为空
+    if (!this.email) {
+      promptAction.showToast({ message: '请先输入邮箱地址' });
       return;
     }
-    
-    let httpRequest = http.createHttp();
-    httpRequest.request(
-      'http://121.36.225.8:8081/auth/send-code',
-      {
-        method: http.RequestMethod.POST,
-        header: {
-          'Content-Type': 'application/json'
-        },
-        extraData: {
-          email: this.email
+
+    try {
+      let httpRequest = http.createHttp();
+      const response = await httpRequest.request(
+        'http://121.36.225.8:8081/auth/send-code',
+        {
+          method: http.RequestMethod.POST,
+          header: {
+            'Content-Type': 'application/json'
+          },
+          extraData: {
+            email: this.email
+          }
         }
-      }
-    ).then((response) => {
+      );
+
       if (response.responseCode === 200) {
-        promptAction.showToast({ message: response.result.toString() });
-        // 保存邮箱到本地
-        AppStorage.setOrCreate("user_email", this.email);
-        // 开始倒计时
-        this.canSendCode = false;
-        this.countdown = 60;
-        this.startCountdown();
+        promptAction.showToast({ message: '验证码已发送到您的邮箱' });
       } else {
         promptAction.showToast({ message: '发送失败: ' + response.result.toString() });
       }
-    }).catch((err:Error) => {
-      promptAction.showToast({ message: '请求异常: ' + JSON.stringify(err) });
-    });
-  }
-
-  startCountdown() {
-    if (this.countdown > 0) {
-      setTimeout(() => {
-        this.countdown--;
-        this.startCountdown();
-      }, 1000);
-    } else {
-      this.canSendCode = true;
+    } catch (err) {
+      console.error('发送验证码异常:', err);
+      promptAction.showToast({ message: '发送验证码失败，请重试' });
     }
   }
 
-  verifyEmailCode() {
-    // 检查用户是否勾选协议
+  async verifyEmailCode() {
+    // 检查是否同意用户协议
     if (!this.agree) {
-      promptAction.showToast({ message: '请先阅读并同意用户协议和隐私政策' });
+      promptAction.showToast({ message: '请先同意用户协议和隐私政策' });
       return;
     }
-    
-    let httpRequest = http.createHttp();
-    httpRequest.request(
-      'http://121.36.225.8:8081/auth/verify-code',
-      {
-        method: http.RequestMethod.POST,
-        header: {
-          'Content-Type': 'application/json'
-        },
-        extraData: {
-          email: this.email,
-          verificationCode: this.code
+
+    // 检查邮箱和验证码是否为空
+    if (!this.email || !this.code) {
+      promptAction.showToast({ message: '请填写完整的邮箱和验证码' });
+      return;
+    }
+
+    try {
+      // 先验证邮箱验证码
+      let httpRequest = http.createHttp();
+      const response = await httpRequest.request(
+        'http://121.36.225.8:8081/auth/verify-code',
+        {
+          method: http.RequestMethod.POST,
+          header: {
+            'Content-Type': 'application/json'
+          },
+          extraData: {
+            email: this.email,
+            verificationCode: this.code
+          }
         }
-      }
-    ).then((response) => {
-      promptAction.showToast({ message: JSON.stringify(response) });
+      );
+
       if (response.responseCode === 200) {
-        promptAction.showToast({ message: response.result.toString() });
-        // 跳转到主页面
-        router.push({ url: 'pages/BottomNavBar' });
+        promptAction.showToast({ message: '验证码验证成功' });
+        
+        // 验证成功后，调用 createOrLoginUserByEmail 函数
+        try {
+          const userInfo = await ApiService.createOrLoginUserByEmail(this.email);
+          console.log('用户创建或登录成功:', userInfo);
+          
+          // 直接从 userInfo 中获取用户ID
+          if (userInfo.id) {
+            console.log('从用户信息中获取到用户ID:', userInfo.id);
+            setUserId(userInfo.id);
+            console.log('用户ID已保存到常量中:', userInfo.id);
+          } else {
+            console.warn('用户信息中没有ID字段，尝试通过邮箱获取...');
+            
+            // 如果 userInfo 中没有 ID，则通过邮箱获取
+            try {
+              const userId = await ApiService.getUserIdByEmail(this.email);
+              console.log('通过邮箱获取到用户ID:', userId);
+              setUserId(userId);
+              console.log('用户ID已保存到常量中:', userId);
+            } catch (userIdError) {
+              console.error('通过邮箱获取用户ID失败:', userIdError);
+              console.error('错误详情:', JSON.stringify(userIdError));
+              promptAction.showToast({ message: '登录成功，但获取用户ID失败，部分功能可能受限' });
+            }
+          }
+          
+          promptAction.showToast({ message: '登录成功，欢迎回来！' });
+          
+          // 跳转到主页面
+          router.push({ url: 'pages/BottomNavBar' });
+        } catch (userError) {
+          console.error('用户创建或登录失败:', userError);
+          console.error('错误详情:', JSON.stringify(userError));
+          promptAction.showToast({ message: '用户登录失败，请重试' });
+        }
       } else {
-        promptAction.showToast({ message: '验证失败: ' + response.result.toString() });
+        promptAction.showToast({ message: '验证码验证失败: ' + response.result.toString() });
       }
-    }).catch((err:Error) => {
-      promptAction.showToast({ message: '请求异常: ' + JSON.stringify(err) });
-    });
+    } catch (err) {
+      console.error('验证码验证异常:', err);
+      promptAction.showToast({ message: '验证码验证异常，请重试' });
+    }
   }
 
   build() {
@@ -129,7 +156,7 @@ struct EmailConfirmPage {
         .margin({ bottom: 40 })
 
       // 邮箱输入框
-      TextInput({ placeholder: '请输入QQ邮箱', text: $$this.email })
+      TextInput({ placeholder: '请输入QQ邮箱' })
         .placeholderColor('#6e6e6e')
         .type(InputType.Email)
         .fontSize(18)
@@ -142,7 +169,6 @@ struct EmailConfirmPage {
         .margin({ bottom: 20 })
         .onChange((value: string) => {
           this.email = value;
-          AppStorage.setOrCreate("user_email", value);
         })
 
       // 验证码输入框和获取验证码按钮
@@ -160,15 +186,14 @@ struct EmailConfirmPage {
           .onChange((value: string) => {
             this.code = value;
           })
-        Button(this.canSendCode ? '获取验证码' : `${this.countdown}s`)
+        Button('获取验证码')
           .width(120)
           .height(44)
           .fontSize(16)
-          .fontColor(this.canSendCode ? '#121114' : '#666')
-          .backgroundColor(this.canSendCode ? '#ffda7f' : '#333')
+          .fontColor('#121114')
+          .backgroundColor('#ffda7f')
           .borderRadius(22)
           .margin({ left: 10 })
-          .enabled(this.canSendCode)
           .onClick(() => {
             this.sendEmailCode();
           })
