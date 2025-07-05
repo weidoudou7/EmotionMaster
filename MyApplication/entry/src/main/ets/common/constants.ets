@@ -8,7 +8,7 @@ export interface DecorationInfo {
 }
 
 // 全局用户ID存储
-let globalUserId: number | null = 405;
+let globalUserId: number | null = 574;
 
 /**
  * 设置用户ID

@@ -219,6 +219,34 @@ public class AIRoleController {
         } else {
             return ApiResponse.error("未找到该AI角色");
         }
-    }}
+    }
+
+    /**
+     * 根据用户ID获取用户创建的AI角色列表
+     * GET /ai/role/user/{userId}
+     */
+    @GetMapping("/user/{userId}")
+    public ApiResponse<List<AiRole>> getUserAiRoles(@PathVariable("userId") Integer userId) {
+        try {
+            // 验证用户ID
+            if (userId == null || userId <= 0) {
+                return ApiResponse.error("用户ID无效");
+            }
+
+            // 查询用户创建的AI角色
+            List<AiRole> aiRoles = aiRoleMapper.selectByUserId(userId);
+            
+            if (aiRoles != null && !aiRoles.isEmpty()) {
+                return ApiResponse.success("获取用户AI角色列表成功", aiRoles);
+            } else {
+                // 返回空列表而不是错误，因为用户可能还没有创建任何角色
+                return ApiResponse.success("用户暂无创建的AI角色", new ArrayList<>());
+            }
+            
+        } catch (Exception e) {
+            return ApiResponse.error("获取用户AI角色列表失败: " + e.getMessage());
+        }
+    }
+}
 
 

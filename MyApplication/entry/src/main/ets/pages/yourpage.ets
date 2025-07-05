@@ -23,6 +23,7 @@ export struct YourPage {
   @State cardScale: number = 1.0; // 卡片缩放动画
   @State latestDynamic: Dynamic | null = null; // 最新动态
   @State lastClickTime: number = 0; // 上次点击时间，用于双击检测
+  @State lastAtticClickTime: number = 0; // 阁楼标签上次点击时间，用于双击检测
 
   // 银河系动画状态
   @State arcRotation: number = 0 // 圆弧旋转角度
@@ -620,7 +621,19 @@ export struct YourPage {
           .backgroundColor(this.selectedAtticTab === '智能体' ? 'rgba(255, 255, 255, 0.1)' : 'transparent')
           .borderRadius(16)
           .onClick(() => {
-            this.selectedAtticTab = '智能体';
+            // 双击检测：如果两次点击间隔小于300ms，则认为是双击
+            const currentTime = Date.now();
+            if (currentTime - this.lastAtticClickTime < 300) {
+              // 双击事件：跳转到myairole页面
+              let uiContext: UIContext = this.getUIContext();
+              let router = uiContext.getRouter();
+              router.pushUrl({ url: 'pages/myairole' });
+              this.lastAtticClickTime = 0; // 重置点击时间
+            } else {
+              // 单击事件：切换到智能体标签页并显示智能体内容
+              this.selectedAtticTab = '智能体';
+              this.lastAtticClickTime = currentTime;
+            }
           })
         
         Text('收藏')
@@ -632,7 +645,19 @@ export struct YourPage {
           .backgroundColor(this.selectedAtticTab === '收藏' ? 'rgba(255, 255, 255, 0.1)' : 'transparent')
           .borderRadius(16)
           .onClick(() => {
-            this.selectedAtticTab = '收藏';
+            // 双击检测：如果两次点击间隔小于300ms，则认为是双击
+            const currentTime = Date.now();
+            if (currentTime - this.lastAtticClickTime < 300) {
+              // 双击事件：跳转到收藏页面（这里可以根据实际页面调整）
+              let uiContext: UIContext = this.getUIContext();
+              let router = uiContext.getRouter();
+              router.pushUrl({ url: 'pages/FeaturedList' });
+              this.lastAtticClickTime = 0; // 重置点击时间
+            } else {
+              // 单击事件：切换到收藏标签页并显示收藏内容
+              this.selectedAtticTab = '收藏';
+              this.lastAtticClickTime = currentTime;
+            }
           })
       }
       .width('100%')

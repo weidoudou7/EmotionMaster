@@ -29,6 +29,7 @@
     "pages/music_test",
     "pages/chatComment",
     "pages/LoadingPage",
-    "pages/ProfilePage"
+    "pages/ProfilePage",
+    "pages/myairole"
   ]
 }

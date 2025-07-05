@@ -7,11 +7,7 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @MapperScan("com.ai.companion.mapper")
-@ComponentScan(basePackages = "com.ai.companion", 
-               includeFilters = @ComponentScan.Filter(
-                   type = org.springframework.context.annotation.FilterType.REGEX,
-                   pattern = "com\\.ai\\.companion\\.(UserController|ChatHistoryController|UserService|UserServiceImpl|UserMapper|config\\..*|utils\\..*)"
-               ))
+@ComponentScan(basePackages = "com.ai.companion")
 public class MyApplication {
 
     public static void main(String[] args) {

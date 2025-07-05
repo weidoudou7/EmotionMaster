@@ -1561,6 +1561,44 @@ export class ApiService {
       throw new Error(response.message || '检查点赞状态失败');
     }
   }
+
+  /**
+   * 根据用户ID获取用户创建的AI角色列表
+   */
+  static async getUserAiRoles(userId: number): Promise<AiRole[]> {
+    try {
+      console.log('🤖 ApiService.getUserAiRoles 开始获取用户AI角色列表');
+      console.log('🤖 用户ID:', userId);
+      console.log('🤖 API_BASE_URL:', API_BASE_URL);
+
+      const url = `${API_BASE_URL}/ai/role/user/${userId}`;
+      console.log('🤖 请求URL:', url);
+
+      const response = await ApiService.request<AiRole[]>(url);
+
+      console.log('🤖 API响应:', response);
+
+      if (response.success) {
+        console.log('✅ 获取用户AI角色列表成功，返回数据:', response.data);
+        return response.data;
+      } else {
+        console.log('❌ 获取用户AI角色列表失败，API返回错误:', response.message);
+        throw new Error(response.message || 'Failed to get user AI roles');
+      }
+    } catch (error) {
+      console.error('❌ 获取用户AI角色列表失败:', error);
+      console.error('❌ 错误类型:', typeof error);
+      console.error('❌ 错误详情:', JSON.stringify(error));
+
+      if (error instanceof Error) {
+        console.error('❌ 错误消息:', error.message);
+        console.error('❌ 错误堆栈:', error.stack);
+        throw error;
+      } else {
+        throw new Error('获取用户AI角色列表失败: 未知错误');
+      }
+    }
+  }
 }
 
 
