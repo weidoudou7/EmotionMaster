@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserInfoVO {
+    private Integer id; // 用户ID（数据库主键）
     private String userName; // 用户名称
     private String userUID; // 用户UID
     private String userAvatar; // 用户头像路径
