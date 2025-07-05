@@ -51,10 +51,8 @@ struct FigureResultPage {
       Column() {
         // 顶部栏
         Row() {
-          Button('<')
-            .backgroundColor('transparent')
-            .fontColor('#fff')
-            .fontSize(24)
+          Image($r('app.media.back'))
+            .width(22)
             .onClick(() => router.back())
           Blank().width(10)
           Text('生成结果')

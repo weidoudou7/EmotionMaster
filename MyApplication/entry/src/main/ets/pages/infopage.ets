@@ -366,10 +366,8 @@ export struct InfoPage {
       // 渐变背景
       Column() {
         Blank().width('100%').height('100%')
-          .linearGradient({
-            direction: GradientDirection.Bottom,
-            colors: [['#1a1a2e', 0.0], ['#16213e', 0.5], ['#0f3460', 1.0]]
-          })
+          .backgroundColor('#181818')
+          .expandSafeArea([SafeAreaType.SYSTEM])
       }
       .width('100%')
       .height('100%')
@@ -388,22 +386,15 @@ export struct InfoPage {
           Column() {
             // 页面标题区域
             Row() {
-              Button() {
-                Image($r('app.media.return'))
+                Image($r('app.media.back'))
                   .width(24)
                   .height(24)
-                  .fillColor('#fff')
-              }
-              .width(40)
-              .height(40)
-              .backgroundColor('rgba(255,255,255,0.1)')
-              .borderRadius(20)
-              .margin({ right: 16 })
-              .onClick(() => {
-                let uiContext: UIContext = this.getUIContext();
-                let router = uiContext.getRouter();
-                router.back();
-              })
+                  .margin({ right: 16 })
+                  .onClick(() => {
+                    let uiContext: UIContext = this.getUIContext();
+                    let router = uiContext.getRouter();
+                    router.back();
+                  })
 
               Text('个人信息')
                 .fontSize(24)

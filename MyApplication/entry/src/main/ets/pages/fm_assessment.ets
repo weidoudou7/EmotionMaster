@@ -365,21 +365,20 @@ struct FMAssessmentPage {
     Column() {
       // 顶部导航
       Row() {
-        Image($r('app.media.music_return'))
-          .width(36)
-          .height(36)
+        Image($r('app.media.back'))
+          .width(24)
           //.shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
           .onClick(() => router.back())
         Text('压力评估')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1976D2')
+          .fontColor(Color.White)
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
         Blank().width(36)
       }
       .width('100%')
-      .padding({ top: 16, left: 12, right: 12, bottom: 0 })
+      .padding({ top: 16, left: 12, right: 12, bottom: 12 })
 
       // 内容区域
       if (this.currentStep === 'welcome') {
@@ -392,7 +391,8 @@ struct FMAssessmentPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#f8f9fa')
+    .backgroundColor(Color.Black)
+    .expandSafeArea([SafeAreaType.SYSTEM])
   }
 
   @Builder
@@ -463,7 +463,7 @@ struct FMAssessmentPage {
       .margin({ top: 40, left: 16, right: 16 })
       .shadow({ radius: 12, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 4 })
     }
-    .layoutWeight(1)
+    .margin({top:80})
     .justifyContent(FlexAlign.Center)
   }
 

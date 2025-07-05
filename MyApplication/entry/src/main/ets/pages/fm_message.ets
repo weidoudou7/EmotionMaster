@@ -162,10 +162,10 @@ export struct MessagePage {
         }
         .width('100%')
         .height(140)
-        .backgroundColor('rgba(34,34,34,0.7)')
-        .borderRadius(24)
-        .margin({ left: 8, right: 8, top: 8, bottom: 12 })
-        .shadow({ radius: 8, color: '#00000022', offsetX: 0, offsetY: 2 })
+        .backgroundColor('#39B1FB')
+        .borderRadius(20)
+        .margin({ left: 20, right:20, bottom: 12 })
+        //.shadow({ radius: 8, color: '#00000022', offsetX: 0, offsetY: 2 })
       }
       // 消息列表
       List() {

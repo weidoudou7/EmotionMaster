@@ -72,7 +72,7 @@ struct ColumnPage {
       content: '在现代快节奏的生活中，心理健康问题日益突出。本文将从多个角度分析现代人面临的心理挑战，并提供实用的应对策略...',
       icon: '🧠',
       iconColor: '#1976D2',
-      bgColor: '#E3F2FD'
+      bgColor: '#'
     },
     {
       id: '2',
@@ -297,8 +297,6 @@ struct ColumnPage {
         // 返回按钮
         Image($r('app.media.music_return'))
           .width(36)
-          .height(36)
-          .fillColor(Color.White)
           //.shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
           .position({ x: 16, y: 16 })
           .onClick(() => router.back())
@@ -387,7 +385,7 @@ struct ColumnPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#f8f8f8')
+    .expandSafeArea([SafeAreaType.SYSTEM])
   }
 
   @Builder

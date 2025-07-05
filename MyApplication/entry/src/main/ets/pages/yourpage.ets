@@ -102,54 +102,52 @@ export struct YourPage {
       // 渐变背景
       Column() {
         Blank().width('100%').height('100%')
-          .linearGradient({
-            direction: GradientDirection.Bottom,
-            colors: [['#1a1a2e', 0.0], ['#16213e', 0.3], ['#0f3460', 0.7], ['#533483', 1.0]]
-          })
+          .backgroundColor('#181818')
+          .expandSafeArea([SafeAreaType.SYSTEM])
       }
       .width('100%')
       .height('100%')
       
-      // 装饰性背景元素
-      Column() {
-        // 顶部装饰元素
-        Row() {
-          Image($r('app.media.deroration_1'))
-            .width(200)
-            .height(200)
-            .opacity(0.1)
-            .position({ x: -100, y: -50 })
-          Image($r('app.media.deroration_2'))
-            .width(150)
-            .height(150)
-            .opacity(0.08)
-            .position({ x: 300, y: -30 })
-        }
-        .width('100%')
-        .height(60)
-        
-        Blank().layoutWeight(1)
-        
-        // 底部装饰元素
-        Row() {
-          Image($r('app.media.deroration_3'))
-            .width(180)
-            .height(180)
-            .opacity(0.08)
-            .position({ x: -80, y: 20 })
-          Image($r('app.media.deroration_4'))
-            .width(120)
-            .height(120)
-            .opacity(0.1)
-            .position({ x: 320, y: 40 })
-        }
-        .width('100%')
-        .height(80)
-      }
-      .width('100%')
-      .height('100%')
-      .position({ x: 0, y: 0 })
-      .zIndex(1)
+      // // 装饰性背景元素
+      // Column() {
+      //   // 顶部装饰元素
+      //   Row() {
+      //     Image($r('app.media.deroration_1'))
+      //       .width(200)
+      //       .height(200)
+      //       .opacity(0.1)
+      //       .position({ x: -100, y: -50 })
+      //     Image($r('app.media.deroration_2'))
+      //       .width(150)
+      //       .height(150)
+      //       .opacity(0.08)
+      //       .position({ x: 300, y: -30 })
+      //   }
+      //   .width('100%')
+      //   .height(60)
+      //
+      //   Blank().layoutWeight(1)
+      //
+      //   // 底部装饰元素
+      //   Row() {
+      //     Image($r('app.media.deroration_3'))
+      //       .width(180)
+      //       .height(180)
+      //       .opacity(0.08)
+      //       .position({ x: -80, y: 20 })
+      //     Image($r('app.media.deroration_4'))
+      //       .width(120)
+      //       .height(120)
+      //       .opacity(0.1)
+      //       .position({ x: 320, y: 40 })
+      //   }
+      //   .width('100%')
+      //   .height(80)
+      // }
+      // .width('100%')
+      // .height('100%')
+      // .position({ x: 0, y: 0 })
+      // .zIndex(1)
       
       // 主体内容
       Scroll() {

@@ -81,10 +81,8 @@ export struct CreateFigurePage {
     Column() {
       // 顶部栏
       Row() {
-        Button('<')
-          .backgroundColor('transparent')
-          .fontColor('#fff')
-          .fontSize(24)
+        Image($r('app.media.back'))
+          .width(24)
           .onClick(() => router.back())
         Blank().width(10)
         Text('创建形象')
@@ -95,7 +93,7 @@ export struct CreateFigurePage {
       }
       .width('100%')
       .height(56)
-      .backgroundColor('#222')
+      .backgroundColor('#181818')
       .alignItems(VerticalAlign.Center)
       .padding({ left: 10 })
 
