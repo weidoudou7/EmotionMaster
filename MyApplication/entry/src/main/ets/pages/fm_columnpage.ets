@@ -339,14 +339,6 @@ struct ColumnPage {
             .textAlign(TextAlign.Center)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .margin({ bottom: 8 })
-          Button(this.currentColumn.isFollowed ? '已关注' : '关注')
-            .fontSize(14)
-            .fontColor(this.currentColumn.isFollowed ? '#999' : '#fff')
-            .backgroundColor(this.currentColumn.isFollowed ? '#f5f5f5' : '#0D9FFB')
-            .borderRadius(16)
-            .padding({ left: 24, right: 24, top: 8, bottom: 8 })
-            .margin({ top: 4 })
-            .onClick(() => this.toggleFollow())
         }
         .width('100%')
         .padding(20)
@@ -356,22 +348,7 @@ struct ColumnPage {
         .margin({ top: 65, left: 16, right: 16, bottom: 8 })
       }
       .width('100%')
-      // 标签栏
-      Row() {
-        ForEach(this.tabs, (tab: string, idx: number) => {
-          Text(tab)
-            .fontSize(16)
-            .fontColor(this.currentTab === idx ? '#0D9FFB' : '#666')
-            .fontWeight(this.currentTab === idx ? FontWeight.Medium : FontWeight.Normal)
-            .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-            .onClick(() => {
-              this.currentTab = idx;
-            })
-        }, (tab: string) => tab)
-      }
-      .width('100%')
-      .backgroundColor('#fff')
-      .border({ width: { bottom: 1 }, color: '#f0f0f0' })
+
 
       // 文章列表
       List() {
@@ -416,7 +393,7 @@ struct ColumnPage {
             Text(article.author)
               .fontSize(12)
               .fontColor('#999')
-            Text(` · ${article.publishTime} · ${article.readTime}`)
+            Text(` · ${article.readTime}`)
               .fontSize(12)
               .fontColor('#999')
           }
