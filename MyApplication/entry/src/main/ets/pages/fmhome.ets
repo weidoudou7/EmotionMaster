@@ -179,29 +179,29 @@ export struct FMHomePage {
 
   private columnItems: SectionItem[] = [
     { 
-      title: 'Vol.01 《深度解析》', 
-      subtitle: '深度文章分析', 
-      tag: '深度', 
-      author: '分析师',
-      icon: '🔍',
+      title: 'Vol.01 《心理科普》', 
+      subtitle: 'AI心理健康知识深度解析', 
+      tag: '科普', 
+      author: '心理专家',
+      icon: '🧠',
       iconColor: '#ffffff',
       bgColor: 'rgba(255, 255, 255, 0.05)'
     },
     { 
-      title: 'Vol.02 《技术分享》', 
-      subtitle: '技术经验分享', 
-      tag: '技术', 
-      author: '技术员',
-      icon: '💻',
+      title: 'Vol.02 《AI应用》', 
+      subtitle: 'AI技术在心理健康领域的应用', 
+      tag: 'AI应用', 
+      author: 'AI研究员',
+      icon: '🤖',
       iconColor: '#ffffff',
       bgColor: 'rgba(255, 255, 255, 0.05)'
     },
     { 
-      title: 'Vol.03 《行业观察》', 
-      subtitle: '行业趋势观察', 
-      tag: '观察', 
-      author: '观察者',
-      icon: '📊',
+      title: 'Vol.03 《行业动态》', 
+      subtitle: '心理健康行业最新趋势观察', 
+      tag: '动态', 
+      author: '行业观察员',
+      icon: '📈',
       iconColor: '#ffffff',
       bgColor: 'rgba(255, 255, 255, 0.05)'
     }
@@ -209,17 +209,17 @@ export struct FMHomePage {
 
   private toolItems: ToolItem[] = [
     {
-      icon: '🎵',
-      title: '音乐治疗',
-      desc: '通过音乐缓解压力',
+      icon: '💨',
+      title: '呼吸训练',
+      desc: '科学呼吸，缓解焦虑',
       color: '#ffffff',
       bgColor: 'rgba(255, 255, 255, 0.05)',
-      route: 'pages/fm_musicBegin'
+      route: 'pages/fm_breathing'
     },
     {
       icon: '🧘‍♀️',
       title: '冥想练习',
-      desc: '正念冥想指导',
+      desc: '正念冥想，放松身心',
       color: '#ffffff',
       bgColor: 'rgba(255, 255, 255, 0.05)',
       route: 'pages/fm_meditation'
@@ -233,12 +233,12 @@ export struct FMHomePage {
       route: 'pages/fm_message'
     },
     {
-      icon: '💬',
-      title: 'AI对话',
-      desc: '与AI倾诉心事',
+      icon: '🔧',
+      title: '压力评估',
+      desc: '评估压力指数，科学调节',
       color: '#ffffff',
       bgColor: 'rgba(255, 255, 255, 0.05)',
-      route: 'pages/chat'
+      route: 'pages/fm_assessment'
     }
   ];
 
@@ -609,6 +609,41 @@ export struct FMHomePage {
           .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
           .margin({ left: 16, right: 16, bottom: 12 })
           .shadow({ radius: 8, color: '#00000020', offsetX: 0, offsetY: 2 })
+          .onClick(()=>{
+            switch(item.tag) {
+              case 'AI推荐':
+                // 跳转到AI聊天页面，使用个性化推荐身份
+                router.pushUrl({
+                  url: 'pages/chat',
+                });
+                break;
+              case '工具':
+                // 跳转到心理健康工具页面
+                router.pushUrl({
+                  url: 'pages/fm_assessment',
+                  params: {
+                    toolType: 'comprehensive',
+                    title: '心理健康工具集'
+                  }
+                });
+                break;
+              case '课程':
+                // 跳转到情绪管理课程页面
+                router.pushUrl({
+                  url: 'pages/fm_breathing',
+                  params: {
+                    courseType: 'emotion_management',
+                    title: '情绪管理课程'
+                  }
+                });
+                break;
+              default:
+              // 默认跳转到AI聊天页面
+                router.pushUrl({
+                  url: 'pages/chat',
+                });
+            }
+          })
         }
       })
     }
@@ -619,73 +654,61 @@ export struct FMHomePage {
   // 构建音乐内容
   @Builder
   buildMusicContent() {
-    List() {
-      ForEach(this.musicItems, (item: SectionItem) => {
-        ListItem() {
-          Stack() {
-            // 卡片背景发光效果
-            Column()
-              .width('100%')
-              .height('auto')
-              .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
-              .borderRadius(16)
-              .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
-            
-            Row() {
-              if (item.image) {
-                Image(item.image)
-                  .width(80)
-                  .height(80)
-                  .borderRadius(12)
-                  .margin({ right: 12 })
-              }
-              Column() {
-                Text(item.title)
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Bold)
-                  .fontColor('#ffffff')
-                  .opacity(this.textOpacity)
-                  .margin({ bottom: 4 })
-                Text(item.subtitle)
-                  .fontSize(14)
-                  .fontColor('rgba(255, 255, 255, 0.7)')
-                  .opacity(this.textOpacity)
-                  .margin({ bottom: 8 })
-                Row() {
-                  Text(item.tag)
-                    .fontSize(12)
-                    .fontColor('#ffffff')
-                    .backgroundColor('rgba(255, 255, 255, 0.1)')
-                    .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                    .borderRadius(8)
-                    .margin({ right: 8 })
-                  Text(`@${item.author}`)
-                    .fontSize(12)
-                    .fontColor('rgba(255, 255, 255, 0.6)')
-                }
-              }
-              .layoutWeight(1)
-            }
-            .padding({ left: 16, right: 16, top: 16, bottom: 16 })
+    // 音乐电台区
+    Column() {
+      Text('音乐电台')
+        .fontColor('#0D9FFB')
+        .fontSize(18)
+        .fontWeight(FontWeight.Bold)
+        .margin({ bottom: 16, top: 24 })
+      ForEach(this.randomSongs, (song: MusicDetailVO, idx: number) => {
+        Row() {
+          Image(song.coverUrl)
+            .width(56).height(56)
+            .borderRadius(8)
+            .margin({ right: 12 })
+          Column() {
+            Text(song.name)
+              .fontColor('#fff')
+              .fontSize(16)
+              .fontWeight(FontWeight.Bold)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+            Text(song.artist)
+              .fontColor('rgba(255,255,255,0.7)')
+              .fontSize(13)
+              .margin({ top: 2 })
           }
-          .width('100%')
-          .backgroundColor('rgba(255, 255, 255, 0.03)')
-          .borderRadius(16)
-          .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
-          .margin({ left: 16, right: 16, bottom: 12 })
-          .shadow({ radius: 8, color: '#00000020', offsetX: 0, offsetY: 2 })
+          .layoutWeight(1)
         }
-      })
+        .width('100%')
+        .padding({ top: 8, bottom: 8 })
+        .backgroundColor('transparent')
+        .borderRadius(16)
+        .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 2 })
+        .onClick(() => {
+          const songDetail = this.musicDetailCache[song.musicId] || song;
+          router.pushUrl({
+            url: 'pages/music_cloud_style',
+            params: {
+              musicId: song.musicId,
+              musicTitle: song.name,
+              musicArtist: song.artist,
+              musicDetail: songDetail,
+              songs: this.randomSongs,      // 传递三首歌
+              currentIndex: idx             // 当前点击的索引
+            }
+          })
+        })
+      }, (song: MusicDetailVO) => song.name)
     }
-    .width('100%')
-    .layoutWeight(1)
   }
 
   // 构建专栏内容
   @Builder
   buildColumnContent() {
     List() {
-      ForEach(this.columnItems, (item: SectionItem) => {
+      ForEach(this.columnItems, (item: SectionItem,idx:number) => {
         ListItem() {
           Stack() {
             // 卡片背景发光效果
@@ -738,6 +761,23 @@ export struct FMHomePage {
           .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
           .margin({ left: 16, right: 16, bottom: 12 })
           .shadow({ radius: 8, color: '#00000020', offsetX: 0, offsetY: 2 })
+          .onClick(() => {
+            let columnType = 'depth'; // 默认心理科普
+            if (item.tag === 'AI应用') {
+              columnType = 'tech';
+            } else if (item.tag === '动态') {
+              columnType = 'observe';
+            }
+            router.pushUrl({
+              url: 'pages/fm_columnpage',
+              params: {
+                columnId: (idx + 1).toString(),
+                columnName: item.title,
+                columnAuthor: item.author,
+                columnType: columnType
+              }
+            });
+          })
         }
       })
     }
