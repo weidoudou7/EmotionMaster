@@ -316,11 +316,18 @@ public class UserServiceImpl implements UserService {
 
     }
 
+    @Override
+    public Integer getUserIdByEmail(String email) {
+        User user = userMapper.selectByEmail(email);
+        return user != null ? user.getId() : null;
+    }
+
     /**
      * 将User实体转换为UserInfoVO
      */
     private UserInfoVO convertToVO(User user) {
         return new UserInfoVO(
+            user.getId(),
             user.getUserName(),
             user.getUserUID(),
             user.getUserAvatar(),

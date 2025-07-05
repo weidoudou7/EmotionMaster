@@ -24,7 +24,9 @@
     </select>
 
     <select id="selectByRoleType" resultMap="AiRoleResultMap">
-        SELECT * FROM ai_roles WHERE role_type = #{roleType}
+        SELECT * FROM ai_roles 
+        WHERE role_type = #{roleType}
+        ORDER BY view_count DESC, created_at DESC
     </select>
 
     <select id="selectByRoleAuthor" resultMap="AiRoleResultMap">

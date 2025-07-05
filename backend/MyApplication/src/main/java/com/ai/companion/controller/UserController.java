@@ -201,6 +201,40 @@ public class UserController {
     }
 
     /**
+     * 通过邮箱创建或登录用户
+     * @param email 用户邮箱
+     * @return 用户信息
+     */
+    @PostMapping("/createOrLoginByEmail")
+    public ApiResponse<UserInfoVO> createOrLoginUserByEmail(@RequestParam String email) {
+        try {
+            UserInfoVO userInfo = userService.createOrLoginUserByEmail(email);
+            return ApiResponse.success("用户创建或登录成功", userInfo);
+        } catch (Exception e) {
+            return ApiResponse.error("用户创建或登录失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 根据邮箱获取用户ID
+     * @param email 用户邮箱
+     * @return 用户ID
+     */
+    @GetMapping("/getUserIdByEmail")
+    public ApiResponse<Integer> getUserIdByEmail(@RequestParam String email) {
+        try {
+            Integer userId = userService.getUserIdByEmail(email);
+            if (userId != null) {
+                return ApiResponse.success("获取用户ID成功", userId);
+            } else {
+                return ApiResponse.error("用户不存在");
+            }
+        } catch (Exception e) {
+            return ApiResponse.error("获取用户ID失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 插入两个测试用户（开发测试用）
      */
     @PostMapping("/insertTestUsers")

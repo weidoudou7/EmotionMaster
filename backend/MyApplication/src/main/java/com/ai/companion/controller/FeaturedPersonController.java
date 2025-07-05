@@ -40,6 +40,19 @@ public class FeaturedPersonController {
     }
 
     /**
+     * 根据角色类型获取特色人物列表
+     * HTTP方法: GET
+     * 请求路径: /api/featured-people/type?roleType={roleType}
+     * @param roleType 角色类型
+     * @return 包含指定类型特色人物的列表，HTTP状态码200
+     */
+    @GetMapping("/type")
+    public ResponseEntity<List<AiRole>> getRolesByType(@RequestParam String roleType) {
+        List<AiRole> roles = service.getRolesByType(roleType);
+        return ResponseEntity.ok(roles);
+    }
+
+    /**
      * 根据ID获取单个特色人物
      * HTTP方法: GET
      * 请求路径: /api/featured-people/{id}

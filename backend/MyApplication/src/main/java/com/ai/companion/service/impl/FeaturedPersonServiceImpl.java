@@ -73,9 +73,9 @@ public class FeaturedPersonServiceImpl implements FeaturedPersonService {
     public List<AiRole> getRolesByType(String type) {
         // 按角色类型查询并返回结果
         List<AiRole> roles = aiRoleMapper.selectByRoleType(type);
-        // 限制最多返回9条数据
-        if (roles.size() > 9) {
-            return roles.subList(0, 9);
+        // 限制最多返回20条数据，确保有足够的角色展示
+        if (roles.size() > 20) {
+            return roles.subList(0, 20);
         }
         return roles;
     }

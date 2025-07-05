@@ -99,4 +99,11 @@ public interface UserService {
      */
     UserInfoVO createOrLoginUserByEmail(String email);
 
+    /**
+     * 根据邮箱获取用户ID
+     * @param email 邮箱地址
+     * @return 用户ID，如果用户不存在则返回null
+     */
+    Integer getUserIdByEmail(String email);
+
 } 
