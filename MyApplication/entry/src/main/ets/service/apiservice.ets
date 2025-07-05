@@ -289,6 +289,7 @@ export class ApiService {
         
         // 同步到前端全局状态
         globalUserData.updateUserAvatar(avatarUrl);
+        console.log('🎨 [ApiService] 全局状态已更新，头像URL:', avatarUrl);
         return avatarUrl;
       } else {
         throw new Error(response.message || 'Failed to generate avatar');
@@ -358,6 +359,7 @@ export class ApiService {
         
         // 同步到前端全局状态
         globalUserData.updateUserAvatar(avatarUrl);
+        console.log('💾 [ApiService] 全局状态已更新，头像URL:', avatarUrl);
         return avatarUrl;
       } else {
         throw new Error(response.message || 'Failed to confirm preview avatar');
