@@ -198,7 +198,13 @@ export interface CreateMessageRequest {
 export interface RoleTypeStatistics {
   roleType: string;
   count: number;
-  percentage: number;
+}
+
+// 预览头像响应接口
+export interface PreviewAvatarResponse {
+  previewImage: string;
+  previewSeed: number;
+  timestamp: number;
 }
 
 // 用户角色偏好分析结果接口

@@ -5,6 +5,7 @@ import com.ai.companion.entity.vo.UserInfoVO;
 import com.ai.companion.entity.vo.UpdateUserRequest;
 import com.ai.companion.entity.vo.UserStatsVO;
 import com.ai.companion.entity.vo.AvatarUploadRequest;
+import com.ai.companion.entity.vo.PreviewAvatarResponse;
 import com.ai.companion.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -106,6 +107,114 @@ public class UserController {
     }
 
     /**
+     * 生成新的随机头像
+     * @param userUID 用户UID
+     * @return 新头像URL
+     */
+    @PostMapping("/{userUID}/avatar/generate")
+    public ApiResponse<String> generateNewAvatar(@PathVariable String userUID) {
+        System.out.println("🎨 ========== 头像生成请求开始 ==========");
+        System.out.println("🎨 [Controller] 收到头像生成请求");
+        System.out.println("🎨 [Controller] 用户UID: " + userUID);
+        System.out.println("🎨 [Controller] 请求时间: " + java.time.LocalDateTime.now());
+        System.out.println("🎨 [Controller] 请求路径: POST /user/" + userUID + "/avatar/generate");
+        
+        try {
+            System.out.println("🎨 [Controller] 调用UserService.generateNewAvatar()");
+            String avatarUrl = userService.generateNewAvatar(userUID);
+            
+            System.out.println("🎨 [Controller] UserService返回头像URL: " + avatarUrl);
+            System.out.println("🎨 [Controller] 头像生成成功，准备返回响应");
+            System.out.println("🎨 ========== 头像生成请求成功 ==========");
+            
+            return ApiResponse.success("头像生成成功", avatarUrl);
+        } catch (Exception e) {
+            System.err.println("❌ [Controller] 头像生成过程中发生异常");
+            System.err.println("❌ [Controller] 异常类型: " + e.getClass().getSimpleName());
+            System.err.println("❌ [Controller] 异常消息: " + e.getMessage());
+            System.err.println("❌ [Controller] 异常堆栈:");
+            e.printStackTrace();
+            System.err.println("❌ ========== 头像生成请求失败 ==========");
+            
+            return ApiResponse.error("头像生成失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 生成预览头像
+     * @param userUID 用户UID
+     * @return 预览头像信息
+     */
+    @PostMapping("/{userUID}/avatar/preview")
+    public ApiResponse<PreviewAvatarResponse> generatePreviewAvatar(@PathVariable String userUID) {
+        System.out.println("👁️ ========== 预览头像请求开始 ==========");
+        System.out.println("👁️ [Controller] 收到预览头像请求");
+        System.out.println("👁️ [Controller] 用户UID: " + userUID);
+        System.out.println("👁️ [Controller] 请求时间: " + java.time.LocalDateTime.now());
+        System.out.println("👁️ [Controller] 请求路径: POST /user/" + userUID + "/avatar/preview");
+        
+        try {
+            System.out.println("👁️ [Controller] 调用UserService.generatePreviewAvatar()");
+            PreviewAvatarResponse previewResponse = userService.generatePreviewAvatar(userUID);
+            
+            System.out.println("👁️ [Controller] UserService返回预览响应");
+            System.out.println("👁️ [Controller] 预览种子: " + previewResponse.getPreviewSeed());
+            System.out.println("👁️ [Controller] 预览图片长度: " + previewResponse.getPreviewImage().length());
+            System.out.println("👁️ [Controller] 预览头像生成成功，准备返回响应");
+            System.out.println("👁️ ========== 预览头像请求成功 ==========");
+            
+            return ApiResponse.success("预览头像生成成功", previewResponse);
+        } catch (Exception e) {
+            System.err.println("❌ [Controller] 预览头像生成过程中发生异常");
+            System.err.println("❌ [Controller] 异常类型: " + e.getClass().getSimpleName());
+            System.err.println("❌ [Controller] 异常消息: " + e.getMessage());
+            System.err.println("❌ [Controller] 异常堆栈:");
+            e.printStackTrace();
+            System.err.println("❌ ========== 预览头像请求失败 ==========");
+            
+            return ApiResponse.error("预览头像生成失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 确认并保存预览头像
+     * @param userUID 用户UID
+     * @param previewSeed 预览种子
+     * @return 保存的头像URL
+     */
+    @PostMapping("/{userUID}/avatar/confirm")
+    public ApiResponse<String> confirmPreviewAvatar(
+            @PathVariable String userUID,
+            @RequestParam long previewSeed) {
+        System.out.println("💾 ========== 确认头像请求开始 ==========");
+        System.out.println("💾 [Controller] 收到确认头像请求");
+        System.out.println("💾 [Controller] 用户UID: " + userUID);
+        System.out.println("💾 [Controller] 预览种子: " + previewSeed);
+        System.out.println("💾 [Controller] 请求时间: " + java.time.LocalDateTime.now());
+        System.out.println("💾 [Controller] 请求路径: POST /user/" + userUID + "/avatar/confirm");
+        
+        try {
+            System.out.println("💾 [Controller] 调用UserService.confirmPreviewAvatar()");
+            String avatarUrl = userService.confirmPreviewAvatar(userUID, previewSeed);
+            
+            System.out.println("💾 [Controller] UserService返回头像URL: " + avatarUrl);
+            System.out.println("💾 [Controller] 头像确认并保存成功，准备返回响应");
+            System.out.println("💾 ========== 确认头像请求成功 ==========");
+            
+            return ApiResponse.success("头像确认并保存成功", avatarUrl);
+        } catch (Exception e) {
+            System.err.println("❌ [Controller] 确认头像过程中发生异常");
+            System.err.println("❌ [Controller] 异常类型: " + e.getClass().getSimpleName());
+            System.err.println("❌ [Controller] 异常消息: " + e.getMessage());
+            System.err.println("❌ [Controller] 异常堆栈:");
+            e.printStackTrace();
+            System.err.println("❌ ========== 确认头像请求失败 ==========");
+            
+            return ApiResponse.error("头像确认失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 切换用户隐私可见性
      * @param userUID 用户UID
      * @return 更新后的隐私状态
@@ -187,6 +296,12 @@ public class UserController {
      */
     @GetMapping("/health")
     public ApiResponse<String> health() {
+        System.out.println("🏥 ========== 健康检查请求 ==========");
+        System.out.println("🏥 [Controller] 收到健康检查请求");
+        System.out.println("🏥 [Controller] 请求时间: " + java.time.LocalDateTime.now());
+        System.out.println("🏥 [Controller] 请求路径: GET /user/health");
+        System.out.println("🏥 [Controller] 服务状态: 正常运行");
+        System.out.println("🏥 ========== 健康检查完成 ==========");
         return ApiResponse.success("用户服务运行正常", "OK");
     }
 

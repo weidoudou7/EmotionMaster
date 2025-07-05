@@ -5,7 +5,7 @@ import router from '@ohos.router'
 struct Splash {
   aboutToAppear() {
     setTimeout(() => {
-      router.pushUrl({ url: 'pages/2_Login' })
+      router.pushUrl({ url: 'pages/yourpage' })
     }, 3000)
   }
   build() {

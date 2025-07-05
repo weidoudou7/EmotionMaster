@@ -5,6 +5,7 @@ import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
 import { Dynamic, CreateDynamicRequest } from '../common/types';
 import { NetworkUtils } from '../common/utils';
+import { Config } from '../common/config';
 import promptAction from '@ohos.promptAction';
 import { BottomNavBar } from './BottomNavBar';
 import preferences from '@ohos.data.preferences';
@@ -33,6 +34,10 @@ struct DynamicList {
   @State isPublishing: boolean = false; // 是否正在发布
   @State localDynamics: Dynamic[] = []; // 本地动态列表
   @State showImagePickerModal: boolean = false; // 是否显示图片选择弹窗
+
+  // 头像查看器状态
+  @State showAvatarViewer: boolean = false; // 显示头像查看器
+  @State currentAvatarUrl: string = ''; // 当前查看的头像URL
 
   // 页面生命周期
   aboutToAppear() {
@@ -208,6 +213,18 @@ struct DynamicList {
     promptAction.showToast({ message: '删除成功' });
   }
 
+  // 显示头像查看器
+  showAvatarViewerDialog(avatarUrl: string) {
+    this.currentAvatarUrl = avatarUrl;
+    this.showAvatarViewer = true;
+  }
+
+  // 关闭头像查看器
+  closeAvatarViewer() {
+    this.showAvatarViewer = false;
+    this.currentAvatarUrl = '';
+  }
+
   // 发布动态
   async publishDynamic(): Promise<void> {
     console.log('🚀 开始发布动态...');
@@ -339,6 +356,23 @@ struct DynamicList {
     if (days < 7) return `${days}天前`;
     
     return date.toLocaleDateString();
+  }
+
+  // 处理头像URL - 改为预览器样式
+  getAvatarUrl(avatarUrl: string | undefined): Resource | string {
+    if (!avatarUrl || avatarUrl === '/avatars/default.png') {
+      return $r('app.media.image');
+    }
+    
+    // 处理头像URL - 如果是相对路径，拼接完整URL
+    if (avatarUrl && avatarUrl.startsWith('/')) {
+      const baseUrl = Config.getApiBaseUrl().replace('/api', '');
+      const fullUrl = baseUrl + avatarUrl;
+      console.log('👤 [DynamicList] 处理后的头像URL:', fullUrl);
+      return fullUrl;
+    }
+    
+    return avatarUrl;
   }
 
   build() {
@@ -519,20 +553,104 @@ struct DynamicList {
       if (this.showPublishModal) {
         this.PublishModal()
       }
+
+      // 头像查看器 - 全屏显示头像
+      if (this.showAvatarViewer) {
+        Stack({ alignContent: Alignment.Center }) {
+          // 半透明背景
+          Column() {
+            Blank()
+              .width('100%')
+              .height('100%')
+              .backgroundColor('#000000')
+              .opacity(0.9)
+              .onClick(() => this.closeAvatarViewer())
+          }
+          .width('100%')
+          .height('100%')
+
+          // 头像查看器内容
+          Column() {
+            // 关闭按钮
+            Row() {
+              Button() {
+                Image($r('app.media.return'))
+                  .width(24)
+                  .height(24)
+                  .fillColor('#fff')
+              }
+              .width(40)
+              .height(40)
+              .backgroundColor('rgba(0,0,0,0.5)')
+              .borderRadius(20)
+              .onClick(() => this.closeAvatarViewer())
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.End)
+            .margin({ bottom: 20 })
+
+            // 大尺寸头像显示
+            Image(this.currentAvatarUrl)
+              .width(300)
+              .height(300)
+              .borderRadius(150)
+              .border({ width: 6, color: 'rgba(255,255,255,0.3)' })
+              .objectFit(ImageFit.Cover)
+              .margin({ bottom: 20 })
+
+            // 操作按钮
+            Row() {
+              Button('查看用户')
+                .width(120)
+                .height(44)
+                .backgroundColor('rgba(255,255,255,0.2)')
+                .fontColor('#fff')
+                .borderRadius(22)
+                .onClick(() => {
+                  this.closeAvatarViewer();
+                  setTimeout(() => {
+                    let uiContext: UIContext = this.getUIContext();
+                    let router = uiContext.getRouter();
+                    router.pushUrl({ url: 'pages/yourpage' });
+                  }, 300);
+                })
+            }
+            .justifyContent(FlexAlign.Center)
+          }
+          .width('90%')
+          .padding(24)
+        }
+        .width('100%')
+        .height('100%')
+        .position({ x: 0, y: 0 })
+        .zIndex(999)
+      }
     }
   }
 
   @Builder
   DynamicCard(dynamic: Dynamic) {
     Column() {
-      // 用户信息
+      // 用户信息 - 改为预览器样式显示头像
       Row() {
-        Image(dynamic.userAvatar || $r('app.media.image'))
-          .width(40)
-          .height(40)
-          .borderRadius(20)
-          .backgroundColor('rgba(255,255,255,0.1)')
-          .border({ width: 1, color: 'rgba(255,255,255,0.2)' })
+        // 头像显示 - 像预览器一样显示
+        Stack() {
+          // 头像图片 - 大尺寸显示
+          Image(this.getAvatarUrl(dynamic.userAvatar))
+            .width(50)
+            .height(50)
+            .borderRadius(25)
+            .backgroundColor('rgba(255,255,255,0.1)')
+            .border({ width: 2, color: 'rgba(255,255,255,0.3)' })
+            .objectFit(ImageFit.Cover)
+            .onClick(() => {
+              // 点击头像显示查看器
+              const avatarUrl = this.getAvatarUrl(dynamic.userAvatar);
+              if (typeof avatarUrl === 'string') {
+                this.showAvatarViewerDialog(avatarUrl);
+              }
+            })
+        }
         
         Column() {
           Text(dynamic.userName || globalUserData.userName)
@@ -582,7 +700,7 @@ struct DynamicList {
       // 图片展示
       if (dynamic.images && dynamic.images.length > 0) {
         Grid() {
-          ForEach(dynamic.images, (image: string) => {
+          ForEach(dynamic.images, (image: string, index: number) => {
             GridItem() {
               Image(image)
                 .width('100%')
@@ -593,51 +711,54 @@ struct DynamicList {
           })
         }
         .columnsTemplate('1fr 1fr 1fr')
-        .rowsGap(8)
         .columnsGap(8)
+        .rowsGap(8)
         .width('100%')
         .margin({ bottom: 12 })
       }
       
-      // 操作按钮
+      // 操作栏
       Row() {
-        Button() {
-          Row() {
-            Image($r('app.media.ic_add_circle'))
-              .width(16)
-              .height(16)
-              .fillColor('rgba(255,255,255,0.6)')
-            Text(dynamic.likeCount.toString())
-              .fontSize(14)
-              .fontColor('rgba(255,255,255,0.6)')
-              .margin({ left: 4 })
-          }
+        // 点赞按钮
+        Row() {
+          Text('❤️')
+            .fontSize(16)
+            .margin({ right: 4 })
+          Text(dynamic.likeCount?.toString() || '0')
+            .fontSize(14)
+            .fontColor('rgba(255,255,255,0.8)')
         }
-        .backgroundColor('rgba(255,255,255,0.1)')
-        .borderRadius(16)
-        .padding({ left: 12, right: 12, top: 6, bottom: 6 })
         .onClick(() => {
-          this.likeDynamic(dynamic);
+          if (this.localDynamics.some(d => d.id === dynamic.id)) {
+            // 本地动态不支持点赞
+            promptAction.showToast({ message: '本地动态暂不支持点赞' });
+          } else {
+            this.likeDynamic(dynamic);
+          }
         })
         
-        Button() {
-          Row() {
-            Image($r('app.media.message_icon'))
-              .width(16)
-              .height(16)
-              .fillColor('rgba(255,255,255,0.6)')
-            Text(dynamic.commentCount.toString())
-              .fontSize(14)
-              .fontColor('rgba(255,255,255,0.6)')
-              .margin({ left: 4 })
-          }
+        // 评论按钮
+        Row() {
+          Text('💬')
+            .fontSize(16)
+            .margin({ right: 4 })
+          Text(dynamic.commentCount?.toString() || '0')
+            .fontSize(14)
+            .fontColor('rgba(255,255,255,0.8)')
         }
-        .backgroundColor('rgba(255,255,255,0.1)')
-        .borderRadius(16)
-        .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-        .margin({ left: 8 })
+        .margin({ left: 20 })
         .onClick(() => {
           promptAction.showToast({ message: '评论功能开发中' });
+        })
+        
+        // 分享按钮
+        Row() {
+          Text('📤')
+            .fontSize(16)
+        }
+        .margin({ left: 20 })
+        .onClick(() => {
+          promptAction.showToast({ message: '分享功能开发中' });
         })
       }
       .width('100%')
@@ -645,27 +766,29 @@ struct DynamicList {
     }
     .width('100%')
     .padding(16)
-    .backgroundColor('rgba(255,255,255,0.08)')
-    .borderRadius(16)
-    .border({ width: 1, color: 'rgba(255,255,255,0.1)' })
+    .backgroundColor('rgba(255,255,255,0.05)')
+    .borderRadius(12)
     .margin({ bottom: 12 })
   }
 
   @Builder
   PublishModal() {
-    Column() {
-      // 遮罩层
-      Blank()
-        .width('100%')
-        .height('100%')
-        .backgroundColor('rgba(0,0,0,0.5)')
-        .onClick(() => {
-          if (!this.isPublishing) {
+    Stack({ alignContent: Alignment.Center }) {
+      // 半透明背景
+      Column() {
+        Blank()
+          .width('100%')
+          .height('100%')
+          .backgroundColor('#000000')
+          .opacity(0.6)
+          .onClick(() => {
             this.showPublishModal = false;
-          }
-        })
-      
-      // 发布弹窗
+          })
+      }
+      .width('100%')
+      .height('100%')
+
+      // 发布弹窗内容
       Column() {
         // 标题栏
         Row() {
@@ -676,49 +799,32 @@ struct DynamicList {
             .layoutWeight(1)
           
           Button() {
-            Text('取消')
-              .fontSize(16)
-              .fontColor('rgba(255,255,255,0.6)')
+            Image($r('app.media.return'))
+              .width(20)
+              .height(20)
+              .fillColor('#fff')
           }
+          .width(32)
+          .height(32)
           .backgroundColor('rgba(255,255,255,0.1)')
           .borderRadius(16)
-          .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-          .margin({ right: 8 })
           .onClick(() => {
-            if (!this.isPublishing) {
-              this.showPublishModal = false;
-            }
-          })
-          
-          Button() {
-            if (this.isPublishing) {
-              LoadingProgress()
-                .width(16)
-                .height(16)
-                .color('#fff')
-            } else {
-              Text('发布')
-                .fontSize(16)
-                .fontColor('#fff')
-            }
-          }
-          .backgroundColor(this.isPublishing ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)')
-          .borderRadius(16)
-          .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-          .onClick(() => {
-            this.publishDynamic();
+            this.showPublishModal = false;
           })
         }
         .width('100%')
-        .margin({ bottom: 16 })
-        
+        .margin({ bottom: 20 })
+
         // 内容输入框
-        TextArea({ placeholder: '分享你的想法...', text: this.publishContent })
+        TextArea({
+          text: this.publishContent,
+          placeholder: '分享你的想法...'
+        })
           .width('100%')
           .height(120)
           .backgroundColor('rgba(255,255,255,0.1)')
           .borderRadius(12)
-          .padding(12)
+          .padding(16)
           .fontSize(16)
           .fontColor('#fff')
           .placeholderColor('rgba(255,255,255,0.5)')
@@ -726,7 +832,7 @@ struct DynamicList {
             this.publishContent = value;
           })
           .margin({ bottom: 16 })
-        
+
         // 图片选择区域
         if (this.publishImages.length > 0) {
           Grid() {
@@ -739,6 +845,7 @@ struct DynamicList {
                     .borderRadius(8)
                     .objectFit(ImageFit.Cover)
                   
+                  // 删除按钮
                   Button() {
                     Text('×')
                       .fontSize(16)
@@ -746,10 +853,9 @@ struct DynamicList {
                   }
                   .width(24)
                   .height(24)
-                  .backgroundColor('rgba(0,0,0,0.5)')
+                  .backgroundColor('rgba(0,0,0,0.6)')
                   .borderRadius(12)
-                  .position({ x: '100%', y: 0 })
-                  .translate({ x: -12, y: -12 })
+                  .position({ x: '85%', y: '15%' })
                   .onClick(() => {
                     this.removeImage(index);
                   })
@@ -757,46 +863,52 @@ struct DynamicList {
               }
             })
           }
-          .columnsTemplate('1fr 1fr 1fr 1fr')
-          .rowsGap(8)
+          .columnsTemplate('1fr 1fr 1fr')
           .columnsGap(8)
+          .rowsGap(8)
           .width('100%')
           .margin({ bottom: 16 })
         }
-        
-        // 添加图片按钮
-        if (this.publishImages.length < 9) {
+
+        // 操作按钮
+        Row() {
           Button() {
-            Column() {
-              Image($r('app.media.plus_icon'))
-                .width(24)
-                .height(24)
-                .fillColor('rgba(255,255,255,0.6)')
-              Text('添加图片')
-                .fontSize(12)
-                .fontColor('rgba(255,255,255,0.6)')
-                .margin({ top: 4 })
-            }
+            Text('📷')
+              .fontSize(16)
           }
-          .width('100%')
-          .height(80)
+          .width(44)
+          .height(44)
           .backgroundColor('rgba(255,255,255,0.1)')
-          .borderRadius(8)
-          .border({ width: 1, color: 'rgba(255,255,255,0.2)', style: BorderStyle.Dashed })
+          .borderRadius(22)
           .onClick(() => {
             this.selectImages();
           })
+
+          Button('发布')
+            .width(100)
+            .height(44)
+            .backgroundColor(this.isPublishing ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)')
+            .fontColor('#fff')
+            .borderRadius(22)
+            .margin({ left: 'auto' })
+            .onClick(() => {
+              if (!this.isPublishing) {
+                this.publishDynamic();
+              }
+            })
         }
+        .width('100%')
+        .justifyContent(FlexAlign.SpaceBetween)
       }
       .width('90%')
-      .padding(20)
-      .backgroundColor('rgba(30,30,30,0.95)')
+      .backgroundColor('rgba(0,0,0,0.8)')
       .borderRadius(20)
-      .border({ width: 1, color: 'rgba(255,255,255,0.1)' })
-      .position({ x: '5%', y: '20%' })
+      .padding(24)
+      .backdropBlur(20)
     }
     .width('100%')
     .height('100%')
-    .zIndex(3)
+    .position({ x: 0, y: 0 })
+    .zIndex(999)
   }
 } 

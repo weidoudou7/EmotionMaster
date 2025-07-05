@@ -1,6 +1,6 @@
 import { globalUserData } from '../models/userdata';
 import { Config } from '../common/config';
-import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult, CreateAiRoleRequest, GenerateRoleNameRequest, CreateConversationRequest, Conversation, Message, CreateMessageRequest, CommentItem, RoleTypeStatistics, UserRolePreferenceAnalysis } from '../common/types';
+import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult, CreateAiRoleRequest, GenerateRoleNameRequest, CreateConversationRequest, Conversation, Message, CreateMessageRequest, CommentItem, RoleTypeStatistics, UserRolePreferenceAnalysis, PreviewAvatarResponse } from '../common/types';
 import {  AiRole } from '../common/types';
 import http from '@ohos.net.http';
 
@@ -182,14 +182,22 @@ export class ApiService {
   static async getUserInfo(userUID: string): Promise<UserInfo> {
     const response = await ApiService.request<UserInfo>(`${API_BASE_URL}/user/${userUID}`);
     if (response.success) {
+      // 处理头像URL - 如果是相对路径，拼接完整URL
+      let userInfo = response.data;
+      if (userInfo.userAvatar && userInfo.userAvatar.startsWith('/')) {
+        const baseUrl = Config.getApiBaseUrl().replace('/api', '');
+        userInfo.userAvatar = baseUrl + userInfo.userAvatar;
+        console.log('👤 [ApiService] 处理后的头像URL:', userInfo.userAvatar);
+      }
+      
       // 同步到前端全局状态
-      globalUserData.updateUserName(response.data.userName);
-      globalUserData.updateUserUID(response.data.userUID);
-      globalUserData.updateUserAvatar(response.data.userAvatar);
-      if (response.data.isPrivacyVisible !== globalUserData.isPrivacyVisible) {
+      globalUserData.updateUserName(userInfo.userName);
+      globalUserData.updateUserUID(userInfo.userUID);
+      globalUserData.updateUserAvatar(userInfo.userAvatar);
+      if (userInfo.isPrivacyVisible !== globalUserData.isPrivacyVisible) {
         globalUserData.togglePrivacy();
       }
-      return response.data;
+      return userInfo;
     } else {
       throw new Error(response.message || 'Failed to get user info');
     }
@@ -249,6 +257,113 @@ export class ApiService {
       }
     } catch (error) {
       console.error('头像上传失败:', error);
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error('未知错误: ' + JSON.stringify(error));
+      }
+    }
+  }
+
+  /**
+   * 生成新的随机头像
+   */
+  static async generateNewAvatar(userUID: string): Promise<string> {
+    try {
+      console.log('🎨 [ApiService] 开始生成新头像，用户UID:', userUID);
+      
+      const response = await ApiService.request<string>(`${API_BASE_URL}/user/${userUID}/avatar/generate`, {
+        method: http.RequestMethod.POST
+      });
+
+      if (response.success) {
+        console.log('🎨 [ApiService] 头像生成成功，原始URL:', response.data);
+        
+        // 处理头像URL - 如果是相对路径，拼接完整URL
+        let avatarUrl = response.data;
+        if (avatarUrl && avatarUrl.startsWith('/')) {
+          const baseUrl = Config.getApiBaseUrl().replace('/api', '');
+          avatarUrl = baseUrl + avatarUrl;
+          console.log('🎨 [ApiService] 拼接后的完整URL:', avatarUrl);
+        }
+        
+        // 同步到前端全局状态
+        globalUserData.updateUserAvatar(avatarUrl);
+        return avatarUrl;
+      } else {
+        throw new Error(response.message || 'Failed to generate avatar');
+      }
+    } catch (error) {
+      console.error('🎨 [ApiService] 头像生成失败:', error);
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error('未知错误: ' + JSON.stringify(error));
+      }
+    }
+  }
+
+  /**
+   * 生成预览头像
+   */
+  static async generatePreviewAvatar(userUID: string): Promise<PreviewAvatarResponse> {
+    try {
+      console.log('👁️ [ApiService] 开始生成预览头像，用户UID:', userUID);
+      
+      const response = await ApiService.request<PreviewAvatarResponse>(`${API_BASE_URL}/user/${userUID}/avatar/preview`, {
+        method: http.RequestMethod.POST
+      });
+
+      if (response.success) {
+        console.log('👁️ [ApiService] 预览头像生成成功');
+        console.log('👁️ [ApiService] 预览种子:', response.data.previewSeed);
+        console.log('👁️ [ApiService] 预览图片长度:', response.data.previewImage.length);
+        
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to generate preview avatar');
+      }
+    } catch (error) {
+      console.error('👁️ [ApiService] 预览头像生成失败:', error);
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error('未知错误: ' + JSON.stringify(error));
+      }
+    }
+  }
+
+  /**
+   * 确认并保存预览头像
+   */
+  static async confirmPreviewAvatar(userUID: string, previewSeed: number): Promise<string> {
+    try {
+      console.log('💾 [ApiService] 开始确认预览头像，用户UID:', userUID);
+      console.log('💾 [ApiService] 预览种子:', previewSeed);
+      
+      const response = await ApiService.request<string>(`${API_BASE_URL}/user/${userUID}/avatar/confirm?previewSeed=${previewSeed}`, {
+        method: http.RequestMethod.POST
+      });
+
+      if (response.success) {
+        console.log('💾 [ApiService] 头像确认并保存成功，原始URL:', response.data);
+        
+        // 处理头像URL - 如果是相对路径，拼接完整URL
+        let avatarUrl = response.data;
+        if (avatarUrl && avatarUrl.startsWith('/')) {
+          const baseUrl = Config.getApiBaseUrl().replace('/api', '');
+          avatarUrl = baseUrl + avatarUrl;
+          console.log('💾 [ApiService] 拼接后的完整URL:', avatarUrl);
+        }
+        
+        // 同步到前端全局状态
+        globalUserData.updateUserAvatar(avatarUrl);
+        return avatarUrl;
+      } else {
+        throw new Error(response.message || 'Failed to confirm preview avatar');
+      }
+    } catch (error) {
+      console.error('💾 [ApiService] 确认预览头像失败:', error);
       if (error instanceof Error) {
         throw error;
       } else {
@@ -388,7 +503,7 @@ export class ApiService {
       if (error instanceof Error) {
         throw new Error(`AI聊天失败: ${error.message}`);
       } else {
-        throw new Error('未知错误: ' + JSON.stringify(error));
+        throw new Error('AI聊天失败: 未知错误');
       }
     }
   }
@@ -1102,8 +1217,7 @@ export class ApiService {
         const percentage = Math.round((count / totalValidConversations) * 100);
         roleTypeCounts.push({
           roleType: roleType,
-          count: count,
-          percentage: percentage
+          count: count
         });
       }
       // 按数量降序排列
@@ -1120,12 +1234,12 @@ export class ApiService {
         analysis = `用户专注于与${mostPreferred.roleType}类型的AI角色交流`;
       } else if (mostPreferred !== null) {
         const topType = mostPreferred.roleType;
-        const topPercentage = mostPreferred.percentage;
+        const topPercentage = Math.round((mostPreferred.count / totalValidConversations) * 100);
         analysis = `用户最喜欢与${topType}类型的AI角色交流，占比${topPercentage}%。`;
         
         if (roleTypeCounts.length > 1) {
           const secondType = roleTypeCounts[1].roleType;
-          const secondPercentage = roleTypeCounts[1].percentage;
+          const secondPercentage = Math.round((roleTypeCounts[1].count / totalValidConversations) * 100);
           analysis += `其次是${secondType}类型，占比${secondPercentage}%。`;
         }
       }

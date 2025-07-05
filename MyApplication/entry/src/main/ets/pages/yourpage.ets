@@ -4,6 +4,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
 import { UserInfo, UserStats, Dynamic } from '../common/types';
+import { Config } from '../common/config';
 import promptAction from '@ohos.promptAction';
 import preferences from '@ohos.data.preferences';
 
@@ -23,6 +24,8 @@ export struct YourPage {
   @State cardScale: number = 1.0; // 卡片缩放动画
   @State latestDynamic: Dynamic | null = null; // 最新动态
   @State lastClickTime: number = 0; // 上次点击时间，用于双击检测
+  @State userAvatar: Resource | string = $r("app.media.image"); // 用户头像
+  @State showAvatarViewer: boolean = false; // 显示头像查看器
 
   // 银河系动画状态
   @State arcRotation: number = 0 // 圆弧旋转角度
@@ -45,6 +48,12 @@ export struct YourPage {
     this.loadUserInfoAsync();
     this.loadUserStatsAsync();
     this.loadLatestDynamicAsync();
+  }
+
+  // 页面显示时刷新用户信息
+  onPageShow() {
+    // 刷新用户信息，确保头像是最新的
+    this.loadUserInfoAsync();
   }
 
   // 银河系动画
@@ -78,15 +87,62 @@ export struct YourPage {
   // 异步加载用户信息（不阻塞页面显示）
   async loadUserInfoAsync() {
     try {
+      console.log('👤 [yourpage] 开始加载用户信息，用户UID:', this.UID);
+      
       const userInfo = await ApiService.getUserInfo(this.UID);
       this.userInfo = userInfo;
       this.yourname = userInfo.userName;
       this.UID = userInfo.userUID;
       this.ooo = userInfo.isPrivacyVisible;
+
+      // 更新头像显示
+      await this.updateAvatarDisplay(userInfo.userAvatar);
+      
+      console.log('👤 [yourpage] 用户信息加载完成');
     } catch (error) {
-      console.error('加载用户信息失败:', error);
+      console.error('👤 [yourpage] 加载用户信息失败:', error);
       // 不显示错误提示，避免影响用户体验
     }
+  }
+
+  // 更新头像显示
+  async updateAvatarDisplay(avatarUrl: string | undefined) {
+    console.log('🖼️ [yourpage] 开始更新头像显示');
+    console.log('🖼️ [yourpage] 原始头像URL:', avatarUrl);
+    
+    if (avatarUrl && avatarUrl !== '/avatars/default.png' && avatarUrl !== '') {
+      // 如果有后端头像，使用后端头像
+      let processedAvatarUrl = avatarUrl;
+      
+      // 处理头像URL - 如果是相对路径，拼接完整URL
+      if (avatarUrl.startsWith('/')) {
+        const baseUrl = Config.getApiBaseUrl().replace('/api', '');
+        processedAvatarUrl = baseUrl + avatarUrl;
+        console.log('🖼️ [yourpage] 处理后的头像URL:', processedAvatarUrl);
+      }
+      
+      this.userAvatar = processedAvatarUrl;
+      console.log('🖼️ [yourpage] 头像更新成功');
+    } else {
+      // 使用默认头像
+      this.userAvatar = $r("app.media.image");
+      console.log('🖼️ [yourpage] 使用默认头像');
+    }
+  }
+
+  // 获取头像URL（用于显示）
+  getAvatarUrl(): Resource | string {
+    return this.userAvatar;
+  }
+
+  // 显示头像查看器
+  showAvatarViewerDialog() {
+    this.showAvatarViewer = true;
+  }
+
+  // 关闭头像查看器
+  closeAvatarViewer() {
+    this.showAvatarViewer = false;
   }
 
   // 异步加载用户统计信息（不阻塞页面显示）
@@ -210,28 +266,31 @@ export struct YourPage {
                   .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
                 
                 Row() {
-                  // 头像
-                  Image(this.userInfo?.userAvatar ? this.userInfo.userAvatar : $r("app.media.image"))
-                    .width(80)
-                    .height(80)
-                    .borderRadius(40)
-                    .margin({ top: 2, right: 20 })
-                    .backgroundColor('rgba(255,255,255,0.1)')
-                    .border({ width: 2, color: 'rgba(255,255,255,0.3)' })
-                    .scale({ x: this.avatarScale, y: this.avatarScale })
-                    .animation({
-                      duration: 120,
-                      curve: Curve.EaseInOut
-                    })
-                    .onClick(() => {
-                      this.avatarScale = 0.92;
-                      setTimeout(() => {
-                        this.avatarScale = 1.0;
-                        let uiContext: UIContext = this.getUIContext();
-                        let router = uiContext.getRouter();
-                        router.pushUrl({ url: 'pages/infopage' });
-                      }, 120);
-                    })
+                  // 头像 - 改为预览器样式显示
+                  Stack() {
+                    // 头像图片 - 大尺寸显示
+                    Image(this.getAvatarUrl())
+                      .width(120)
+                      .height(120)
+                      .borderRadius(60)
+                      .backgroundColor('rgba(255,255,255,0.1)')
+                      .border({ width: 3, color: 'rgba(255,255,255,0.3)' })
+                      .scale({ x: this.avatarScale, y: this.avatarScale })
+                      .animation({
+                        duration: 120,
+                        curve: Curve.EaseInOut
+                      })
+                      .objectFit(ImageFit.Cover)
+                      .onClick(() => {
+                        this.avatarScale = 0.92;
+                        setTimeout(() => {
+                          this.avatarScale = 1.0;
+                          this.showAvatarViewerDialog();
+                        }, 120);
+                      })
+                  }
+                  .margin({ top: 2, right: 20 })
+                  
                   // 名称和UID
                   Column() {
                     Text(this.yourname)
@@ -481,6 +540,78 @@ export struct YourPage {
       .width('100%')
       .height('100%')
       .scrollBar(BarState.Off)
+
+      // 头像查看器 - 全屏显示头像
+      if (this.showAvatarViewer) {
+        Stack({ alignContent: Alignment.Center }) {
+          // 半透明背景
+          Column() {
+            Blank()
+              .width('100%')
+              .height('100%')
+              .backgroundColor('#000000')
+              .opacity(0.9)
+              .onClick(() => this.closeAvatarViewer())
+          }
+          .width('100%')
+          .height('100%')
+
+          // 头像查看器内容
+          Column() {
+            // 关闭按钮
+            Row() {
+              Button() {
+                Image($r('app.media.return'))
+                  .width(24)
+                  .height(24)
+                  .fillColor('#fff')
+              }
+              .width(40)
+              .height(40)
+              .backgroundColor('rgba(0,0,0,0.5)')
+              .borderRadius(20)
+              .onClick(() => this.closeAvatarViewer())
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.End)
+            .margin({ bottom: 20 })
+
+            // 大尺寸头像显示
+            Image(this.userAvatar)
+              .width(300)
+              .height(300)
+              .borderRadius(150)
+              .border({ width: 6, color: 'rgba(255,255,255,0.3)' })
+              .objectFit(ImageFit.Cover)
+              .margin({ bottom: 20 })
+
+            // 操作按钮
+            Row() {
+              Button('编辑头像')
+                .width(120)
+                .height(44)
+                .backgroundColor('rgba(255,255,255,0.2)')
+                .fontColor('#fff')
+                .borderRadius(22)
+                .onClick(() => {
+                  this.closeAvatarViewer();
+                  setTimeout(() => {
+                    let uiContext: UIContext = this.getUIContext();
+                    let router = uiContext.getRouter();
+                    router.pushUrl({ url: 'pages/infopage' });
+                  }, 300);
+                })
+            }
+            .justifyContent(FlexAlign.Center)
+          }
+          .width('90%')
+          .padding(24)
+        }
+        .width('100%')
+        .height('100%')
+        .position({ x: 0, y: 0 })
+        .zIndex(999)
+      }
     }
     .width('100%')
     .height('100%')
@@ -504,11 +635,13 @@ export struct YourPage {
           Column() {
             // 动态头部信息
             Row() {
-              Image(this.userInfo?.userAvatar ? this.userInfo.userAvatar : $r("app.media.image"))
+              // 动态中的头像显示 - 使用统一的方法
+              Image(this.getAvatarUrl())
                 .width(40)
                 .height(40)
                 .borderRadius(20)
                 .margin({ right: 12 })
+                .objectFit(ImageFit.Cover)
               
               Column() {
                 Text(this.yourname)
