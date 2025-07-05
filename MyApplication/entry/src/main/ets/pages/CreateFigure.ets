@@ -95,7 +95,7 @@ export struct CreateFigurePage {
       }
       .width('100%')
       .height(56)
-      .backgroundColor('#222')
+      .backgroundColor('rgba(255, 255, 255, 0.05)')
       .alignItems(VerticalAlign.Center)
       .padding({ left: 10 })
 
@@ -103,7 +103,7 @@ export struct CreateFigurePage {
       Column() {
         Text('形象参考图')
           .fontSize(16)
-          .fontColor('#fff')
+          .fontColor('#ffffff')
           .margin({ bottom: 8 })
         Column() {
           if (this.hasSelectedImage) {
@@ -139,19 +139,19 @@ export struct CreateFigurePage {
               Button('+')
                 .width(60).height(60)
                 .fontSize(36)
-                .fontColor('#888')
-                .backgroundColor('#222')
+                .fontColor('rgba(255, 255, 255, 0.6)')
+                .backgroundColor('rgba(255, 255, 255, 0.05)')
                 .borderRadius(16)
                 .onClick(() => this.selectReferenceImage())
               Text('(可选) 将基于上传的参考图生成基础形象')
                 .fontSize(12)
-                .fontColor('#888')
+                .fontColor('rgba(255, 255, 255, 0.6)')
                 .margin({ top: 8 })
             }
           }
         }
         .width('100%')
-        .backgroundColor('#232323')
+        .backgroundColor('rgba(255, 255, 255, 0.05)')
         .borderRadius(16)
         .padding(20)
       }
@@ -164,7 +164,7 @@ export struct CreateFigurePage {
         Row() {
           Text('形象描述')
             .fontSize(16)
-            .fontColor('#fff')
+            .fontColor('#ffffff')
           Blank()
           Button(this.isGenerating ? '生成中...' : '自动生成')
             .fontSize(13)
@@ -177,8 +177,8 @@ export struct CreateFigurePage {
         Column() {
           TextInput({ text: this.desc, placeholder: '（可选）添加形象的详细描述，如五官、动作、服饰、背景等' })
             .fontSize(14)
-            .fontColor('#fff')
-            .backgroundColor('#232323')
+            .fontColor('#ffffff')
+            .backgroundColor('rgba(255, 255, 255, 0.05)')
             .borderRadius(12)
             .height(60)
             .onChange((v: string) => {
@@ -186,7 +186,7 @@ export struct CreateFigurePage {
             })
         }
         .width('100%')
-        .backgroundColor('#232323')
+        .backgroundColor('rgba(255, 255, 255, 0.05)')
         .borderRadius(16)
         .padding(20)
       }
@@ -197,7 +197,7 @@ export struct CreateFigurePage {
       // 选择形象类型
       Text('选择形象类型')
         .fontSize(15)
-        .fontColor('#fff')
+        .fontColor('#ffffff')
         .alignSelf(ItemAlign.Start)
         .margin({ left: 20, bottom: 8 })
 
@@ -206,8 +206,8 @@ export struct CreateFigurePage {
           ListItem() {
             Button(type)
               .fontSize(15)
-              .fontColor(this.selectedFigureType === idx ? '#FFD700' : '#fff')
-              .backgroundColor(this.selectedFigureType === idx ? '#232323' : 'transparent')
+              .fontColor(this.selectedFigureType === idx ? '#FFD700' : '#ffffff')
+              .backgroundColor(this.selectedFigureType === idx ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)')
               .borderRadius(16)
               .onClick(() => {
                 this.selectedFigureType = idx;
@@ -227,6 +227,9 @@ export struct CreateFigurePage {
       // 新增：动态AI角色展示
       if (this.isLoadingRoles) {
         Text('AI角色加载中...')
+          .fontSize(14)
+          .fontColor('#ffffff')
+          .margin({ left: 20, bottom: 8 })
       }
 
       // 横向滑动9张图片
@@ -236,7 +239,6 @@ export struct CreateFigurePage {
             // 双击事件处理
             Column() {
               Image(role.avatarUrl).width(100).height(100).borderRadius(12)
-              Text(role.roleName).fontSize(12).maxLines(1)
             }
             .onClick(() => {
               const currentTime = Date.now();
@@ -274,8 +276,8 @@ export struct CreateFigurePage {
         .height(48)
         .fontSize(18)
         .fontWeight(FontWeight.Bold)
-        .backgroundColor(this.isGeneratingFigure ? '#666' : '#FFD700')
-        .fontColor('#222')
+        .backgroundColor(this.isGeneratingFigure ? 'rgba(255, 255, 255, 0.1)' : '#FFD700')
+        .fontColor(this.isGeneratingFigure ? 'rgba(255, 255, 255, 0.6)' : '#222')
         .borderRadius(24)
         .alignSelf(ItemAlign.Center)
         .enabled(!this.isGeneratingFigure)
@@ -284,7 +286,7 @@ export struct CreateFigurePage {
       Blank().height(30)
     }
     .width('100%')
-    .backgroundColor('#181818')
+    .backgroundColor('#0a0a1a')
     .height('100%')
   }
 

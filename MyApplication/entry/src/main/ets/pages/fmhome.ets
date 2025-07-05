@@ -54,6 +54,13 @@ export struct FMHomePage {
   @State isAutoPlaying: boolean = true // 自动播放状态
   private autoPlayTimer: number = -1 // 自动播放定时器
 
+  // 银河系动画状态
+  @State arcRotation: number = 0 // 圆弧旋转角度
+  @State starTwinkle: number = 0 // 星星闪烁效果
+  @State glowOpacity: number = 0.5 // 发光效果透明度
+  @State textOpacity: number = 0.8 // 文字透明度
+  @State nebulaOpacity: number = 0.3 // 星云透明度
+
   // 专栏理论高度（标题+内容+间距），可根据实际页面微调
   private sectionHeights: number[] = [320, 420, 420, 320]; // 仅示例，需根据实际内容微调
   private sectionSpacing: number = 40;
@@ -91,8 +98,8 @@ export struct FMHomePage {
       title: '今日心情',
       subtitle: '记录你的情绪状态',
       emoji: '😊',
-      backgroundColor: 'rgba(227, 242, 253, 0.9)',
-      textColor: '#1976D2',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      textColor: '#ffffff',
       description: '点击记录今天的心情，让AI更好地了解你'
     },
     {
@@ -100,8 +107,8 @@ export struct FMHomePage {
       title: '压力指数',
       subtitle: '了解你的压力水平',
       emoji: '😰',
-      backgroundColor: 'rgba(255, 243, 224, 0.9)',
-      textColor: '#F57C00',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      textColor: '#ffffff',
       description: '快速评估当前压力状态，获取缓解建议'
     },
     {
@@ -109,8 +116,8 @@ export struct FMHomePage {
       title: '正念练习',
       subtitle: '5分钟放松身心',
       emoji: '🧘‍♀️',
-      backgroundColor: 'rgba(232, 245, 232, 0.9)',
-      textColor: '#388E3C',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      textColor: '#ffffff',
       description: '通过正念冥想，找回内心的平静'
     }
   ];
@@ -123,8 +130,8 @@ export struct FMHomePage {
       tag: 'AI推荐', 
       author: 'AI助手',
       icon: '🤖',
-      iconColor: '#607D8B',
-      bgColor: 'rgba(236, 239, 241, 0.9)'
+      iconColor: '#ffffff',
+      bgColor: 'rgba(255, 255, 255, 0.05)'
     },
     { 
       title: '今日心理健康工具', 
@@ -132,8 +139,8 @@ export struct FMHomePage {
       tag: '工具', 
       author: '心理专家',
       icon: '🧰',
-      iconColor: '#4CAF50',
-      bgColor: 'rgba(232, 245, 232, 0.9)'
+      iconColor: '#ffffff',
+      bgColor: 'rgba(255, 255, 255, 0.05)'
     },
     { 
       title: '情绪管理课程', 
@@ -141,8 +148,8 @@ export struct FMHomePage {
       tag: '课程', 
       author: '情绪专家',
       icon: '📚',
-      iconColor: '#9C27B0',
-      bgColor: 'rgba(243, 229, 245, 0.9)'
+      iconColor: '#ffffff',
+      bgColor: 'rgba(255, 255, 255, 0.05)'
     },
   ];
 
@@ -177,8 +184,8 @@ export struct FMHomePage {
       tag: '深度', 
       author: '分析师',
       icon: '🔍',
-      iconColor: '#1976D2',
-      bgColor: 'rgba(227, 242, 253, 0.9)'
+      iconColor: '#ffffff',
+      bgColor: 'rgba(255, 255, 255, 0.05)'
     },
     { 
       title: 'Vol.02 《技术分享》', 
@@ -186,8 +193,8 @@ export struct FMHomePage {
       tag: '技术', 
       author: '技术员',
       icon: '💻',
-      iconColor: '#4CAF50',
-      bgColor: 'rgba(232, 245, 232, 0.9)'
+      iconColor: '#ffffff',
+      bgColor: 'rgba(255, 255, 255, 0.05)'
     },
     { 
       title: 'Vol.03 《行业观察》', 
@@ -195,39 +202,43 @@ export struct FMHomePage {
       tag: '观察', 
       author: '观察者',
       icon: '📊',
-      iconColor: '#FF9800',
-      bgColor: 'rgba(255, 243, 224, 0.9)'
+      iconColor: '#ffffff',
+      bgColor: 'rgba(255, 255, 255, 0.05)'
     }
   ];
 
-  // AI今日推荐内容（可扩展为动态AI推荐）
-  private aiRecommend: AIRecommend = {
-    title: 'AI今日推荐：正念冥想5分钟',
-    desc: '放松身心，缓解压力，开启美好一天',
-    tag: 'AI推荐'
-  };
-  // 工具区内容 - 仅包含冥想练习、呼吸训练、压力评估
-  private toolList: ToolItem[] = [
-    { 
-      title: '冥想练习', 
-      desc: '正念冥想，放松身心', 
-      color: '#4CAF50',
-      bgColor: 'rgba(232, 245, 232, 0.9)',
+  private toolItems: ToolItem[] = [
+    {
+      icon: '🎵',
+      title: '音乐治疗',
+      desc: '通过音乐缓解压力',
+      color: '#ffffff',
+      bgColor: 'rgba(255, 255, 255, 0.05)',
+      route: 'pages/fm_musicBegin'
+    },
+    {
+      icon: '🧘‍♀️',
+      title: '冥想练习',
+      desc: '正念冥想指导',
+      color: '#ffffff',
+      bgColor: 'rgba(255, 255, 255, 0.05)',
       route: 'pages/fm_meditation'
     },
-    { 
-      title: '呼吸训练', 
-      desc: '科学呼吸，缓解焦虑', 
-      color: '#00BCD4',
-      bgColor: 'rgba(224, 242, 241, 0.9)',
-      route: 'pages/fm_breathing'
+    {
+      icon: '📝',
+      title: '情绪日记',
+      desc: '记录每日情绪',
+      color: '#ffffff',
+      bgColor: 'rgba(255, 255, 255, 0.05)',
+      route: 'pages/fm_message'
     },
-    { 
-      title: '压力评估', 
-      desc: '评估压力指数，科学调节', 
-      color: '#FF9800',
-      bgColor: 'rgba(255, 243, 224, 0.9)',
-      route: 'pages/fm_assessment'
+    {
+      icon: '💬',
+      title: 'AI对话',
+      desc: '与AI倾诉心事',
+      color: '#ffffff',
+      bgColor: 'rgba(255, 255, 255, 0.05)',
+      route: 'pages/chat'
     }
   ];
 
@@ -240,10 +251,10 @@ export struct FMHomePage {
     // 手动切换时暂停自动轮播
     this.stopAutoPlay()
     
-    // 先淡出
-    animateTo({ duration: 200, curve: Curve.EaseOut }, () => {
+    // 先淡出并移动
+    animateTo({ duration: 300, curve: Curve.EaseOut }, () => {
       this.emotionCardOpacity = 0;
-      this.emotionCardTranslateX = direction === 'left' ? -20 : 20;
+      this.emotionCardTranslateX = direction === 'left' ? -30 : 30;
     })
     
     setTimeout(() => {
@@ -255,14 +266,14 @@ export struct FMHomePage {
       }
       
       // 重置位置
-      this.emotionCardTranslateX = direction === 'left' ? 20 : -20;
+      this.emotionCardTranslateX = direction === 'left' ? 30 : -30;
       
-      // 再淡入
-      animateTo({ duration: 200, curve: Curve.EaseIn }, () => {
+      // 再淡入并回到中心
+      animateTo({ duration: 300, curve: Curve.EaseIn }, () => {
         this.emotionCardOpacity = 1.0;
         this.emotionCardTranslateX = 0;
       })
-    }, 200)
+    }, 300)
   }
 
   // 开始自动轮播
@@ -271,7 +282,7 @@ export struct FMHomePage {
     this.isAutoPlaying = true
     this.autoPlayTimer = setInterval(() => {
       this.switchEmotionCard('right')
-    }, 4000) // 每4秒切换一次
+    }, 3000) // 每3秒切换一次，更频繁
   }
 
   // 停止自动轮播
@@ -294,7 +305,9 @@ export struct FMHomePage {
 
   // 页面生命周期
   aboutToAppear() {
-    this.startAutoPlay();
+    this.startGalaxyAnimations()
+    this.startAutoPlay()
+    this.startGreetingAnimation()
     this.fetchRandomSongs();
   }
 
@@ -334,629 +347,501 @@ export struct FMHomePage {
 
   build() {
     Stack() {
-      // 渐变背景
-      Column() {
-        Blank().width('100%').height('100%')
-          .linearGradient({
-            direction: GradientDirection.Bottom,
-            colors: [['#1a1a2e', 0.0], ['#16213e', 0.3], ['#0f3460', 0.7], ['#533483', 1.0]]
-          })
-      }
-      .width('100%')
-      .height('100%')
-      
-      // 装饰性背景元素
-      Column() {
-        // 顶部装饰元素
-        Row() {
-          Image($r('app.media.deroration_1'))
-            .width(200)
-            .height(200)
-            .opacity(0.1)
-            .position({ x: -100, y: -50 })
-          Image($r('app.media.deroration_2'))
-            .width(150)
-            .height(150)
-            .opacity(0.08)
-            .position({ x: 300, y: -30 })
-        }
+      // 深色渐变背景 - 改为纯黑色主题
+      Column()
         .width('100%')
-        .height(60)
-        
-        Blank().layoutWeight(1)
-        
-        // 底部装饰元素
-        Row() {
-          Image($r('app.media.deroration_3'))
-            .width(180)
-            .height(180)
-            .opacity(0.08)
-            .position({ x: -80, y: 20 })
-          Image($r('app.media.deroration_4'))
-            .width(120)
-            .height(120)
-            .opacity(0.1)
-            .position({ x: 320, y: 40 })
-        }
-        .width('100%')
-        .height(80)
-      }
-      .width('100%')
-      .height('100%')
-      .position({ x: 0, y: 0 })
-      .zIndex(1)
+        .height('100%')
+        .linearGradient({
+          direction: GradientDirection.Bottom,
+          colors: [['#000000', 0.0], ['#0a0a0a', 0.5], ['#1a1a1a', 1.0]]
+        })
       
-      // 主体内容
-      Column() {
-        // 顶部AI温馨问候
-        Row() {
-          Text(this.greetings[this.greetingIndex])
-            .fontSize(18)
-            .fontColor('#fff')
-            .fontWeight(FontWeight.Bold)
-            .margin({ left: 16, top: 12, bottom: 8 })
-            .layoutWeight(1)
-            .opacity(this.greetingAnimOpacity)
-            .translate({ x: 0, y: this.greetingAnimTranslateY })
-          Text('换一句')
-            .fontSize(15)
-            .fontColor('rgba(255,255,255,0.6)')
-            .margin({ right: 16 })
-            .onClick(() => {
-              let newIndex = this.greetingIndex
-              while (newIndex === this.greetingIndex) {
-                newIndex = Math.floor(Math.random() * this.greetings.length)
-              }
-              // 先淡出和下移
-              animateTo({ duration: 180, curve: Curve.EaseOut }, () => {
-                this.greetingAnimOpacity = 0;
-                this.greetingAnimTranslateY = 20;
+      // 旋转的圆弧背景 - 改为黑色系装饰
+      Stack() {
+        // 多个同心圆弧轨道
+        ForEach([0, 1, 2, 3], (index: number) => {
+          Stack() {
+            // 圆弧轨道 - 改为深灰色
+            Column()
+              .width(250 + index * 60)
+              .height(250 + index * 60)
+              .borderRadius((250 + index * 60) / 2)
+              .border({ width: 1, color: `rgba(64, 64, 64, ${0.3 - index * 0.05})` })
+              .position({ x: '50%', y: '50%' })
+              .translate({ x: -(250 + index * 60) / 2, y: -(250 + index * 60) / 2 })
+            
+            // 旋转的圆弧点 - 改为白色系
+            Column()
+              .width(6)
+              .height(6)
+              .backgroundColor(`rgba(255, 255, 255, ${0.6 - index * 0.1})`)
+              .borderRadius(3)
+              .position({ x: '50%', y: '50%' })
+              .translate({ 
+                x: -3 + Math.cos((this.arcRotation + index * 90) * Math.PI / 180) * (125 + index * 30),
+                y: -3 + Math.sin((this.arcRotation + index * 90) * Math.PI / 180) * (125 + index * 30)
               })
-              setTimeout(() => {
-                this.greetingIndex = newIndex;
-                // 再淡入和上移
-                animateTo({ duration: 220, curve: Curve.EaseIn }, () => {
-                  this.greetingAnimOpacity = 1.0;
-                  this.greetingAnimTranslateY = 0;
-                })
-              }, 180)
-            })
-        }
-        .width('100%')
+          }
+        })
         
-        // 顶部搜索栏
-        Row() {
-          TextInput({ placeholder: '系统' })
-            .width('90%')
-            .height(40)
-            .backgroundColor('rgba(255,255,255,0.1)')
-            .fontColor('#fff')
-            .borderRadius(20)
-            .padding({ left: 20 })
-            .border({ width: 1, color: 'rgba(255,255,255,0.2)' })
-        }
-        .width('100%')
-        .padding({ top: 4, bottom: 8 })
-
-        // 分类Tab - 均匀分布
-        Row() {
-          ForEach(this.tabs, (tab: string, idx: number) => {
-            Column() {
-              Text(tab)
-                .fontSize(16)
-                .fontColor(this.activeTab === idx ? '#fff' : 'rgba(255,255,255,0.6)')
-                .fontWeight(this.activeTab === idx ? FontWeight.Bold : FontWeight.Normal)
-              if (this.activeTab === idx) {
-                Blank().height(2).width(24).backgroundColor('#0D9FFB').margin({ top: 2 })
-              }
-            }
-            .onClick(() => { 
-              this.activeTab = idx
-              this.scrollToSection(idx)
+        // 外圈装饰点 - 改为银色系
+        ForEach([0, 1, 2, 3, 4, 5], (index: number) => {
+          Column()
+            .width(6)
+            .height(6)
+            .backgroundColor(`rgba(192, 192, 192, ${0.4 - index * 0.05})`)
+            .borderRadius(3)
+            .position({ x: '50%', y: '50%' })
+            .translate({ 
+              x: -3 + Math.cos((this.arcRotation * 0.5 + index * 60) * Math.PI / 180) * 120,
+              y: -3 + Math.sin((this.arcRotation * 0.5 + index * 60) * Math.PI / 180) * 120
             })
-            .layoutWeight(1)
-            .justifyContent(FlexAlign.Center)
-          }, (tab: string) => tab)
+        })
+      }
+      .width('100%')
+      .height('100%')
+      
+      // 主要内容区域
+      Column() {
+        // 顶部问候语
+        Stack() {
+          // 问候语卡片背景发光效果
+          Column()
+            .width('100%')
+            .height('auto')
+            .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.03})`)
+            .borderRadius(16)
+            .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
+          
+          Text(this.greetings[this.greetingIndex])
+            .fontSize(16)
+            .fontColor('#ffffff')
+            .opacity(this.greetingAnimOpacity)
+            .translate({ y: this.greetingAnimTranslateY })
+            .animation({
+              duration: 500,
+              curve: Curve.EaseInOut
+            })
+            .textAlign(TextAlign.Center)
+            .padding({ top: 20, bottom: 20, left: 20, right: 20 })
         }
         .width('100%')
-        .padding({ left: 16, right: 16, bottom: 8 })
+        .backgroundColor('rgba(255, 255, 255, 0.03)')
+        .borderRadius(16)
+        .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+        .margin({ top: 20, left: 16, right: 16, bottom: 16 })
+        .shadow({ radius: 12, color: '#00000030', offsetX: 0, offsetY: 4 })
 
-        // 内容区域 - 垂直滚动
-        Scroll(this.scrollController) {
+        // 情绪卡片区域
+        Stack() {
+          // 情绪卡片背景发光效果
+          Column()
+            .width('100%')
+            .height('auto')
+            .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+            .borderRadius(20)
+            .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
+          
           Column() {
-            // Banner - 情绪卡片轮播
-            Column() {
-              Blank().height(15)
-              // 情绪卡片轮播区域
-              Stack() {
-                // 当前情绪卡片
-                Column() {
-                  Row() {
-                    // 左侧切换按钮
-                    Button('‹')
-                      .fontSize(24)
-                      .fontColor(this.emotionCards[this.currentEmotionIndex].textColor)
-                      .backgroundColor(this.emotionCards[this.currentEmotionIndex].backgroundColor)
-                      .borderRadius(20)
-                      .width(40)
-                      .height(40)
-                      .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 2 })
-                      .onClick(() => this.switchEmotionCard('left'))
-                    
-                    // 情绪卡片内容
-                    Column() {
-                      Row() {
-                        Text(this.emotionCards[this.currentEmotionIndex].emoji)
-                          .fontSize(32)
-                          .margin({ right: 12 })
-                        Column() {
-                          Text(this.emotionCards[this.currentEmotionIndex].title)
-                            .fontSize(18)
-                            .fontWeight(FontWeight.Bold)
-                            .fontColor(this.emotionCards[this.currentEmotionIndex].textColor)
-                          Text(this.emotionCards[this.currentEmotionIndex].subtitle)
-                            .fontSize(14)
-                            .fontColor(this.emotionCards[this.currentEmotionIndex].textColor)
-                            .opacity(0.8)
-                        }
-                        .layoutWeight(1)
-                      }
-                      .margin({ bottom: 8 })
-                      Text(this.emotionCards[this.currentEmotionIndex].description)
-                        .fontSize(13)
-                        .fontColor(this.emotionCards[this.currentEmotionIndex].textColor)
-                        .opacity(0.7)
-                        .textAlign(TextAlign.Start)
-                    }
-                    .layoutWeight(1)
-                    .margin({ left: 16, right: 16 })
-                    
-                    // 右侧切换按钮
-                    Button('›')
-                      .fontSize(24)
-                      .fontColor(this.emotionCards[this.currentEmotionIndex].textColor)
-                      .backgroundColor(this.emotionCards[this.currentEmotionIndex].backgroundColor)
-                      .borderRadius(20)
-                      .width(40)
-                      .height(40)
-                      .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 2 })
-                      .onClick(() => this.switchEmotionCard('right'))
-                  }
-                  .width('100%')
-                  .alignItems(VerticalAlign.Center)
-                }
-                .backgroundColor(this.emotionCards[this.currentEmotionIndex].backgroundColor)
-                .borderRadius(16)
-                .padding(20)
-                .width('100%')
-                .height(120)
-                .opacity(this.emotionCardOpacity)
-                .translate({ x: this.emotionCardTranslateX, y: 0 })
-                .shadow({ radius: 8, color: 'rgba(0,0,0,0.2)', offsetX: 0, offsetY: 4 })
-                .onClick(() => {
-                  // 根据当前情绪卡片执行相应操作
-                  switch(this.currentEmotionIndex) {
-                    case 0:
-                      // 跳转到情绪记录页面
-                      console.log('跳转到情绪记录页面')
-                      break
-                    case 1:
-                      // 跳转到压力测试页面
-                      console.log('跳转到压力测试页面')
-                      break
-                    case 2:
-                      // 跳转到正念练习页面
-                      console.log('跳转到正念练习页面')
-                      break
-                  }
-                })
-              }
-              .width('100%')
-              
-              // 指示点和控制按钮
-              Row() {
-                // 指示点
-                Row() {
-                  ForEach(this.emotionCards, (card: EmotionCard, idx: number) => {
-                    Blank()
-                      .width(idx === this.currentEmotionIndex ? 24 : 8)
-                      .height(8)
-                      .backgroundColor(idx === this.currentEmotionIndex ? '#0D9FFB' : 'rgba(255,255,255,0.3)')
-                      .borderRadius(4)
-                      .margin({ right: 4 })
-                      .animation({
-                        duration: 300,
-                        curve: Curve.EaseInOut
-                      })
-                      .onClick(() => {
-                        if (idx !== this.currentEmotionIndex) {
-                          const direction = idx > this.currentEmotionIndex ? 'right' : 'left'
-                          this.switchEmotionCard(direction)
-                        }
-                      })
-                  }, (card: EmotionCard) => card.id.toString())
-                }
-                .layoutWeight(1)
-                
-                // 播放/暂停按钮
-                Button(this.isAutoPlaying ? '⏸' : '▶')
-                  .fontSize(16)
-                  .fontColor('#fff')
-                  .backgroundColor('rgba(255,255,255,0.2)')
-                  .borderRadius(12)
-                  .width(24)
-                  .height(24)
-                  .margin({ right: 8 })
-                  .onClick(() => this.toggleAutoPlay())
-              }
-              .margin({ top: 12, bottom: 8 })
-              .width('100%')
-              .justifyContent(FlexAlign.SpaceBetween)
-              .alignItems(VerticalAlign.Center)
-            }
-            .width('100%')
-            .height(200) // 固定高度
-            .padding({ left: 16, right: 16, bottom: 0 })
-
-            // AI今日推荐卡片
-            Column() {
-              Row() {
-                Text(this.aiRecommend.tag)
-                  .fontColor('#fff')
-                  .fontSize(12)
-                  .backgroundColor('#0D9FFB')
-                  .borderRadius(8)
-                  .padding({ left: 8, right: 8, top: 2, bottom: 2 })
-                  .margin({ right: 8 })
-                Text(this.aiRecommend.title)
-                  .fontColor('#fff')
-                  .fontSize(16)
+            Text('今日心情')
+              .fontSize(20)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#ffffff')
+              .opacity(this.textOpacity)
+              .margin({ top: 16, bottom: 12 })
+            
+            // 情绪卡片 - 逐一展示
+            Stack() {
+              // 当前显示的情绪卡片
+              Column() {
+                Text(this.emotionCards[this.currentEmotionIndex].emoji)
+                  .fontSize(32)
+                  .margin({ bottom: 8 })
+                Text(this.emotionCards[this.currentEmotionIndex].title)
+                  .fontSize(14)
                   .fontWeight(FontWeight.Bold)
+                  .fontColor('#ffffff')
+                  .opacity(this.textOpacity)
+                  .margin({ bottom: 4 })
+                Text(this.emotionCards[this.currentEmotionIndex].subtitle)
+                  .fontSize(12)
+                  .fontColor('rgba(255, 255, 255, 0.7)')
+                  .opacity(this.textOpacity)
               }
-              .margin({ bottom: 4 })
-              Text(this.aiRecommend.desc)
-                .fontColor('rgba(255,255,255,0.8)')
-                .fontSize(14)
-                .margin({ bottom: 8 })
+              .width('100%')
+              .backgroundColor('rgba(255, 255, 255, 0.1)')
+              .borderRadius(12)
+              .padding({ top: 16, bottom: 16 })
+              .border({ width: 1, color: 'rgba(255, 255, 255, 0.2)' })
+              .opacity(this.emotionCardOpacity)
+              .translate({ x: this.emotionCardTranslateX })
+              .animation({
+                duration: 200,
+                curve: Curve.EaseInOut
+              })
+              .onClick(() => this.switchEmotionCard('right'))
+              
+              // 指示器
               Row() {
-                Button('和AI聊聊')
-                  .fontColor('#fff')
-                  .backgroundColor('#0D9FFB')
-                  .borderRadius(16)
-                  .fontSize(15)
-                  .padding({ left: 18, right: 18, top: 6, bottom: 6 })
-                  .onClick(() => {
-                    // TODO: 跳转到AI陪聊页面
-                  })
+                ForEach(this.emotionCards, (card: EmotionCard, index: number) => {
+                  Column()
+                    .width(6)
+                    .height(6)
+                    .backgroundColor(this.currentEmotionIndex === index ? '#ffffff' : 'rgba(255, 255, 255, 0.3)')
+                    .borderRadius(3)
+                    .margin({ right: 4 })
+                })
               }
-            }
-            .backgroundColor('rgba(227, 242, 253, 0.2)')
-            .borderRadius(16)
-            .padding(16)
-            .margin({ top: 8, bottom: 20 })
-            .border({ width: 1, color: 'rgba(255,255,255,0.1)' })
-
-            // 精选区
-            this.BuildSection('精选推荐', this.selectedItems)
-            // 音乐电台区
-            Column() {
-              Text('音乐电台')
-                .fontColor('#0D9FFB')
-                .fontSize(18)
-                .fontWeight(FontWeight.Bold)
-                .margin({ bottom: 16, top: 24 })
-              ForEach(this.randomSongs, (song: MusicDetailVO, idx: number) => {
-                Row() {
-                  Image(song.coverUrl)
-                    .width(56).height(56)
-                    .borderRadius(8)
-                    .margin({ right: 12 })
-                  Column() {
-                    Text(song.name)
-                      .fontColor('#fff')
-                      .fontSize(16)
-                      .fontWeight(FontWeight.Bold)
-                      .maxLines(1)
-                      .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    Text(song.artist)
-                      .fontColor('rgba(255,255,255,0.7)')
-                      .fontSize(13)
-                      .margin({ top: 2 })
-                  }
-                  .layoutWeight(1)
-                }
-                .width('100%')
-                .padding({ top: 8, bottom: 8 })
-                .backgroundColor('transparent')
-                .borderRadius(16)
-                .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 2 })
-                .onClick(() => {
-                  const songDetail = this.musicDetailCache[song.musicId] || song;
-                  router.pushUrl({
-                    url: 'pages/music_cloud_style',
-                    params: {
-                      musicId: song.musicId,
-                      musicTitle: song.name,
-                      musicArtist: song.artist,
-                      musicDetail: songDetail,
-                      songs: this.randomSongs,      // 传递三首歌
-                      currentIndex: idx             // 当前点击的索引
-                    }
-                  })
-                })
-              }, (song: MusicDetailVO) => song.name)
-            }
-            // 专栏区
-            this.BuildSection('专栏文章', this.columnItems)
-            // 工具区
-            Column() {
-              Text('心理健康工具')
-                .fontColor('#0D9FFB')
-                .fontSize(18)
-                .fontWeight(FontWeight.Bold)
-                .margin({ bottom: 16, top: 24 })
-              // 工具区纵向列表展示
-              ForEach(this.toolList, (tool: ToolItem, idx: number) => {
-                Row() {
-                  // 工具图标区域
-                  Row() {
-                    Text(this.getToolIcon(tool.title))
-                      .fontSize(28)
-                      .fontColor(tool.color)
-                  }
-                  .width(56)
-                  .height(56)
-                  .backgroundColor(tool.bgColor)
-                  .borderRadius(8)
-                  .justifyContent(FlexAlign.Center)
-                  .alignItems(VerticalAlign.Center)
-                  .margin({ right: 12 })
-                  // 工具信息
-                  Column() {
-                    Text(tool.title)
-                      .fontColor('#fff')
-                      .fontSize(16)
-                      .fontWeight(FontWeight.Bold)
-                      .maxLines(1)
-                      .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    Text(tool.desc)
-                      .fontColor('rgba(255,255,255,0.7)')
-                      .fontSize(13)
-                      .margin({ top: 2 })
-                  }
-                  .layoutWeight(1)
-                }
-                .width('100%')
-                .padding({ top: 8, bottom: 8 })
-                .backgroundColor('transparent')
-                .borderRadius(16)
-                .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 2 })
-                .onClick(() => {
-                  console.log('点击了工具:', tool.title)
-                  if (tool.route) {
-                    router.pushUrl({
-                      url: tool.route,
-                      params: {
-                        toolName: tool.title,
-                        toolType: this.getToolType(tool.title)
-                      }
-                    })
-                  }
-                })
-              }, (tool: ToolItem) => tool.title)
+              .position({ x: '50%', y: '100%' })
+              .translate({ x: -15, y: 8 })
             }
             .width('100%')
-            .margin({ bottom: 40 })
+            .padding({ left: 16, right: 16, bottom: 16 })
           }
           .width('100%')
-          .padding({ left: 16, right: 16, bottom: 80 })
+          .backgroundColor('rgba(255, 255, 255, 0.03)')
+          .borderRadius(20)
+          .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+          .margin({ left: 16, right: 16, bottom: 16 })
+          .shadow({ radius: 12, color: '#00000030', offsetX: 0, offsetY: 4 })
+        }
+
+        // 标签栏
+        Row() {
+          ForEach(this.tabs, (tab: string, index: number) => {
+            Text(tab)
+              .fontSize(16)
+              .fontWeight(this.activeTab === index ? FontWeight.Bold : FontWeight.Normal)
+              .fontColor(this.activeTab === index ? '#ffffff' : 'rgba(255, 255, 255, 0.6)')
+              .opacity(this.textOpacity)
+              .padding({ left: 20, right: 20, top: 12, bottom: 12 })
+              .backgroundColor(this.activeTab === index ? 'rgba(255, 255, 255, 0.1)' : 'transparent')
+              .borderRadius(20)
+              .onClick(() => {
+                this.activeTab = index;
+              })
+          })
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.SpaceEvenly)
+        .padding({ left: 16, right: 16, bottom: 16 })
+
+        // 内容区域
+        Column() {
+          if (this.activeTab === 0) {
+            // 精选内容
+            this.buildSelectedContent()
+          } else if (this.activeTab === 1) {
+            // 音乐内容
+            this.buildMusicContent()
+          } else if (this.activeTab === 2) {
+            // 专栏内容
+            this.buildColumnContent()
+          } else if (this.activeTab === 3) {
+            // 工具内容
+            this.buildToolContent()
+          }
         }
         .layoutWeight(1)
-        .scrollBar(BarState.Off)
-        .edgeEffect(EdgeEffect.Spring)
+        .width('100%')
       }
       .width('100%')
       .height('100%')
-      .zIndex(2)
     }
     .width('100%')
     .height('100%')
   }
 
-  // 滚动到指定专栏的方法（定值累加法）
-  scrollToSection(index: number) {
-    let offset = this.searchBarHeight + this.tabBarHeight + this.bannerHeight;
-    for (let i = 0; i < index; i++) {
-      offset += this.sectionHeights[i] + this.sectionSpacing;
-    }
-    offset -= this.targetOffset;
-    this.scrollController.scrollTo({ xOffset: 0, yOffset: offset });
-  }
-
+  // 构建精选内容
   @Builder
-  BuildSection(title: string, items: SectionItem[]) {
-    Column() {
-      Text(title)
-        .fontColor('#0D9FFB')
-        .fontSize(18)
-        .fontWeight(FontWeight.Bold)
-        .margin({ bottom: 16, top: 24 })
-      ForEach(items, (item: SectionItem, idx: number) => {
-        Row() {
-          // 如果有图片就显示图片，否则显示图标或默认占位符
-          if (item.image) {
-            Image(item.image)
-              .width(56)
-              .height(56)
-              .borderRadius(8)
-              .objectFit(ImageFit.Cover)
-          } else if (item.icon) {
-            // 显示图标
+  buildSelectedContent() {
+    List() {
+      ForEach(this.selectedItems, (item: SectionItem) => {
+        ListItem() {
+          Stack() {
+            // 卡片背景发光效果
+            Column()
+              .width('100%')
+              .height('auto')
+              .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+              .borderRadius(16)
+              .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
+            
             Row() {
-              Text(item.icon)
-                .fontSize(24)
-                .fontColor(item.iconColor || '#666')
+              if (item.icon) {
+                Text(item.icon)
+                  .fontSize(24)
+                  .fontColor(item.iconColor)
+                  .margin({ right: 12 })
+              }
+              Column() {
+                Text(item.title)
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#ffffff')
+                  .opacity(this.textOpacity)
+                  .margin({ bottom: 4 })
+                Text(item.subtitle)
+                  .fontSize(14)
+                  .fontColor('rgba(255, 255, 255, 0.7)')
+                  .opacity(this.textOpacity)
+                  .margin({ bottom: 8 })
+                Row() {
+                  Text(item.tag)
+                    .fontSize(12)
+                    .fontColor('#ffffff')
+                    .backgroundColor('rgba(255, 255, 255, 0.1)')
+                    .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                    .borderRadius(8)
+                    .margin({ right: 8 })
+                  Text(`@${item.author}`)
+                    .fontSize(12)
+                    .fontColor('rgba(255, 255, 255, 0.6)')
+                }
+              }
+              .layoutWeight(1)
             }
-            .width(56)
-            .height(56)
-            .backgroundColor(item.bgColor || 'rgba(245,245,245,0.9)')
-            .borderRadius(8)
-            .justifyContent(FlexAlign.Center)
-            .alignItems(VerticalAlign.Center)
-          } else {
-            Blank().width(56).height(56).backgroundColor('rgba(227, 242, 253, 0.9)').borderRadius(8)
+            .padding({ left: 16, right: 16, top: 16, bottom: 16 })
           }
-          Column() {
-            Text(item.title)
-              .fontColor('#fff')
-              .fontSize(16)
-              .fontWeight(FontWeight.Bold)
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-            Text(item.subtitle)
-              .fontColor('rgba(255,255,255,0.7)')
-              .fontSize(13)
-              .margin({ top: 2 })
-            Row() {
-              Text('《' + item.tag + '》')
-                .fontColor('#0D9FFB')
-                .fontSize(12)
-                .backgroundColor('rgba(227, 242, 253, 0.3)')
-                .borderRadius(6)
-                .padding({ left: 8, right: 8, top: 2, bottom: 2 })
-              Text(item.author)
-                .fontColor('rgba(255,255,255,0.6)')
-                .fontSize(12)
-                .margin({ left: 8 })
-            }
-            .margin({ top: 4 })
-          }
-          .margin({ left: 12 })
-          .layoutWeight(1)
+          .width('100%')
+          .backgroundColor('rgba(255, 255, 255, 0.03)')
+          .borderRadius(16)
+          .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+          .margin({ left: 16, right: 16, bottom: 12 })
+          .shadow({ radius: 8, color: '#00000020', offsetX: 0, offsetY: 2 })
         }
-        .width('100%')
-        .padding({ top: 8, bottom: 8 })
-        .backgroundColor('transparent')
-        .borderRadius(16)
-        .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 2 })
-        .onClick(() => {
-          console.log('点击了:', item.title)
-          // 如果是音乐电台模块，跳转到音乐播放界面
-          if (title === '音乐电台') {
-            // 根据音乐类型设置不同的音乐ID
-            let musicId = '1824045033'; // 默认音乐ID
-            if (item.tag === '古典') {
-              musicId = '1824045034'; // 古典音乐ID
-            } else if (item.tag === '轻音') {
-              musicId = '1824045035'; // 轻音乐ID
-            }
-            
-            router.pushUrl({
-              url: 'pages/music_cloud_style',
-              params: {
-                musicId: musicId,
-                musicTitle: item.title,
-                musicArtist: item.author
-              }
-            });
-          }
-          // 如果是专栏文章模块，跳转到专栏页面
-          else if (title === '专栏文章') {
-            let columnType = 'depth'; // 默认深度解析
-            if (item.tag === '技术') {
-              columnType = 'tech';
-            } else if (item.tag === '观察') {
-              columnType = 'observe';
-            }
-            
-            router.pushUrl({
-              url: 'pages/fm_columnpage',
-              params: {
-                columnId: (idx + 1).toString(),
-                columnName: item.title,
-                columnAuthor: item.author,
-                columnType: columnType
-              }
-            });
-          }
-          // 如果是精选推荐模块，根据内容类型跳转到相应页面
-          else if (title === '精选推荐') {
-            switch(item.tag) {
-              case 'AI推荐':
-                // 跳转到AI聊天页面，使用个性化推荐身份
-                router.pushUrl({
-                  url: 'pages/chat',
-                  params: {
-                    identity: 'emotionInspire',
-                    title: 'AI个性化推荐',
-                    description: '基于你的情绪状态，为你推荐最适合的心理健康内容'
-                  }
-                });
-                break;
-              case '工具':
-                // 跳转到心理健康工具页面
-                router.pushUrl({
-                  url: 'pages/fm_assessment',
-                  params: {
-                    toolType: 'comprehensive',
-                    title: '心理健康工具集'
-                  }
-                });
-                break;
-              case '课程':
-                // 跳转到情绪管理课程页面
-                router.pushUrl({
-                  url: 'pages/fm_meditation',
-                  params: {
-                    courseType: 'emotion_management',
-                    title: '情绪管理课程'
-                  }
-                });
-                break;
-              default:
-                // 默认跳转到AI聊天页面
-                router.pushUrl({
-                  url: 'pages/chat',
-                  params: {
-                    identity: 'default',
-                    title: item.title,
-                    description: item.subtitle
-                  }
-                });
-            }
-          }
-        })
-      }, (item: SectionItem) => item.title)
+      })
     }
     .width('100%')
-    .margin({ bottom: 40 })
+    .layoutWeight(1)
   }
 
-  // 获取工具图标的方法
-  private getToolIcon(title: string): string {
-    switch (title) {
-      case '冥想练习':
-        return '🧘‍♀️'
-      case '呼吸训练':
-        return '💨'
-      case '压力评估':
-        return '📊'
-      default:
-        return '🔧'
+  // 构建音乐内容
+  @Builder
+  buildMusicContent() {
+    List() {
+      ForEach(this.musicItems, (item: SectionItem) => {
+        ListItem() {
+          Stack() {
+            // 卡片背景发光效果
+            Column()
+              .width('100%')
+              .height('auto')
+              .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+              .borderRadius(16)
+              .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
+            
+            Row() {
+              if (item.image) {
+                Image(item.image)
+                  .width(80)
+                  .height(80)
+                  .borderRadius(12)
+                  .margin({ right: 12 })
+              }
+              Column() {
+                Text(item.title)
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#ffffff')
+                  .opacity(this.textOpacity)
+                  .margin({ bottom: 4 })
+                Text(item.subtitle)
+                  .fontSize(14)
+                  .fontColor('rgba(255, 255, 255, 0.7)')
+                  .opacity(this.textOpacity)
+                  .margin({ bottom: 8 })
+                Row() {
+                  Text(item.tag)
+                    .fontSize(12)
+                    .fontColor('#ffffff')
+                    .backgroundColor('rgba(255, 255, 255, 0.1)')
+                    .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                    .borderRadius(8)
+                    .margin({ right: 8 })
+                  Text(`@${item.author}`)
+                    .fontSize(12)
+                    .fontColor('rgba(255, 255, 255, 0.6)')
+                }
+              }
+              .layoutWeight(1)
+            }
+            .padding({ left: 16, right: 16, top: 16, bottom: 16 })
+          }
+          .width('100%')
+          .backgroundColor('rgba(255, 255, 255, 0.03)')
+          .borderRadius(16)
+          .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+          .margin({ left: 16, right: 16, bottom: 12 })
+          .shadow({ radius: 8, color: '#00000020', offsetX: 0, offsetY: 2 })
+        }
+      })
+    }
+    .width('100%')
+    .layoutWeight(1)
+  }
+
+  // 构建专栏内容
+  @Builder
+  buildColumnContent() {
+    List() {
+      ForEach(this.columnItems, (item: SectionItem) => {
+        ListItem() {
+          Stack() {
+            // 卡片背景发光效果
+            Column()
+              .width('100%')
+              .height('auto')
+              .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+              .borderRadius(16)
+              .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
+            
+            Row() {
+              if (item.icon) {
+                Text(item.icon)
+                  .fontSize(24)
+                  .fontColor(item.iconColor)
+                  .margin({ right: 12 })
+              }
+              Column() {
+                Text(item.title)
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#ffffff')
+                  .opacity(this.textOpacity)
+                  .margin({ bottom: 4 })
+                Text(item.subtitle)
+                  .fontSize(14)
+                  .fontColor('rgba(255, 255, 255, 0.7)')
+                  .opacity(this.textOpacity)
+                  .margin({ bottom: 8 })
+                Row() {
+                  Text(item.tag)
+                    .fontSize(12)
+                    .fontColor('#ffffff')
+                    .backgroundColor('rgba(255, 255, 255, 0.1)')
+                    .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                    .borderRadius(8)
+                    .margin({ right: 8 })
+                  Text(`@${item.author}`)
+                    .fontSize(12)
+                    .fontColor('rgba(255, 255, 255, 0.6)')
+                }
+              }
+              .layoutWeight(1)
+            }
+            .padding({ left: 16, right: 16, top: 16, bottom: 16 })
+          }
+          .width('100%')
+          .backgroundColor('rgba(255, 255, 255, 0.03)')
+          .borderRadius(16)
+          .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+          .margin({ left: 16, right: 16, bottom: 12 })
+          .shadow({ radius: 8, color: '#00000020', offsetX: 0, offsetY: 2 })
+        }
+      })
+    }
+    .width('100%')
+    .layoutWeight(1)
+  }
+
+  // 构建工具内容
+  @Builder
+  buildToolContent() {
+    Grid() {
+      ForEach(this.toolItems, (item: ToolItem) => {
+        GridItem() {
+          Stack() {
+            // 工具卡片背景发光效果
+            Column()
+              .width('100%')
+              .height('auto')
+              .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+              .borderRadius(16)
+              .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
+            
+            Column() {
+              Text(item.icon)
+                .fontSize(32)
+                .fontColor(item.color)
+                .margin({ bottom: 8 })
+              Text(item.title)
+                .fontSize(14)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#ffffff')
+                .opacity(this.textOpacity)
+                .margin({ bottom: 4 })
+              Text(item.desc)
+                .fontSize(12)
+                .fontColor('rgba(255, 255, 255, 0.7)')
+                .opacity(this.textOpacity)
+                .textAlign(TextAlign.Center)
+            }
+            .padding({ top: 16, bottom: 16 })
+          }
+          .width('100%')
+          .backgroundColor('rgba(255, 255, 255, 0.03)')
+          .borderRadius(16)
+          .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+          .shadow({ radius: 8, color: '#00000020', offsetX: 0, offsetY: 2 })
+          .onClick(() => this.onToolItemClick(item))
+        }
+      })
+    }
+    .columnsTemplate('1fr 1fr')
+    .columnsGap(12)
+    .rowsGap(12)
+    .width('100%')
+    .padding({ left: 16, right: 16 })
+    .layoutWeight(1)
+  }
+
+  // 工具项点击处理
+  private onToolItemClick(item: ToolItem) {
+    if (item.route) {
+      router.pushUrl({ url: item.route });
     }
   }
 
-  // 获取工具类型的方法
-  private getToolType(title: string): string {
-    switch (title) {
-      case '冥想练习':
-        return 'meditation'
-      case '呼吸训练':
-        return 'breathing'
-      case '压力评估':
-        return 'assessment'
-      default:
-        return 'tool'
-    }
+  // 银河系动画
+  private startGalaxyAnimations() {
+    // 圆弧旋转动画
+    setInterval(() => {
+      this.arcRotation += 1.5
+    }, 50)
+    
+    // 星星闪烁动画
+    setInterval(() => {
+      this.starTwinkle += 0.1
+    }, 100)
+    
+    // 发光效果动画
+    setInterval(() => {
+      this.glowOpacity = this.glowOpacity === 0.5 ? 0.8 : 0.5
+    }, 1200)
+    
+    // 文字透明度动画
+    setInterval(() => {
+      this.textOpacity = this.textOpacity === 0.8 ? 1.0 : 0.8
+    }, 1800)
+    
+    // 星云透明度动画
+    setInterval(() => {
+      this.nebulaOpacity = this.nebulaOpacity === 0.3 ? 0.6 : 0.3
+    }, 3000)
+  }
+
+  // 问候语动画
+  private startGreetingAnimation() {
+    setInterval(() => {
+      this.greetingAnimOpacity = 0;
+      this.greetingAnimTranslateY = -20;
+      
+      setTimeout(() => {
+        this.greetingIndex = Math.floor(Math.random() * this.greetings.length);
+        this.greetingAnimOpacity = 1;
+        this.greetingAnimTranslateY = 0;
+      }, 500);
+    }, 8000);
   }
 } 
