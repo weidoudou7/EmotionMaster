@@ -5,6 +5,10 @@ import { CreateConversationRequest } from '../common/types';
 import { ReadStateCode, TextReader, TextReaderIcon } from '@kit.SpeechKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { Context } from '@ohos.arkui.UIContext';
+import abilityAccessCtrl from '@ohos.abilityAccessCtrl';
+import SpeechRecognizerManager from '../utils/SpeechRecognizerManager'
+import { Permissions } from '@kit.AbilityKit'
+import { AudioCapturerManager } from '../utils/AudioCapturerManager'
 import { getUserId } from '../common/constants';
 
 // 新增：点赞图标接口
@@ -109,6 +113,17 @@ export struct Chat {
   };
 
   @State private createdAiRoleId: number = 0; // 新增：创建的AI角色ID
+  @State private isVoiceMode: boolean = false;
+  @State private isRecording: boolean = false;
+  @State private showRecordPanel: boolean = false;
+  @State private recordDuration: number = 0;
+  @State private isCancelRecord: boolean = false;
+  @State private touchStartY: number = 0;
+  @State private fileName: string = '';
+  @State private volumeLevel: number = 0; // 可选：用于声波动画
+  private recordTimer: number = 0;
+  private volumeTimer: number = 0;
+  @State private hasMicrophonePermission: boolean = false; // 新增：麦克风权限状态
 
   @State private showExtraInputs: boolean = false; // 控制空白栏显示
   @State private replySuggestions: string[] = ['', '', '']; // 回复建议数组
@@ -143,6 +158,11 @@ export struct Chat {
   private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings)
 
   aboutToAppear() {
+    console.log('当前环境:', this.isVirtualMachine() ? '虚拟机' : '真机');
+    
+    // 检查麦克风权限
+    this.checkMicrophonePermission();
+    
     // 获取路由参数
     const params = router.getParams() as ChatParams;
     if (params) {
@@ -942,32 +962,66 @@ export struct Chat {
             Image($r('app.media.voice_icon')) // TODO: 替换为实际的 ic_voice 图片资源
               .width(26).height(26)
               .margin({ right: 8 })
+              .onClick(() => {
+                this.isVoiceMode = !this.isVoiceMode; // 切换语音/文本输入模式
+              })
 
-            // 输入框
-            TextInput({
-              text: this.inputText,
-              placeholder: '发送消息给' + this.agentName
-            })
-              .type(InputType.Normal)
-              .placeholderColor('#aaa')
-              .fontColor(Color.White)
-              .fontSize(16)
-              .layoutWeight(1) // 占据剩余空间
+            // 输入框或语音按钮
+            if (!this.isVoiceMode) {
+              // 文本输入模式
+              TextInput({
+                text: this.inputText,
+                placeholder: '发送消息给' + this.agentName
+              })
+                .type(InputType.Normal)
+                .placeholderColor('#aaa')
+                .fontColor(Color.White)
+                .fontSize(16)
+                .layoutWeight(1) // 占据剩余空间
+                .height(48)
+                .borderWidth(0) // 设置边框宽度为0，移除边框
+                .padding({ left: 16, right: 16 })
+                .margin({ right: 8 })
+                .onChange((text: string) => {
+                  this.inputText = text;
+                })
+                .onFocus(() => {
+                  this.isInputFocused = true;
+                  // 新增：输入框获得焦点时滚动到底部
+                  this.scrollToBottom();
+                })
+                .onBlur(() => {
+                  this.isInputFocused = false;
+                })
+            } else {
+              // 语音输入模式
+              Button() {
+                Text(this.isRecording ? '松开发送' : '按住说话')
+                  .fontColor(Color.White)
+                  .fontSize(16)
+              }
+              .width('100%')
               .height(48)
-              .borderWidth(0) // 设置边框宽度为0，移除边框
-              .padding({ left: 16, right: 16 })
-              .margin({ right: 8 })
-              .onChange((text: string) => {
-                this.inputText = text;
+              .backgroundColor('rgba(0,0,0,0.3)')
+              .borderRadius(24)
+              .onTouch((event: TouchEvent) => {
+                if (event.type === TouchType.Down) {
+                  this.touchStartY = event.touches[0].y;
+                  this.isCancelRecord = false;
+                  this.showRecordPanel = true;
+                  this.startRecord();
+                } else if (event.type === TouchType.Move) {
+                  if (this.touchStartY - event.touches[0].y > 50) {
+                    this.isCancelRecord = true;
+                  } else {
+                    this.isCancelRecord = false;
+                  }
+                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                  this.showRecordPanel = false;
+                  this.stopAndSendRecord();
+                }
               })
-              .onFocus(() => {
-                this.isInputFocused = true;
-                // 新增：输入框获得焦点时滚动到底部
-                this.scrollToBottom();
-              })
-              .onBlur(() => {
-                this.isInputFocused = false;
-              })
+            }
 
             // 右侧加号按钮 (用于更多功能)
             Image($r('app.media.ic_add_circle')) // TODO: 替换为实际的 ic_add_circle 图片资源
@@ -1224,6 +1278,49 @@ export struct Chat {
         .height('100%')
         .zIndex(this._showIntroAnimation ? 5 : 0) // 动画时z-index为5，结束后为1
       }
+
+      // 录音弹窗
+      if (this.showRecordPanel) {
+        // 蒙层
+        Stack() {
+          // 半透明背景
+          Row() {} // 空Row
+            .backgroundColor('rgba(0,0,0,0.3)')
+            .width('100%')
+            .height('100%')
+
+          // 录音弹窗
+          Column() {
+            // 声波动画
+            Row() {
+              ForEach([1,2,3,4,5], (i: number) => {
+                Blank()
+                  .width(6)
+                  .height(30) // 固定高度
+                  .backgroundColor(this.isCancelRecord ? '#ff4d4f' : '#00e0ff')
+                  .margin({ left: 2, right: 2 })
+              })
+            }
+            .margin({ bottom: 12 })
+
+            // 状态提示
+            Text(this.isCancelRecord ? '松开手指，取消发送' : '上滑取消')
+              .fontColor(this.isCancelRecord ? '#ff4d4f' : '#fff')
+              .fontSize(16)
+              .margin({ bottom: 8 })
+
+            // 实时时长
+            Text(`${this.recordDuration}"`)
+              .fontColor('#fff')
+              .fontSize(20)
+          }
+          .padding({ top: 40, bottom: 40, left: 30, right: 30 })
+          .backgroundColor('rgba(0,0,0,0.8)')
+          .borderRadius(16)
+          .align(Alignment.Center)
+        }
+        .zIndex(99)
+      }
     }
   }
 
@@ -1369,4 +1466,150 @@ export struct Chat {
           }
         })
      }
+
+  // 检查麦克风权限
+  private async checkMicrophonePermission(): Promise<void> {
+    try {
+      // 直接尝试申请权限，如果已授权会直接返回成功
+      const granted = await this.requestMicrophonePermission();
+      this.hasMicrophonePermission = granted;
+      console.log('麦克风权限状态:', this.hasMicrophonePermission ? '已授权' : '未授权');
+    } catch (error) {
+      console.error('权限检查失败:', error);
+      this.hasMicrophonePermission = false;
+    }
+  }
+
+  // 申请麦克风权限
+  private async requestMicrophonePermission(): Promise<boolean> {
+    let atManager = abilityAccessCtrl.createAtManager();
+    try {
+      await atManager.requestPermissionsFromUser(globalThis.abilityContext, ['ohos.permission.MICROPHONE']);
+      // 权限申请成功，假设用户已授权
+      return true;
+    } catch (error) {
+      console.error('申请麦克风权限失败:', error);
+      return false;
+    }
+  }
+
+  // 检测是否为虚拟机环境
+  private isVirtualMachine(): boolean {
+    // 可以通过设备型号、环境变量等判断
+    // 这里简单返回true，表示虚拟机环境
+    return true; // 虚拟机中设为true，真机中设为false
+  }
+
+  private async startRecord() {
+    // 检查麦克风权限
+    if (!this.hasMicrophonePermission) {
+      console.log('麦克风权限未授权，尝试申请权限...');
+      const granted = await this.requestMicrophonePermission();
+      if (!granted) {
+        console.error('麦克风权限申请失败，无法录音');
+        // 可以显示提示信息
+        return;
+      }
+    }
+
+    this.isRecording = true;
+    this.recordDuration = 0;
+    this.fileName = Date.now().toString();
+    
+    // 虚拟机环境：模拟录音
+    if (this.isVirtualMachine()) {
+      console.log('虚拟机环境，使用模拟录音');
+      // 模拟录音文件生成
+      this.simulateRecord();
+    } else {
+      // 真机环境：真实录音
+      try {
+        await AudioCapturerManager.startRecord(this.fileName);
+        console.log('录音开始成功');
+      } catch (error) {
+        console.error('录音开始失败:', error);
+        this.isRecording = false;
+        return;
+      }
+    }
+
+    this.recordTimer = setInterval(() => {
+      this.recordDuration += 1;
+      console.log('recordDuration:', this.recordDuration);
+    }, 1000);
+  }
+
+  // 模拟录音功能
+  private simulateRecord() {
+    // 模拟录音文件生成
+    console.log('模拟录音文件生成:', this.fileName);
+  }
+
+  private async stopAndSendRecord() {
+    clearInterval(this.recordTimer);
+    clearInterval(this.volumeTimer);
+    this.isRecording = false;
+
+    if (this.isVirtualMachine()) {
+      // 虚拟机环境：模拟录音结束
+      console.log('虚拟机环境，模拟录音结束');
+    } else {
+      // 真机环境：真实录音结束
+      await AudioCapturerManager.stopRecord();
+    }
+
+    if (this.isCancelRecord || this.recordDuration < 1) {
+      this.recordDuration = 0;
+      this.isCancelRecord = false;
+      return;
+    }
+
+    // 虚拟机环境：模拟语音识别
+    if (this.isVirtualMachine()) {
+      this.simulateVoiceRecognition();
+    } else {
+      // 真机环境：真实语音识别
+      this.recognizeAudioFile(this.fileName);
+    }
+
+    this.recordDuration = 0;
+    this.isCancelRecord = false;
+  }
+
+  // 模拟语音识别
+  private simulateVoiceRecognition() {
+    // 模拟识别结果
+    const mockText = '这是模拟的语音识别结果';
+    console.log('模拟语音识别结果:', mockText);
+    this.sendVoiceMessage(this.fileName, this.recordDuration, mockText);
+  }
+
+  private recognizeAudioFile(fileName: string) {
+    SpeechRecognizerManager.init2((res) => {
+      let text = res.result || '未识别到语音内容';
+      this.sendVoiceMessage(fileName, this.recordDuration, text);
+    }, fileName);
+  }
+
+  private sendVoiceMessage(fileName: string, duration: number, text: string) {
+    // 语音识别完成后，自动调用sendMessage进行AI对话
+    if (text && text !== '未识别到语音内容') {
+      // 将识别出的文本作为用户输入，调用sendMessage
+      this.inputText = text; // 设置输入文本
+      this.sendMessage(); // 调用AI对话
+    } else {
+      // 如果识别失败，显示语音消息
+      const newMessage: ChatMessage = {
+        id: this.chatData.length + 1,
+        isMe: true,
+        avatar: $r('app.media.splash'),
+        content: '[语音] 未识别到语音内容',
+        time: new Date().toLocaleTimeString().slice(0, 5),
+        type: 'voice',
+        duration: duration,
+      };
+      this.chatData = [...this.chatData, newMessage];
+      this.scrollToBottom();
+    }
+  }
 }

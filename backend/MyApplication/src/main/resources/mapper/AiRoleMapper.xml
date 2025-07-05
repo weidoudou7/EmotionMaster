@@ -204,4 +204,18 @@
             created_at DESC
         LIMIT #{limit}
     </select>
+
+    <select id="countByIsTemplate" resultType="int">
+        SELECT COUNT(*) FROM ai_roles WHERE is_template = #{isTemplate}
+    </select>
+
+    <select id="sumViewCount" resultType="int">
+        SELECT IFNULL(SUM(view_count), 0) FROM ai_roles
+    </select>
+
+    <select id="countNewRolesThisWeek" resultType="int">
+        SELECT COUNT(*) FROM ai_roles
+        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
+        AND created_at &lt; DATE_ADD(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 7 DAY)
+    </select>
 </mapper> 
