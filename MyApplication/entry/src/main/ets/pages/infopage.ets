@@ -78,23 +78,8 @@ export struct InfoPage {
         console.log('🖼️ [infopage] 处理后的头像URL:', processedAvatarUrl);
       }
       
-      // 清除缓存：先设置为默认头像，强制刷新
-      console.log('🔄 [infopage] 清除头像缓存...');
-      this.userAvatar = $r("app.media.image");
-      
-      // 同时清除全局缓存
-      globalUserData.clearAvatarCache();
-      
-      // 等待一小段时间，确保UI更新
-      await new Promise<void>(resolve => setTimeout(resolve, 200));
-      
-      // 设置新的头像URL
       this.userAvatar = processedAvatarUrl;
-      
-      // 同时更新全局状态
-      globalUserData.updateUserAvatar(processedAvatarUrl);
-      
-      console.log('🖼️ [infopage] 头像更新成功（已清除缓存）');
+      console.log('🖼️ [infopage] 头像更新成功');
     } else {
       // 使用默认头像
       this.userAvatar = $r("app.media.image");
@@ -105,12 +90,7 @@ export struct InfoPage {
   // 获取头像URL（用于显示）
   getAvatarUrl(): string {
     if (typeof this.userAvatar === 'string') {
-      // 添加时间戳参数强制刷新缓存
-      const timestamp = Date.now();
-      const separator = this.userAvatar.includes('?') ? '&' : '?';
-      const urlWithTimestamp = `${this.userAvatar}${separator}t=${timestamp}`;
-      console.log('🖼️ [infopage] 返回头像URL（带时间戳）:', urlWithTimestamp);
-      return urlWithTimestamp;
+      return this.userAvatar;
     }
     return '';
   }
@@ -177,8 +157,8 @@ export struct InfoPage {
         // 更新本地显示
         await this.updateAvatarDisplay(newAvatarUrl);
         
-        // 更新用户信息（不重新加载头像）
-        await this.loadUserInfoWithoutAvatar();
+        // 刷新用户信息
+        await this.loadUserInfoAsync();
         
         // 关闭预览对话框
         this.showPreviewDialog = false;
@@ -192,22 +172,6 @@ export struct InfoPage {
       promptAction.showToast({ message: '头像保存失败，请重试' });
     } finally {
       this.isAvatarLoading = false;
-    }
-  }
-
-  // 加载用户信息但不更新头像（避免覆盖已更新的头像）
-  async loadUserInfoWithoutAvatar() {
-    try {
-      console.log('👤 [infopage] 开始加载用户信息（不更新头像），用户UID:', this.userUID);
-      
-      const userInfo = await ApiService.getUserInfo(this.userUID);
-      this.userInfo = userInfo;
-      this.userName = userInfo.userName;
-      this.isPrivacyVisible = userInfo.isPrivacyVisible;
-      
-      console.log('👤 [infopage] 用户信息加载完成（头像保持不变）');
-    } catch (error) {
-      console.error('👤 [infopage] 加载用户信息失败:', error);
     }
   }
 

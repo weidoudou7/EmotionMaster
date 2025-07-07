@@ -121,23 +121,8 @@ export struct YourPage {
         console.log('🖼️ [yourpage] 处理后的头像URL:', processedAvatarUrl);
       }
       
-      // 清除缓存：先设置为默认头像，强制刷新
-      console.log('🔄 [yourpage] 清除头像缓存...');
-      this.userAvatar = $r("app.media.image");
-      
-      // 同时清除全局缓存
-      globalUserData.clearAvatarCache();
-      
-      // 等待一小段时间，确保UI更新
-      await new Promise<void>(resolve => setTimeout(resolve, 200));
-      
-      // 设置新的头像URL
       this.userAvatar = processedAvatarUrl;
-      
-      // 同时更新全局状态
-      globalUserData.updateUserAvatar(processedAvatarUrl);
-      
-      console.log('🖼️ [yourpage] 头像更新成功（已清除缓存）');
+      console.log('🖼️ [yourpage] 头像更新成功');
     } else {
       // 使用默认头像
       this.userAvatar = $r("app.media.image");
@@ -147,14 +132,6 @@ export struct YourPage {
 
   // 获取头像URL（用于显示）
   getAvatarUrl(): Resource | string {
-    if (typeof this.userAvatar === 'string') {
-      // 添加时间戳参数强制刷新缓存
-      const timestamp = Date.now();
-      const separator = this.userAvatar.includes('?') ? '&' : '?';
-      const urlWithTimestamp = `${this.userAvatar}${separator}t=${timestamp}`;
-      console.log('🖼️ [yourpage] 返回头像URL（带时间戳）:', urlWithTimestamp);
-      return urlWithTimestamp;
-    }
     return this.userAvatar;
   }
 

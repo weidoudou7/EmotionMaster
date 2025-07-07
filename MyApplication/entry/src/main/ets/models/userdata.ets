@@ -28,14 +28,7 @@ export class UserData {
 
   // 更新用户头像
   updateUserAvatar(newAvatar: string): void {
-    console.log('👤 [UserData] 更新头像:', newAvatar);
     this.userAvatar = newAvatar;
-  }
-
-  // 清除头像缓存（强制刷新）
-  clearAvatarCache(): void {
-    console.log('🔄 [UserData] 清除头像缓存');
-    this.userAvatar = '';
   }
 
   // 切换隐私可见性
