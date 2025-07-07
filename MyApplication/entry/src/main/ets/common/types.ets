@@ -201,6 +201,13 @@ export interface RoleTypeStatistics {
   percentage: number;
 }
 
+// 预览头像响应接口
+export interface PreviewAvatarResponse {
+  previewImage: string;
+  previewSeed: number;
+  timestamp: number;
+}
+
 // 用户角色偏好分析结果接口
 export interface UserRolePreferenceAnalysis {
   totalConversations: number;

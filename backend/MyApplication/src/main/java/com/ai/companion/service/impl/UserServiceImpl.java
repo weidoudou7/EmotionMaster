@@ -4,9 +4,12 @@ import com.ai.companion.entity.User;
 import com.ai.companion.entity.vo.UserInfoVO;
 import com.ai.companion.entity.vo.UpdateUserRequest;
 import com.ai.companion.entity.vo.UserStatsVO;
+import com.ai.companion.entity.vo.PreviewAvatarResponse;
+import com.ai.companion.entity.vo.PreviewAvatarResult;
 import com.ai.companion.service.UserService;
 import com.ai.companion.service.DynamicService;
 import com.ai.companion.service.UserRelationService;
+import com.ai.companion.service.AvatarGeneratorService;
 import com.ai.companion.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -35,6 +38,9 @@ public class UserServiceImpl implements UserService {
     
     @Autowired
     private UserMapper userMapper;
+    
+    @Autowired
+    private AvatarGeneratorService avatarGeneratorService;
 
     // 头像存储路径
     private static final String AVATAR_UPLOAD_PATH = "uploads/avatars/";
@@ -196,6 +202,146 @@ public class UserServiceImpl implements UserService {
             return avatarUrl;
         } catch (Exception e) {
             throw new RuntimeException("头像上传失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public String generateNewAvatar(String userUID) {
+        System.out.println("🎨 ========== UserService.generateNewAvatar() 开始 ==========");
+        System.out.println("🎨 [UserService] 开始为用户生成新头像");
+        System.out.println("🎨 [UserService] 用户UID: " + userUID);
+        System.out.println("🎨 [UserService] 处理时间: " + LocalDateTime.now());
+        
+        try {
+            // 1. 删除旧头像文件
+            System.out.println("🎨 [UserService] 步骤1: 删除旧头像文件");
+            avatarGeneratorService.deleteOldAvatar(userUID);
+            System.out.println("🎨 [UserService] 旧头像文件删除完成");
+            
+            // 2. 生成新头像并保存
+            System.out.println("🎨 [UserService] 步骤2: 生成新头像并保存");
+            String newAvatarUrl = avatarGeneratorService.generateAndSaveAvatar(userUID);
+            System.out.println("🎨 [UserService] 新头像生成完成，URL: " + newAvatarUrl);
+            
+            // 3. 更新用户头像信息
+            System.out.println("🎨 [UserService] 步骤3: 更新数据库中的用户头像信息");
+            User user = userMapper.selectByUID(userUID);
+            if (user != null) {
+                System.out.println("🎨 [UserService] 找到用户: " + user.getUserName());
+                System.out.println("🎨 [UserService] 原头像URL: " + user.getUserAvatar());
+                System.out.println("🎨 [UserService] 新头像URL: " + newAvatarUrl);
+                
+                user.setUserAvatar(newAvatarUrl);
+                user.setUpdateTime(LocalDateTime.now());
+                userMapper.updateUser(user);
+                
+                System.out.println("✅ [UserService] 数据库更新成功");
+                System.out.println("✅ [UserService] 用户头像已更新，新URL: " + newAvatarUrl);
+            } else {
+                System.err.println("❌ [UserService] 用户不存在，UID: " + userUID);
+                throw new RuntimeException("用户不存在");
+            }
+            
+            System.out.println("🎨 ========== UserService.generateNewAvatar() 成功完成 ==========");
+            return newAvatarUrl;
+        } catch (Exception e) {
+            System.err.println("❌ [UserService] 生成新头像过程中发生异常");
+            System.err.println("❌ [UserService] 异常类型: " + e.getClass().getSimpleName());
+            System.err.println("❌ [UserService] 异常消息: " + e.getMessage());
+            System.err.println("❌ [UserService] 异常堆栈:");
+            e.printStackTrace();
+            System.err.println("❌ ========== UserService.generateNewAvatar() 失败 ==========");
+            
+            throw new RuntimeException("生成新头像失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public PreviewAvatarResponse generatePreviewAvatar(String userUID) {
+        System.out.println("👁️ ========== UserService.generatePreviewAvatar() 开始 ==========");
+        System.out.println("👁️ [UserService] 开始为用户生成预览头像");
+        System.out.println("👁️ [UserService] 用户UID: " + userUID);
+        System.out.println("👁️ [UserService] 处理时间: " + LocalDateTime.now());
+        
+        try {
+            // 检查用户是否存在
+            User user = userMapper.selectByUID(userUID);
+            if (user == null) {
+                System.err.println("❌ [UserService] 用户不存在，UID: " + userUID);
+                throw new RuntimeException("用户不存在");
+            }
+            System.out.println("✅ [UserService] 用户存在，开始生成预览头像");
+            
+            // 生成预览头像
+            PreviewAvatarResult previewResult = avatarGeneratorService.generatePreviewAvatar(userUID);
+            System.out.println("👁️ [UserService] 预览头像生成成功");
+            System.out.println("🌱 [UserService] 预览种子: " + previewResult.getPreviewSeed());
+            
+            // 创建响应对象
+            PreviewAvatarResponse response = new PreviewAvatarResponse();
+            response.setPreviewImage(previewResult.getPreviewImage());
+            response.setPreviewSeed(previewResult.getPreviewSeed());
+            response.setTimestamp(System.currentTimeMillis());
+            
+            System.out.println("👁️ [UserService] 预览头像响应创建成功");
+            System.out.println("👁️ ========== UserService.generatePreviewAvatar() 成功完成 ==========");
+            
+            return response;
+            
+        } catch (Exception e) {
+            System.err.println("❌ [UserService] 生成预览头像过程中发生异常");
+            System.err.println("❌ [UserService] 异常类型: " + e.getClass().getSimpleName());
+            System.err.println("❌ [UserService] 异常消息: " + e.getMessage());
+            System.err.println("❌ [UserService] 异常堆栈:");
+            e.printStackTrace();
+            System.err.println("❌ ========== UserService.generatePreviewAvatar() 失败 ==========");
+            throw new RuntimeException("生成预览头像失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public String confirmPreviewAvatar(String userUID, long previewSeed) {
+        System.out.println("💾 ========== UserService.confirmPreviewAvatar() 开始 ==========");
+        System.out.println("💾 [UserService] 开始确认并保存预览头像");
+        System.out.println("💾 [UserService] 用户UID: " + userUID);
+        System.out.println("💾 [UserService] 预览种子: " + previewSeed);
+        System.out.println("💾 [UserService] 处理时间: " + LocalDateTime.now());
+        
+        try {
+            // 检查用户是否存在
+            User user = userMapper.selectByUID(userUID);
+            if (user == null) {
+                System.err.println("❌ [UserService] 用户不存在，UID: " + userUID);
+                throw new RuntimeException("用户不存在");
+            }
+            System.out.println("✅ [UserService] 用户存在，开始确认头像");
+            
+            // 删除旧头像文件
+            avatarGeneratorService.deleteOldAvatar(userUID);
+            System.out.println("🗑️ [UserService] 旧头像文件删除完成");
+            
+            // 确认并保存头像
+            String avatarPath = avatarGeneratorService.confirmAndSaveAvatar(userUID, previewSeed);
+            System.out.println("💾 [UserService] 头像确认并保存成功");
+            System.out.println("💾 [UserService] 头像路径: " + avatarPath);
+            
+            // 更新用户头像信息
+            user.setUserAvatar(avatarPath);
+            user.setUpdateTime(LocalDateTime.now());
+            userMapper.updateUser(user);
+            System.out.println("💾 [UserService] 用户头像信息更新成功");
+            
+            System.out.println("💾 ========== UserService.confirmPreviewAvatar() 成功完成 ==========");
+            return avatarPath;
+            
+        } catch (Exception e) {
+            System.err.println("❌ [UserService] 确认预览头像过程中发生异常");
+            System.err.println("❌ [UserService] 异常类型: " + e.getClass().getSimpleName());
+            System.err.println("❌ [UserService] 异常消息: " + e.getMessage());
+            System.err.println("❌ [UserService] 异常堆栈:");
+            e.printStackTrace();
+            System.err.println("❌ ========== UserService.confirmPreviewAvatar() 失败 ==========");
+            throw new RuntimeException("确认预览头像失败: " + e.getMessage());
         }
     }
 

@@ -2,18 +2,16 @@
 // 导入页面路由模块
 import { BusinessError } from '@kit.BasicServicesKit';
 import promptAction from '@ohos.promptAction';
-import picker from '@ohos.file.picker';
-import fs from '@ohos.file.fs';
 import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
 import { UserInfo } from '../common/types';
+import { Config } from '../common/config';
 import { BottomNavBar } from './BottomNavBar';
 
 @Entry
 @Component
 export struct InfoPage {
   @State userAvatar: Resource | string = $r("app.media.image"); // 用户头像
-  @State selectedImageUri: string = ''; // 选择的图片URI
   @State userName: string = globalUserData.userName; // 用户名称
   @State userUID: string = globalUserData.userUID; // 用户UID
   @State isPrivacyVisible: boolean = globalUserData.isPrivacyVisible; // 用户隐私是否可见
@@ -26,6 +24,12 @@ export struct InfoPage {
   @State isLoading: boolean = false; // 加载状态
   @State userInfo: UserInfo | null = null; // 用户详细信息
   @State avatarScale: number = 1.0; // 头像缩放动画
+  @State showPreviewDialog: boolean = false; // 显示预览对话框
+  @State previewImage: string = ''; // 预览图片
+  @State previewSeed: number = 0; // 预览种子
+  @State isGeneratingPreview: boolean = false; // 正在生成预览
+  @State isAvatarLoading: boolean = false; // 头像加载状态
+  @State showAvatarViewer: boolean = false; // 显示头像查看器
 
   // 页面生命周期
   aboutToAppear() {
@@ -41,139 +45,142 @@ export struct InfoPage {
   // 异步加载用户信息（不阻塞页面显示）
   async loadUserInfoAsync() {
     try {
+      console.log('👤 [infopage] 开始加载用户信息，用户UID:', this.userUID);
+      
       const userInfo = await ApiService.getUserInfo(this.userUID);
       this.userInfo = userInfo;
       this.userName = userInfo.userName;
       this.isPrivacyVisible = userInfo.isPrivacyVisible;
 
       // 处理头像显示
-      if (userInfo.userAvatar && userInfo.userAvatar !== '/avatars/default.png') {
-        // 如果有后端头像，使用后端头像
-        this.userAvatar = userInfo.userAvatar;
-        this.selectedImageUri = ''; // 清空本地选择的图片
-      } else {
-        // 使用默认头像
-        this.userAvatar = $r("app.media.image");
-        this.selectedImageUri = ''; // 清空本地选择的图片
-      }
+      await this.updateAvatarDisplay(userInfo.userAvatar);
+      
+      console.log('👤 [infopage] 用户信息加载完成');
     } catch (error) {
-      console.error('加载用户信息失败:', error);
+      console.error('👤 [infopage] 加载用户信息失败:', error);
       // 不显示错误提示，避免影响用户体验
     }
   }
 
-  // 头像选择器
-  async selectAvatar() {
-    try {
-      console.log('开始选择头像...');
-      let photoPicker = new picker.PhotoViewPicker();
-      let photoSelectOptions: picker.PhotoSelectOptions = {
-        MIMEType: picker.PhotoViewMIMETypes.IMAGE_TYPE,
-        maxSelectNumber: 1
-      };
-
-      console.log('打开图片选择器...');
-      let photoViewPicker = await photoPicker.select(photoSelectOptions);
-
-      if (photoViewPicker && photoViewPicker.photoUris && photoViewPicker.photoUris.length > 0) {
-        console.log('用户选择了图片:', photoViewPicker.photoUris[0]);
-        this.selectedImageUri = photoViewPicker.photoUris[0];
-
-        // 显示加载状态
-        promptAction.showToast({ message: '正在处理图片...' });
-
-        // 本地处理图片，转换为base64格式用于显示
-        const base64Data = await this.uriToBase64(this.selectedImageUri);
-        if (base64Data) {
-          console.log('图片处理成功，大小:', base64Data.length, '字符');
-
-          // 直接更新本地显示，不调用后端
-          this.userAvatar = this.selectedImageUri;
-
-          // 更新全局用户数据
-          globalUserData.updateUserAvatar(base64Data);
-
-          promptAction.showToast({ message: '头像更新成功' });
-        } else {
-          promptAction.showToast({ message: '图片处理失败' });
-        }
-      } else {
-        console.log('用户取消了图片选择');
+  // 更新头像显示
+  async updateAvatarDisplay(avatarUrl: string | undefined) {
+    console.log('🖼️ [infopage] 开始更新头像显示');
+    console.log('🖼️ [infopage] 原始头像URL:', avatarUrl);
+    
+    if (avatarUrl && avatarUrl !== '/avatars/default.png' && avatarUrl !== '') {
+      // 如果有后端头像，使用后端头像
+      let processedAvatarUrl = avatarUrl;
+      
+      // 处理头像URL - 如果是相对路径，拼接完整URL
+      if (avatarUrl.startsWith('/')) {
+        const baseUrl = Config.getApiBaseUrl().replace('/api', '');
+        processedAvatarUrl = baseUrl + avatarUrl;
+        console.log('🖼️ [infopage] 处理后的头像URL:', processedAvatarUrl);
       }
-    } catch (error) {
-      console.error('选择头像失败:', error);
-      // 检查错误对象是否有code属性
-      if (error && typeof error === 'object') {
-        const errorObj = error as Record<string, number>;
-        const errorCode = errorObj.code;
-        if (errorCode === 201) {
-          promptAction.showToast({ message: '用户取消了图片选择' });
-        } else if (errorCode === 2018203) {
-          promptAction.showToast({ message: '权限不足，请在设置中授予相册访问权限' });
-        } else if (errorCode !== undefined) {
-          promptAction.showToast({ message: `选择图片失败，错误代码: ${errorCode}` });
-        } else {
-          promptAction.showToast({ message: '选择头像失败' });
-        }
-      } else {
-        promptAction.showToast({ message: '选择头像失败' });
-      }
+      
+      this.userAvatar = processedAvatarUrl;
+      console.log('🖼️ [infopage] 头像更新成功');
+    } else {
+      // 使用默认头像
+      this.userAvatar = $r("app.media.image");
+      console.log('🖼️ [infopage] 使用默认头像');
     }
   }
 
-  // 将图片URI转换为base64格式
-  async uriToBase64(uri: string): Promise<string> {
+  // 获取头像URL（用于显示）
+  getAvatarUrl(): string {
+    if (typeof this.userAvatar === 'string') {
+      return this.userAvatar;
+    }
+    return '';
+  }
+
+  // 显示头像查看器
+  showAvatarViewerDialog() {
+    this.showAvatarViewer = true;
+  }
+
+  // 关闭头像查看器
+  closeAvatarViewer() {
+    this.showAvatarViewer = false;
+  }
+
+  // 生成预览头像
+  async generatePreviewAvatar() {
     try {
-      console.log('开始转换图片为base64:', uri);
-      // 打开文件
-      const fd = await fs.open(uri, fs.OpenMode.READ_ONLY);
-      const stat = await fs.stat(uri);
-      const buffer = new ArrayBuffer(stat.size);
-      await fs.read(fd.fd, buffer, { offset: 0 });
-      await fs.close(fd);
+      console.log('👁️ [infopage] 开始生成预览头像...');
+      
+      this.isGeneratingPreview = true;
+      promptAction.showToast({ message: '正在生成预览头像...' });
 
-      // 转换为base64
-      const base64 = this.arrayBufferToBase64(buffer);
-
-      // 获取mimeType
-      const extension = uri.split('.').pop()?.toLowerCase() || 'jpeg';
-      let mimeType = 'image/jpeg';
-      if (extension === 'png') mimeType = 'image/png';
-      else if (extension === 'gif') mimeType = 'image/gif';
-      else if (extension === 'webp') mimeType = 'image/webp';
-
-      const result = `data:${mimeType};base64,${base64}`;
-      console.log('图片转换完成，大小:', stat.size, '字节');
-      return result;
+      // 调用后端API生成预览头像
+      const previewResponse = await ApiService.generatePreviewAvatar(this.userUID);
+      
+      if (previewResponse && previewResponse.previewImage) {
+        console.log('👁️ [infopage] 预览头像生成成功');
+        console.log('👁️ [infopage] 预览种子:', previewResponse.previewSeed);
+        
+        // 保存预览信息
+        this.previewImage = previewResponse.previewImage;
+        this.previewSeed = previewResponse.previewSeed;
+        
+        // 显示预览对话框
+        this.showPreviewDialog = true;
+        
+        promptAction.showToast({ message: '预览头像生成成功' });
+      } else {
+        promptAction.showToast({ message: '预览头像生成失败' });
+      }
     } catch (error) {
-      console.error('转换图片失败:', error);
-      return '';
+      console.error('👁️ [infopage] 生成预览头像失败:', error);
+      promptAction.showToast({ message: '生成预览头像失败，请重试' });
+    } finally {
+      this.isGeneratingPreview = false;
     }
   }
 
-  // ArrayBuffer转base64的辅助方法
-  private arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const uint8Array = new Uint8Array(buffer);
-    const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    let result = '';
+  // 确认并保存预览头像
+  async confirmPreviewAvatar() {
+    try {
+      console.log('💾 [infopage] 开始确认并保存预览头像...');
+      console.log('💾 [infopage] 预览种子:', this.previewSeed);
+      
+      this.isAvatarLoading = true;
+      promptAction.showToast({ message: '正在保存头像...' });
 
-    for (let i = 0; i < uint8Array.length; i += 3) {
-      const byte1 = uint8Array[i];
-      const byte2 = i + 1 < uint8Array.length ? uint8Array[i + 1] : 0;
-      const byte3 = i + 2 < uint8Array.length ? uint8Array[i + 2] : 0;
-
-      const chunk1 = byte1 >> 2;
-      const chunk2 = ((byte1 & 3) << 4) | (byte2 >> 4);
-      const chunk3 = ((byte2 & 15) << 2) | (byte3 >> 6);
-      const chunk4 = byte3 & 63;
-
-      result += base64Chars.charAt(chunk1);
-      result += base64Chars.charAt(chunk2);
-      result += i + 1 < uint8Array.length ? base64Chars.charAt(chunk3) : '=';
-      result += i + 2 < uint8Array.length ? base64Chars.charAt(chunk4) : '=';
+      // 调用后端API确认并保存头像
+      const newAvatarUrl = await ApiService.confirmPreviewAvatar(this.userUID, this.previewSeed);
+      
+      if (newAvatarUrl) {
+        console.log('💾 [infopage] 头像确认并保存成功，URL:', newAvatarUrl);
+        
+        // 更新本地显示
+        await this.updateAvatarDisplay(newAvatarUrl);
+        
+        // 刷新用户信息
+        await this.loadUserInfoAsync();
+        
+        // 关闭预览对话框
+        this.showPreviewDialog = false;
+        
+        promptAction.showToast({ message: '头像保存成功' });
+      } else {
+        promptAction.showToast({ message: '头像保存失败' });
+      }
+    } catch (error) {
+      console.error('💾 [infopage] 确认预览头像失败:', error);
+      promptAction.showToast({ message: '头像保存失败，请重试' });
+    } finally {
+      this.isAvatarLoading = false;
     }
+  }
 
-    return result;
+  // 取消预览头像
+  cancelPreviewAvatar() {
+    console.log('❌ [infopage] 取消预览头像');
+    this.showPreviewDialog = false;
+    this.previewImage = '';
+    this.previewSeed = 0;
   }
 
   // 编辑用户名称
@@ -292,29 +299,6 @@ export struct InfoPage {
     this.showGenderDialog = false;
   }
 
-  // 测试本地图片处理功能
-  async testLocalImageProcessing() {
-    try {
-      console.log('开始测试本地图片处理...');
-
-      // 创建一个测试图片URI（这里使用一个示例URI）
-      const testUri = 'file:///data/storage/el2/base/haps/entry/files/test.jpg';
-
-      // 测试图片转换
-      const base64Data = await this.uriToBase64(testUri);
-      if (base64Data) {
-        console.log('测试图片转换成功，大小:', base64Data.length, '字符');
-        promptAction.showToast({ message: '本地图片处理测试成功' });
-      } else {
-        console.log('测试图片转换失败');
-        promptAction.showToast({ message: '本地图片处理测试失败' });
-      }
-    } catch (error) {
-      console.error('测试本地图片处理失败:', error);
-      promptAction.showToast({ message: '测试失败: ' + (error instanceof Error ? error.message : '未知错误') });
-    }
-  }
-
   build() {
     Stack() {
       // 渐变背景
@@ -369,60 +353,92 @@ export struct InfoPage {
             .justifyContent(FlexAlign.Start)
             .margin({ bottom: 20 })
 
-            // 头像卡片
+            // 头像卡片 - 改为头像查看器样式
             Column() {
-              Stack({ alignContent: Alignment.BottomEnd }) {
-                // 根据是否有选择的图片来决定显示方式
-                if (this.selectedImageUri) {
-                  // 显示本地选择的图片
-                  Image(this.selectedImageUri)
-                    .width(120)
-                    .height(120)
-                    .borderRadius(60)
-                    .border({ width: 3, color: 'rgba(255,255,255,0.3)' })
-                    .scale({ x: this.avatarScale, y: this.avatarScale })
-                    .animation({
-                      duration: 120,
-                      curve: Curve.EaseInOut
-                    })
-                } else {
-                  // 显示默认头像或后端头像
-                  Image(this.userAvatar)
-                    .width(120)
-                    .height(120)
-                    .borderRadius(60)
-                    .border({ width: 3, color: 'rgba(255,255,255,0.3)' })
-                    .scale({ x: this.avatarScale, y: this.avatarScale })
-                    .animation({
-                      duration: 120,
-                      curve: Curve.EaseInOut
-                    })
+              // 头像显示区域 - 像预览器一样显示
+              Stack() {
+                // 头像图片 - 大尺寸显示
+                Image(this.userAvatar)
+                  .width(200)
+                  .height(200)
+                  .borderRadius(100)
+                  .border({ width: 4, color: 'rgba(255,255,255,0.3)' })
+                  .scale({ x: this.avatarScale, y: this.avatarScale })
+                  .animation({
+                    duration: 120,
+                    curve: Curve.EaseInOut
+                  })
+                  .objectFit(ImageFit.Cover)
+                  .onClick(() => {
+                    this.avatarScale = 0.95;
+                    setTimeout(() => {
+                      this.avatarScale = 1.0;
+                      this.showAvatarViewerDialog();
+                    }, 120);
+                  })
+
+                // 加载状态遮罩
+                if (this.isAvatarLoading) {
+                  Column() {
+                    LoadingProgress().width(40).height(40)
+                  }
+                  .width(200)
+                  .height(200)
+                  .borderRadius(100)
+                  .backgroundColor('rgba(0,0,0,0.5)')
+                  .justifyContent(FlexAlign.Center)
                 }
 
-                // 相机图标
-                Image($r('app.media.camera'))
-                  .width(32)
-                  .height(32)
-                  .backgroundColor('rgba(255,255,255,0.9)')
-                  .borderRadius(16)
+                // 刷新按钮 - 悬浮在头像上
+                if (!this.isGeneratingPreview && !this.isAvatarLoading) {
+                  Button() {
+                    Image($r('app.media.return'))
+                      .width(24)
+                      .height(24)
+                      .fillColor('#fff')
+                  }
+                  .width(48)
+                  .height(48)
+                  .backgroundColor('rgba(0,0,0,0.7)')
+                  .borderRadius(24)
                   .border({ width: 2, color: '#fff' })
-                  .margin({ right: 8, bottom: 8 })
+                  .position({ x: '85%', y: '85%' })
+                  .translate({ x: -24, y: -24 })
+                  .onClick(() => {
+                    this.generatePreviewAvatar();
+                  })
+                }
               }
-              .width(120)
-              .height(120)
+              .width(200)
+              .height(200)
+              .margin({ bottom: 20 })
+
+              // 头像操作按钮
+              Row() {
+                Button('查看大图')
+                  .width(100)
+                  .height(40)
+                  .backgroundColor('rgba(255,255,255,0.1)')
+                  .fontColor('#fff')
+                  .borderRadius(20)
+                  .onClick(() => this.showAvatarViewerDialog())
+
+                Button('生成新头像')
+                  .width(100)
+                  .height(40)
+                  .backgroundColor('rgba(255,255,255,0.2)')
+                  .fontColor('#fff')
+                  .borderRadius(20)
+                  .margin({ left: 20 })
+                  .onClick(() => this.generatePreviewAvatar())
+              }
+              .justifyContent(FlexAlign.Center)
             }
             .width('90%')
             .padding(24)
             .backgroundColor('rgba(255,255,255,0.1)')
             .borderRadius(20)
             .margin({ bottom: 20 })
-            .onClick(() => {
-              this.avatarScale = 0.95;
-              setTimeout(() => {
-                this.avatarScale = 1.0;
-                this.selectAvatar();
-              }, 120);
-            })
 
             // 用户信息卡片列表
             Column({ space: 16 }) {
@@ -543,6 +559,76 @@ export struct InfoPage {
         .scrollBar(BarState.Off)
         .width('100%')
         .height('100%')
+      }
+
+      // 头像查看器 - 全屏显示头像
+      if (this.showAvatarViewer) {
+        Stack({ alignContent: Alignment.Center }) {
+          // 半透明背景
+          Column() {
+            Blank()
+              .width('100%')
+              .height('100%')
+              .backgroundColor('#000000')
+              .opacity(0.9)
+              .onClick(() => this.closeAvatarViewer())
+          }
+          .width('100%')
+          .height('100%')
+
+          // 头像查看器内容
+          Column() {
+            // 关闭按钮
+            Row() {
+              Button() {
+                Image($r('app.media.return'))
+                  .width(24)
+                  .height(24)
+                  .fillColor('#fff')
+              }
+              .width(40)
+              .height(40)
+              .backgroundColor('rgba(0,0,0,0.5)')
+              .borderRadius(20)
+              .onClick(() => this.closeAvatarViewer())
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.End)
+            .margin({ bottom: 20 })
+
+            // 大尺寸头像显示
+            Image(this.userAvatar)
+              .width(300)
+              .height(300)
+              .borderRadius(150)
+              .border({ width: 6, color: 'rgba(255,255,255,0.3)' })
+              .objectFit(ImageFit.Cover)
+              .margin({ bottom: 20 })
+
+            // 操作按钮
+            Row() {
+              Button('生成新头像')
+                .width(120)
+                .height(44)
+                .backgroundColor('rgba(255,255,255,0.2)')
+                .fontColor('#fff')
+                .borderRadius(22)
+                .onClick(() => {
+                  this.closeAvatarViewer();
+                  setTimeout(() => {
+                    this.generatePreviewAvatar();
+                  }, 300);
+                })
+            }
+            .justifyContent(FlexAlign.Center)
+          }
+          .width('90%')
+          .padding(24)
+        }
+        .width('100%')
+        .height('100%')
+        .position({ x: 0, y: 0 })
+        .zIndex(999)
       }
 
       // 个性签名编辑弹窗
@@ -818,6 +904,96 @@ export struct InfoPage {
                 .borderRadius(22)
                 .margin({ left: 20 })
                 .onClick(() => this.confirmEditGender())
+            }
+            .justifyContent(FlexAlign.Center)
+          }
+          .width('85%')
+          .backgroundColor('rgba(0,0,0,0.8)')
+          .borderRadius(20)
+          .padding(24)
+          .backdropBlur(20)
+        }
+        .width('100%')
+        .height('100%')
+        .position({ x: 0, y: 0 })
+        .zIndex(999)
+      }
+
+      // 头像预览弹窗 - 重写的预览对话框
+      if (this.showPreviewDialog) {
+        Stack({ alignContent: Alignment.Center }) {
+          // 半透明背景
+          Column() {
+            Blank()
+              .width('100%')
+              .height('100%')
+              .backgroundColor('#000000')
+              .opacity(0.6)
+              .onClick(() => this.cancelPreviewAvatar())
+          }
+          .width('100%')
+          .height('100%')
+
+          // 弹窗内容
+          Column() {
+            // 标题
+            Text('预览新头像')
+              .fontSize(20)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#fff')
+              .margin({ bottom: 20 })
+
+            // 预览头像显示区域
+            Stack() {
+              if (this.previewImage) {
+                Image(this.previewImage)
+                  .width(200)
+                  .height(200)
+                  .borderRadius(100)
+                  .border({ width: 4, color: 'rgba(255,255,255,0.3)' })
+                  .objectFit(ImageFit.Cover)
+              } else {
+                Column() {
+                  LoadingProgress().width(50).height(50)
+                  Text('正在生成预览...').fontSize(16).fontColor('#fff').margin({ top: 10 })
+                }
+                .width(200)
+                .height(200)
+                .justifyContent(FlexAlign.Center)
+              }
+            }
+            .margin({ bottom: 20 })
+
+            // 提示文字
+            Text('这是您的新头像预览，确认后将保存到您的账户')
+              .fontSize(14)
+              .fontColor('rgba(255,255,255,0.7)')
+              .textAlign(TextAlign.Center)
+              .margin({ bottom: 20 })
+
+            // 按钮区域
+            Row() {
+              Button('重新生成')
+                .width(100)
+                .height(44)
+                .backgroundColor('rgba(255,255,255,0.1)')
+                .fontColor('#fff')
+                .borderRadius(22)
+                .onClick(() => {
+                  this.showPreviewDialog = false;
+                  setTimeout(() => {
+                    this.generatePreviewAvatar();
+                  }, 300);
+                })
+
+              Button('确认使用')
+                .width(100)
+                .height(44)
+                .backgroundColor('rgba(255,255,255,0.2)')
+                .fontColor('#fff')
+                .borderRadius(22)
+                .margin({ left: 20 })
+                .onClick(() => this.confirmPreviewAvatar())
             }
             .justifyContent(FlexAlign.Center)
           }

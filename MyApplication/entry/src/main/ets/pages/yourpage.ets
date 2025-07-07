@@ -48,6 +48,12 @@ export struct YourPage {
     this.loadLatestDynamicAsync();
   }
 
+  // 页面显示时刷新用户信息
+  onPageShow() {
+    // 刷新用户信息，确保头像是最新的
+    this.loadUserInfoAsync();
+  }
+
   // 银河系动画
   private startGalaxyAnimations() {
     // 圆弧旋转动画
@@ -211,28 +217,31 @@ export struct YourPage {
                   .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
                 
                 Row() {
-                  // 头像
-                  Image(this.userInfo?.userAvatar ? this.userInfo.userAvatar : $r("app.media.image"))
-                    .width(80)
-                    .height(80)
-                    .borderRadius(40)
-                    .margin({ top: 2, right: 20 })
-                    .backgroundColor('rgba(255,255,255,0.1)')
-                    .border({ width: 2, color: 'rgba(255,255,255,0.3)' })
-                    .scale({ x: this.avatarScale, y: this.avatarScale })
-                    .animation({
-                      duration: 120,
-                      curve: Curve.EaseInOut
-                    })
-                    .onClick(() => {
-                      this.avatarScale = 0.92;
-                      setTimeout(() => {
-                        this.avatarScale = 1.0;
-                        let uiContext: UIContext = this.getUIContext();
-                        let router = uiContext.getRouter();
-                        router.pushUrl({ url: 'pages/infopage' });
-                      }, 120);
-                    })
+                  // 头像 - 改为预览器样式显示
+                  Stack() {
+                    // 头像图片 - 大尺寸显示
+                    Image(this.getAvatarUrl())
+                      .width(120)
+                      .height(120)
+                      .borderRadius(60)
+                      .backgroundColor('rgba(255,255,255,0.1)')
+                      .border({ width: 3, color: 'rgba(255,255,255,0.3)' })
+                      .scale({ x: this.avatarScale, y: this.avatarScale })
+                      .animation({
+                        duration: 120,
+                        curve: Curve.EaseInOut
+                      })
+                      .objectFit(ImageFit.Cover)
+                      .onClick(() => {
+                        this.avatarScale = 0.92;
+                        setTimeout(() => {
+                          this.avatarScale = 1.0;
+                          this.showAvatarViewerDialog();
+                        }, 120);
+                      })
+                  }
+                  .margin({ top: 2, right: 20 })
+                  
                   // 名称和UID
                   Column() {
                     Text(this.yourname)
@@ -482,6 +491,78 @@ export struct YourPage {
       .width('100%')
       .height('100%')
       .scrollBar(BarState.Off)
+
+      // 头像查看器 - 全屏显示头像
+      if (this.showAvatarViewer) {
+        Stack({ alignContent: Alignment.Center }) {
+          // 半透明背景
+          Column() {
+            Blank()
+              .width('100%')
+              .height('100%')
+              .backgroundColor('#000000')
+              .opacity(0.9)
+              .onClick(() => this.closeAvatarViewer())
+          }
+          .width('100%')
+          .height('100%')
+
+          // 头像查看器内容
+          Column() {
+            // 关闭按钮
+            Row() {
+              Button() {
+                Image($r('app.media.return'))
+                  .width(24)
+                  .height(24)
+                  .fillColor('#fff')
+              }
+              .width(40)
+              .height(40)
+              .backgroundColor('rgba(0,0,0,0.5)')
+              .borderRadius(20)
+              .onClick(() => this.closeAvatarViewer())
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.End)
+            .margin({ bottom: 20 })
+
+            // 大尺寸头像显示
+            Image(this.userAvatar)
+              .width(300)
+              .height(300)
+              .borderRadius(150)
+              .border({ width: 6, color: 'rgba(255,255,255,0.3)' })
+              .objectFit(ImageFit.Cover)
+              .margin({ bottom: 20 })
+
+            // 操作按钮
+            Row() {
+              Button('编辑头像')
+                .width(120)
+                .height(44)
+                .backgroundColor('rgba(255,255,255,0.2)')
+                .fontColor('#fff')
+                .borderRadius(22)
+                .onClick(() => {
+                  this.closeAvatarViewer();
+                  setTimeout(() => {
+                    let uiContext: UIContext = this.getUIContext();
+                    let router = uiContext.getRouter();
+                    router.pushUrl({ url: 'pages/infopage' });
+                  }, 300);
+                })
+            }
+            .justifyContent(FlexAlign.Center)
+          }
+          .width('90%')
+          .padding(24)
+        }
+        .width('100%')
+        .height('100%')
+        .position({ x: 0, y: 0 })
+        .zIndex(999)
+      }
     }
     .width('100%')
     .height('100%')
@@ -505,11 +586,13 @@ export struct YourPage {
           Column() {
             // 动态头部信息
             Row() {
-              Image(this.userInfo?.userAvatar ? this.userInfo.userAvatar : $r("app.media.image"))
+              // 动态中的头像显示 - 使用统一的方法
+              Image(this.getAvatarUrl())
                 .width(40)
                 .height(40)
                 .borderRadius(20)
                 .margin({ right: 12 })
+                .objectFit(ImageFit.Cover)
               
               Column() {
                 Text(this.yourname)

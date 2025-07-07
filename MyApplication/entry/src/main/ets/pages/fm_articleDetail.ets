@@ -14,6 +14,20 @@ interface ArticleContent {
   readTime: string;
   content: string;
 }
+
+// Markdown解析后的内容块
+interface MarkdownBlock {
+  type: 'text' | 'heading' | 'list' | 'code' | 'quote' | 'divider';
+  content: string;
+  level?: number; // 用于标题级别
+  items?: string[]; // 用于列表项
+}
+
+interface InlineMarkdownSegment {
+  type: 'normal' | 'bold' | 'italic' | 'bolditalic' | 'code';
+  text: string;
+}
+
 @Entry
 @Component
 struct ArticleDetail {
@@ -22,6 +36,7 @@ struct ArticleDetail {
   @State articleType: string = 'deep';
   @State loading: boolean = true;
   @State articleContent: string = '等待生成中...';
+  @State parsedBlocks: MarkdownBlock[] = [];
 
   // 文章内容数据
   private depthArticles: ArticleContent[] = [
@@ -107,6 +122,142 @@ struct ArticleDetail {
     }
   ];
 
+  // 简单的Markdown解析器
+  parseMarkdown(markdown: string): MarkdownBlock[] {
+    const blocks: MarkdownBlock[] = [];
+    const lines = markdown.split('\n');
+    let currentBlock: MarkdownBlock | null = null;
+    let listItems: string[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (line === '') {
+        // 空行，结束当前块
+        if (currentBlock) {
+          if (currentBlock.type === 'list' && listItems.length > 0) {
+            currentBlock.items = [...listItems];
+            listItems = [];
+          }
+          blocks.push(currentBlock);
+          currentBlock = null;
+        }
+        continue;
+      }
+
+      // 检查标题
+      if (line.startsWith('#')) {
+        if (currentBlock) {
+          if (currentBlock.type === 'list' && listItems.length > 0) {
+            currentBlock.items = [...listItems];
+            listItems = [];
+          }
+          blocks.push(currentBlock);
+        }
+        const match = line.match(/^#+/);
+        const level = match ? match[0].length : 1;
+        currentBlock = {
+          type: 'heading',
+          content: line.replace(/^#+\s*/, ''),
+          level: level
+        };
+        continue;
+      }
+
+      // 检查列表
+      if (line.match(/^[\-\*]\s/)) {
+        if (currentBlock && currentBlock.type !== 'list') {
+          blocks.push(currentBlock);
+        }
+        if (!currentBlock || currentBlock.type !== 'list') {
+          currentBlock = {
+            type: 'list',
+            content: '',
+            items: []
+          };
+        }
+        listItems.push(line.replace(/^[\-\*]\s/, ''));
+        continue;
+      }
+
+      // 检查代码块
+      if (line.startsWith('```')) {
+        if (currentBlock) {
+          if (currentBlock.type === 'list' && listItems.length > 0) {
+            currentBlock.items = [...listItems];
+            listItems = [];
+          }
+          blocks.push(currentBlock);
+        }
+        currentBlock = {
+          type: 'code',
+          content: ''
+        };
+        continue;
+      }
+
+      // 检查引用
+      if (line.startsWith('>')) {
+        if (currentBlock && currentBlock.type !== 'quote') {
+          if (currentBlock.type === 'list' && listItems.length > 0) {
+            currentBlock.items = [...listItems];
+            listItems = [];
+          }
+          blocks.push(currentBlock);
+        }
+        if (!currentBlock || currentBlock.type !== 'quote') {
+          currentBlock = {
+            type: 'quote',
+            content: ''
+          };
+        }
+        currentBlock.content += (currentBlock.content ? '\n' : '') + line.replace(/^>\s*/, '');
+        continue;
+      }
+
+      // 检查分割线
+      if (line.match(/^[\-\*_]{3,}$/)) {
+        if (currentBlock) {
+          if (currentBlock.type === 'list' && listItems.length > 0) {
+            currentBlock.items = [...listItems];
+            listItems = [];
+          }
+          blocks.push(currentBlock);
+        }
+        blocks.push({
+          type: 'divider',
+          content: ''
+        });
+        currentBlock = null;
+        continue;
+      }
+
+      // 普通文本
+      if (!currentBlock) {
+        currentBlock = {
+          type: 'text',
+          content: ''
+        };
+      }
+      
+      if (currentBlock.type === 'text') {
+        currentBlock.content += (currentBlock.content ? '\n' : '') + line;
+      } else if (currentBlock.type === 'code') {
+        currentBlock.content += (currentBlock.content ? '\n' : '') + line;
+      }
+    }
+
+    // 处理最后一个块
+    if (currentBlock) {
+      if (currentBlock.type === 'list' && listItems.length > 0) {
+        currentBlock.items = [...listItems];
+      }
+      blocks.push(currentBlock);
+    }
+
+    return blocks;
+  }
+
   aboutToAppear() {
     // 每次页面出现时都重新获取参数
     const params = router.getParams() as ArticleParams;
@@ -144,6 +295,7 @@ struct ArticleDetail {
 
       ApiService.generateAIArticle(safeType, this.articleTitle).then(content => {
         this.articleContent = content;
+        this.parsedBlocks = this.parseMarkdown(content);
         this.loading = false;
       }).catch((error: Error) => {
         console.error('AI请求失败:', error);
@@ -156,9 +308,142 @@ struct ArticleDetail {
           console.error('error(非Error类型):', JSON.stringify(error));
         }
         this.articleContent = '生成失败，请稍后重试';
+        this.parsedBlocks = [];
         this.loading = false;
       });
     });
+  }
+
+  // 修改后的renderMarkdownContent方法如下：
+  @Builder
+  renderMarkdownContent(block: MarkdownBlock, index: number) {
+    if (block.type === 'heading') {
+      Column()
+      {
+        Column(){
+        ForEach(this.parseInlineMarkdown(block.content), (seg: InlineMarkdownSegment, idx: number) => {
+          if (seg.type === 'bolditalic') {
+            Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#222').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
+          } else if (seg.type === 'bold') {
+            Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#222').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
+          } else if (seg.type === 'italic') {
+            Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#444').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
+          } else if (seg.type === 'code') {
+            Text(seg.text).fontColor('#d6336c').backgroundColor('#f5f5f5').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
+          } else {
+            Text(seg.text).fontColor('#333').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
+          }
+        })
+        }
+          .margin({ top: 16, bottom: 8 })
+          .padding({ left: 16, right: 16 })
+
+      }
+    } else if (block.type === 'text') {
+      Column() {
+        Column(){
+        ForEach(this.parseInlineMarkdown(block.content), (seg: InlineMarkdownSegment, idx: number) => {
+          if (seg.type === 'bolditalic') {
+            Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#222').fontSize(16)
+          } else if (seg.type === 'bold') {
+            Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#222').fontSize(16)
+          } else if (seg.type === 'italic') {
+            Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#444').fontSize(16)
+          } else if (seg.type === 'code') {
+            Text(seg.text).fontColor('#d6336c').backgroundColor('#f5f5f5').fontSize(16)
+          } else {
+            Text(seg.text).fontColor('#333').fontSize(16)
+          }
+        })
+          }
+        .margin({ top: 8, bottom: 8 })
+        .padding({ left: 16, right: 16 })
+      }
+    } else if (block.type === 'list') {
+      Column() {
+        ForEach(block.items || [], (item: string, itemIndex: number) => {
+          Row() {
+            // 有序列表支持 - 用条件渲染
+            if (item.match(/^(\d+)\.\s(.*)$/)) {
+              Text(item.replace(/^(\d+)\..*/, '$1.')).fontSize(16).fontColor('#666').margin({ right: 8 })
+              ForEach(this.parseInlineMarkdown(item.replace(/^\d+\.\s/, '')), (seg: InlineMarkdownSegment, idx: number) => {
+                if (seg.type === 'bolditalic') {
+                  Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#222').fontSize(16)
+                } else if (seg.type === 'bold') {
+                  Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#222').fontSize(16)
+                } else if (seg.type === 'italic') {
+                  Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#444').fontSize(16)
+                } else if (seg.type === 'code') {
+                  Text(seg.text).fontColor('#d6336c').backgroundColor('#f5f5f5').fontSize(16)
+                } else {
+                  Text(seg.text).fontColor('#333').fontSize(16)
+                }
+              })
+            } else {
+              Text('•').fontSize(16).fontColor('#666').margin({ right: 8 })
+              ForEach(this.parseInlineMarkdown(item), (seg: InlineMarkdownSegment, idx: number) => {
+                if (seg.type === 'bolditalic') {
+                  Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#222').fontSize(16)
+                } else if (seg.type === 'bold') {
+                  Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#222').fontSize(16)
+                } else if (seg.type === 'italic') {
+                  Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#444').fontSize(16)
+                } else if (seg.type === 'code') {
+                  Text(seg.text).fontColor('#d6336c').backgroundColor('#f5f5f5').fontSize(16)
+                } else {
+                  Text(seg.text).fontColor('#333').fontSize(16)
+                }
+              })
+            }
+          }
+          .width('100%')
+          .margin({ top: 4, bottom: 4 })
+        })
+      }
+      .margin({ top: 8, bottom: 8 })
+      .padding({ left: 16, right: 16 })
+    } else if (block.type === 'code') {
+      Column() {
+        Text(block.content)
+          .fontSize(14)
+          .fontColor('#fff')
+          .lineHeight(20)
+          .backgroundColor('#2d3748')
+          .borderRadius(8)
+          .padding(12)
+          .width('100%')
+      }
+      .margin({ top: 8, bottom: 8 })
+      .padding({ left: 16, right: 16 })
+    } else if (block.type === 'quote') {
+      Column() {
+        ForEach(this.parseInlineMarkdown(block.content), (seg: InlineMarkdownSegment, idx: number) => {
+          if (seg.type === 'bolditalic') {
+            Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#222').fontSize(16)
+          } else if (seg.type === 'bold') {
+            Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#222').fontSize(16)
+          } else if (seg.type === 'italic') {
+            Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#444').fontSize(16)
+          } else if (seg.type === 'code') {
+            Text(seg.text).fontColor('#d6336c').backgroundColor('#f5f5f5').fontSize(16)
+          } else {
+            Text(seg.text).fontColor('#333').fontSize(16)
+          }
+        })
+      }
+      .backgroundColor('#f7fafc')
+      .borderRadius(8)
+      .border({ width: { left: 4 }, color: '#e2e8f0' })
+      .padding(12)
+      .width('100%')
+      .margin({ top: 8, bottom: 8 })
+      .padding({ left: 16, right: 16 })
+    } else if (block.type === 'divider') {
+      Divider()
+        .color('#e2e8f0')
+        .width('100%')
+        .margin({ top: 16, bottom: 16 })
+    }
   }
 
   // 加载文章内容
@@ -171,6 +456,35 @@ struct ArticleDetail {
     console.log('未找到文章，使用默认内容');
   }
 
+  // 1. 在 ArticleDetail 结构体内添加 parseInlineMarkdown 方法
+  parseInlineMarkdown(text: string): InlineMarkdownSegment[] {
+    const result: InlineMarkdownSegment[] = [];
+    let pattern = /(\*\*\*.+?\*\*\*)|(\*\*.+?\*\*)|(\*.+?\*)|(`.+?`)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        result.push({ type: 'normal', text: text.substring(lastIndex, match.index) });
+      }
+      if (match[1]) {
+        result.push({ type: 'bolditalic', text: match[1].slice(3, -3) });
+      } else if (match[2]) {
+        result.push({ type: 'bold', text: match[2].slice(2, -2) });
+      } else if (match[3]) {
+        result.push({ type: 'italic', text: match[3].slice(1, -1) });
+      } else if (match[4]) {
+        result.push({ type: 'code', text: match[4].slice(1, -1) });
+      }
+      lastIndex = pattern.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      result.push({ type: 'normal', text: text.substring(lastIndex) });
+    }
+    return result;
+  }
+
+  // 2. 修改 renderMarkdownContent 方法，所有 Text(block.content) 处，改为 ForEach(this.parseInlineMarkdown(block.content), ...) 分段渲染
+  // 3. 列表渲染支持有序和无序
   build() {
     Column() {
       // 顶部导航栏
@@ -223,11 +537,13 @@ struct ArticleDetail {
               .lineHeight(24)
               .padding({ left: 16, right: 16, bottom: 40 })
           } else {
-            Text(this.articleContent)
-              .fontSize(16)
-              .fontColor('#333')
-              .lineHeight(24)
-              .padding({ left: 16, right: 16, bottom: 40 })
+            // 渲染解析后的markdown内容
+            ForEach(this.parsedBlocks, (block: MarkdownBlock, index: number) => this.renderMarkdownContent(block, index))
+
+            // 底部间距，避免被底部操作栏遮挡
+            Column()
+              .height(80)
+              .width('100%')
           }
         }
         .width('100%')

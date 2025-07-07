@@ -25,6 +25,34 @@ export struct HomePage {
     this.loadDynamics(true)
   }
 
+  // 页面显示时刷新用户信息
+  onPageShow() {
+    console.log('🏠 HomePage 页面显示，刷新用户信息')
+    // 刷新用户信息，确保头像是最新的
+    this.refreshUserInfo()
+  }
+
+  // 刷新用户信息
+  async refreshUserInfo() {
+    try {
+      console.log('👤 [homepage] 开始刷新用户信息，用户UID:', globalUserData.userUID)
+      
+      const userInfo = await ApiService.getUserInfo(globalUserData.userUID)
+      
+      // 更新全局用户数据
+      globalUserData.updateUserName(userInfo.userName)
+      globalUserData.updateUserUID(userInfo.userUID)
+      globalUserData.updateUserAvatar(userInfo.userAvatar)
+      if (userInfo.isPrivacyVisible !== globalUserData.isPrivacyVisible) {
+        globalUserData.togglePrivacy()
+      }
+      
+      console.log('👤 [homepage] 用户信息刷新完成')
+    } catch (error) {
+      console.error('👤 [homepage] 刷新用户信息失败:', error)
+    }
+  }
+
   private startGalaxyAnimations() {
     // 圆弧旋转动画
     setInterval(() => {
