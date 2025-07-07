@@ -1716,8 +1716,17 @@ export class ApiService {
       }
     }
   }
+
+  /**
+   * 更具UID获取用户ID
+   */
+  static async getUserIdByUID(uid: string): Promise<number> {
+    const response = await ApiService.request<number>(`${API_BASE_URL}/user/findIDByUID?uid=${encodeURIComponent(uid)}`);
+    if (response && response.success) {
+      return response.data;
+    } else {
+      throw new Error(response?.message || '获取用户ID失败');
+    }
+  }
 }
-
-
-
 

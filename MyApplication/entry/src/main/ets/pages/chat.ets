@@ -11,6 +11,7 @@ import { Permissions } from '@kit.AbilityKit'
 import { AudioCapturerManager } from '../utils/AudioCapturerManager'
 import { getUserId } from '../common/constants';
 import promptAction from '@ohos.promptAction';
+import { globalUserData } from '../models/userdata';
 
 // 新增：点赞图标接口
 interface LikeIcon {
@@ -847,11 +848,7 @@ export struct Chat {
             // 左侧：智能体头像和名称/连接者信息
             Image($r('app.media.back'))
               .width(25)
-              .onClick(()=>{
-                router.pushUrl({
-                  url: '/pages/FeaturedList'
-                });
-              })
+              .onClick(() => router.back());
             Row() {
               Image(this.agentAvatar)
                 .width(this.isHeaderCompact ? 24 : 30).height(this.isHeaderCompact ? 24 : 30).borderRadius(this.isHeaderCompact ? 12 : 24)
@@ -941,15 +938,15 @@ export struct Chat {
               router.pushUrl({
                 url: 'pages/chatComment',
                 params: {
-                  aiRoleId: 311, //TODO : 实际为该界面对应的角色id
+                  aiRoleId: this.createdAiRoleId,
                   aiRoleName: this.agentName,
                   aiRoleAvatar: this.agentAvatar,
                   aiRoleType: this.figureType || 'default',
                   aiRoleDescription: this.description || '',
-                  currentUserId: 405 // TODO:实际应从用户数据获取
+                  currentUserId: ApiService.getUserIdByUID(globalUserData.userUID)
                 }
               });
-              console.log('跳转到评论页面，AI角色ID:', 311, '名称:', this.agentName);
+              console.log('跳转到评论页面，AI角色ID:', this.createdAiRoleId, '名称:', this.agentName);
             })
 
             Blank() // 占据剩余空间，将右侧按钮推到最右边
