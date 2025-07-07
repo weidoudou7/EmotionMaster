@@ -764,9 +764,80 @@ export struct Chat {
           .objectFit(ImageFit.Cover)
           .position({ x: 0, y: 0 })
           .zIndex(1)
-          .align(Alignment.TopStart) // 确保图片从左上角开始填充
-        // 移除expandSafeArea，让背景图片完全覆盖屏幕，包括导航栏区域
+          .align(Alignment.TopStart)
+          .expandSafeArea([SafeAreaType.KEYBOARD]) // 新增：让背景图片扩展到键盘区域
       }
+
+      if (this.figureImageUrl) {
+        Stack() {
+          // 背景大图 - 动画结束后保持显示
+          Image(this.figureImageUrl)
+            .clipShape(new Rect({ width: '100%', height: '100%' }))
+            .width('100%')
+            .height('100%')
+              //.clipShape(new Rect({ width: '500px', height: '280px' })
+            .objectFit(ImageFit.Cover)
+            .position({ x: 0, y: 0 })
+            .align(Alignment.TopStart) // 确保图片从左上角开始填充
+            .expandSafeArea([SafeAreaType.SYSTEM, SafeAreaType.KEYBOARD], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM]) // 新增：让背景图片扩展到键盘区域
+            .opacity(this._showIntroAnimation ? this._introBgOpacity : 1.0) // 动画时使用动画透明度，结束后保持完全不透明
+            .zIndex(0)
+
+
+          // 渐变背景 - 只在动画进行时显示
+          if (this._showIntroAnimation) {
+            Row()
+              .width('100%')
+              .height('100%')
+              .backgroundImage('linear-gradient(135deg, #f8b6d8 0%, #fbeee6 100%)')
+          }
+
+          // 中央角色卡片 - 只在动画进行时显示
+          if (this._showIntroAnimation) {
+            Column() {
+              Blank().height('1fr')
+
+              Row() {
+                Column() {
+                  Image(this.figureImageUrl ?? '')
+                    .width(320)
+                    .height(180)
+                    .borderRadius(12)
+                    .objectFit(ImageFit.Cover)
+                    .opacity(this._introOpacity * this._introCenterOpacity)
+                }
+                .backgroundColor('#fff')
+                .borderRadius(16)
+                .border({ width: 4, color: '#fff' })
+                .shadow({ radius: 24, color: '#00000044', offsetX: 0, offsetY: 12 })
+                .padding(6)
+                .scale({ x: this._introScale * this._introCenterScale, y: this._introScale * this._introCenterScale })
+                .translate({ x: 0, y: this._introOffsetY })
+                .rotate({ angle: this._introRotate })
+              }
+              .width('100%')
+              .justifyContent(FlexAlign.Center)
+
+              // 角色名称
+              Text(this.figureName || '')
+                .fontSize(24)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#333')
+                .margin({ top: 20 })
+                .opacity(this._introNameOpacity)
+                .translate({ x: 0, y: this._introNameOffsetY })
+
+              Blank().height('1fr')
+            }
+            .width('100%')
+            .height('100%')
+          }
+        }
+        .width('100%')
+        .height('100%')
+        .zIndex(this._showIntroAnimation ? 5 : 0) // 动画时z-index为5，结束后为1
+      }
+
 
       Column() {
         // 只有在不显示入场动画时才显示聊天界面内容
@@ -896,14 +967,16 @@ export struct Chat {
             }
             .alignItems(VerticalAlign.Center)
           }
-          .width('96%') // 调整宽度
+          .width('100%') // 调整宽度
           .height(this.isHeaderCompact ? 48 : 64) // 动态高度
-          .padding(this.isHeaderCompact ? { left: 8, right: 8, top: 4, bottom: 4 } : { left: 8, right: 8, top: 10, bottom: 10 }) // 动态padding
-          .margin({ top: this.isFromNavBar ? (this.isHeaderCompact ? 70 : 80) : (this.isHeaderCompact ? 10 : 20), bottom: 10 }) // 根据进入方式调整顶部margin
+          //.padding(this.isHeaderCompact ? { left: 8, right: 8, bottom: 4 } : { left: 8, right: 8, bottom: 10 }) // 动态padding
+          //.margin({ top: this.isFromNavBar ? (this.isHeaderCompact ? 70 : 80) : (this.isHeaderCompact ? 10 : 20), bottom: 10 }) // 根据进入方式调整顶部margin
           .alignItems(VerticalAlign.Center)
           .justifyContent(FlexAlign.SpaceBetween) // 改变布局方式
           .zIndex(10) // 提高z-index，确保在背景之上
           .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP]) // 避开顶部系统安全区域
+          .expandSafeArea([SafeAreaType.KEYBOARD])
+
 
           // 聊天消息列表 (Z-index: 2)
           Scroll(this.scrollController) {
@@ -920,9 +993,10 @@ export struct Chat {
             .padding({ left: 12, right: 12, top: 10, bottom: 10 })
           }
           .width('100%')
+          .expandSafeArea([SafeAreaType.KEYBOARD])
           .layoutWeight(1) // 占据剩余垂直空间
-          .zIndex(10) // 提高z-index，确保在背景之上
-          .expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
+          .zIndex(5) // 提高z-index，确保在背景之上
+          //.expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
           .scrollBar(BarState.Off) // 隐藏滚动条
           .edgeEffect(EdgeEffect.Spring) // 添加边缘弹性效果
           .onReachEnd(() => {
@@ -1197,14 +1271,6 @@ export struct Chat {
       .padding({ left:8,right:8, bottom: 56 }) // 底部padding与底部导航栏高度一致，避免重叠
       .zIndex(2) // 确保Column在背景图片之上
 
-      // 底部导航栏 (Z-index: 4)
-      Column() {
-        // Blank() // 移除 Blank()
-      }
-      .width('100%')
-      .alignItems(HorizontalAlign.Center)
-      .zIndex(4) // 确保在最上层
-      .align(Alignment.Bottom) // 确保对齐到 Stack 的底部
 
       // 点赞特效Canvas (Z-index: 1，在背景之上但在UI元素之下)
       if (this.isLikeEffectEnabled) {
@@ -1221,72 +1287,7 @@ export struct Chat {
           })
       }
 
-      // 新增：角色入场动画层 (Z-index: 5，最上层) - 动画结束后保持背景图片
-      if (this.figureImageUrl) {
-        Stack() {
-          // 背景大图 - 动画结束后保持显示
-          Image(this.figureImageUrl)
-            .width('100%')
-            .height('100%')
-            .objectFit(ImageFit.Cover)
-            .position({ x: 0, y: 0 })
-            .align(Alignment.TopStart) // 确保图片从左上角开始填充
-            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-            .opacity(this._showIntroAnimation ? this._introBgOpacity : 1.0) // 动画时使用动画透明度，结束后保持完全不透明
 
-          // 渐变背景 - 只在动画进行时显示
-          if (this._showIntroAnimation) {
-            Row()
-              .width('100%')
-              .height('100%')
-              .backgroundImage('linear-gradient(135deg, #f8b6d8 0%, #fbeee6 100%)')
-          }
-
-          // 中央角色卡片 - 只在动画进行时显示
-          if (this._showIntroAnimation) {
-            Column() {
-              Blank().height('1fr')
-
-              Row() {
-                Column() {
-                  Image(this.figureImageUrl ?? '')
-                    .width(320)
-                    .height(180)
-                    .borderRadius(12)
-                    .objectFit(ImageFit.Cover)
-                    .opacity(this._introOpacity * this._introCenterOpacity)
-                }
-                .backgroundColor('#fff')
-                .borderRadius(16)
-                .border({ width: 4, color: '#fff' })
-                .shadow({ radius: 24, color: '#00000044', offsetX: 0, offsetY: 12 })
-                .padding(6)
-                .scale({ x: this._introScale * this._introCenterScale, y: this._introScale * this._introCenterScale })
-                .translate({ x: 0, y: this._introOffsetY })
-                .rotate({ angle: this._introRotate })
-              }
-              .width('100%')
-              .justifyContent(FlexAlign.Center)
-
-              // 角色名称
-              Text(this.figureName || '')
-                .fontSize(24)
-                .fontWeight(FontWeight.Bold)
-                .fontColor('#333')
-                .margin({ top: 20 })
-                .opacity(this._introNameOpacity)
-                .translate({ x: 0, y: this._introNameOffsetY })
-
-              Blank().height('1fr')
-            }
-            .width('100%')
-            .height('100%')
-          }
-        }
-        .width('100%')
-        .height('100%')
-        .zIndex(this._showIntroAnimation ? 5 : 0) // 动画时z-index为5，结束后为1
-      }
 
       // 录音弹窗
       if (this.showRecordPanel) {
