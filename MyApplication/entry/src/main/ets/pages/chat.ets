@@ -169,6 +169,9 @@ export struct Chat {
     // 检查麦克风权限
     this.checkMicrophonePermission();
     
+    // 初始化语音识别引擎
+    //this.initSpeechRecognition();
+
     // 获取路由参数
     const params = router.getParams() as ChatParams;
     if (params) {
@@ -188,7 +191,7 @@ export struct Chat {
       console.log('description:', this.description);
       console.log('createdAiRoleId:', this.createdAiRoleId);
       console.log('========================');
-      
+
       // 检查必要参数是否有效
       if (this.figureImageUrl && this.figureName && this.createdAiRoleId > 0) {
         this.agentName = this.figureName;
@@ -204,7 +207,7 @@ export struct Chat {
           time: new Date().toLocaleTimeString().slice(0, 5)
         };
         this.chatData = [welcomeMessage, ...this.chatData];
-        
+
         // 记录用户开始聊天行为
         const userId = getUserId();
         if (userId !== null && this.createdAiRoleId > 0) {
@@ -677,9 +680,9 @@ export struct Chat {
         console.log('对话ID无效，先创建对话记录');
         await this.createConversationRecord();
       }
-      
-      console.log('使用featured_chat接口，描述词:', this.description);
-      aiResponse = await ApiService.featuredChat(userMessage, this.chatId, this.description);
+
+        console.log('使用featured_chat接口，描述词:', this.description);
+        aiResponse = await ApiService.featuredChat(userMessage, this.chatId, this.description);
 
 
       // 添加AI回复消息
@@ -885,23 +888,19 @@ export struct Chat {
               .objectFit(ImageFit.Cover)
               .position({ x: 0, y: 0 })
               .zIndex(1)
-              .align(Alignment.TopStart) // 确保图片从左上角开始填充
-              // 移除expandSafeArea，让背景图片完全覆盖屏幕，包括导航栏区域
-          }
+          .align(Alignment.TopStart) // 确保图片从左上角开始填充
+          // 移除expandSafeArea，让背景图片完全覆盖屏幕，包括导航栏区域
+      }
 
-          Column() {
-            // 只有在不显示入场动画时才显示聊天界面内容
-            if (!this._showIntroAnimation) {
-              // 顶部信息栏 (Z-index: 2)
-              Row() {
-                // 左侧：智能体头像和名称/连接者信息
-                Image($r('app.media.back'))
-                  .width(25)
-                  .onClick(()=>{
-                    router.pushUrl({
-                      url: '/pages/FeaturedList'
-                    });
-                  })
+      Column() {
+        // 只有在不显示入场动画时才显示聊天界面内容
+        if (!this._showIntroAnimation) {
+          // 顶部信息栏 (Z-index: 2)
+          Row() {
+            // 左侧：智能体头像和名称/连接者信息
+            Image($r('app.media.back'))
+              .width(25)
+              .onClick(() => router.back());
                 Row() {
                   Image(this.agentAvatar)
                     .width(this.isHeaderCompact ? 24 : 30).height(this.isHeaderCompact ? 24 : 30).borderRadius(this.isHeaderCompact ? 12 : 24)
@@ -957,7 +956,7 @@ export struct Chat {
                   // 切换点赞特效的开启/关闭状态
                   this.isLikeEffectEnabled = !this.isLikeEffectEnabled;
                   console.log('点击点赞按钮，点赞特效状态:', this.isLikeEffectEnabled ? '开启' : '关闭');
-                  
+
                   if (this.isLikeEffectEnabled) {
                     // 开启特效时，启动动画循环并触发一次特效作为视觉反馈
                     console.info('开启点赞特效');
@@ -972,7 +971,7 @@ export struct Chat {
                   }
                 })
 
-                // 消息按钮
+            // 消息按钮
                 Button() {
                   Row() {
                     Image($r('app.media.message_icon')) // TODO: 替换为实际的 message_icon 图片资源
@@ -991,40 +990,42 @@ export struct Chat {
                   router.pushUrl({
                     url: 'pages/chatComment',
                     params: {
-                      aiRoleId: 311, //TODO : 实际为该界面对应的角色id
+                  aiRoleId: this.createdAiRoleId,
                       aiRoleName: this.agentName,
                       aiRoleAvatar: this.agentAvatar,
                       aiRoleType: this.figureType || 'default',
                       aiRoleDescription: this.description || '',
-                      currentUserId: 405 // TODO:实际应从用户数据获取
+                  currentUserId: ApiService.getUserIdByUID(globalUserData.userUID)
                     }
                   });
-                  console.log('跳转到评论页面，AI角色ID:', 311, '名称:', this.agentName);
+              console.log('跳转到评论页面，AI角色ID:', this.createdAiRoleId, '名称:', this.agentName);
                 })
 
-                Blank() // 占据剩余空间，将右侧按钮推到最右边
+            Blank() // 占据剩余空间，将右侧按钮推到最右边
 
-                // 右侧按钮组
-                Row() {
-                  // 菜单按钮
-                  Button() {
-                    Image($r('app.media.menu_icon')) // TODO: 替换为实际的 menu_icon 图片资源
-                      .width(this.isHeaderCompact ? 18 : 20).height(this.isHeaderCompact ? 18 : 20) // 缩小图片
+            // 右侧按钮组
+            Row() {
+              // 菜单按钮
+              Button() {
+                Image($r('app.media.menu_icon')) // TODO: 替换为实际的 menu_icon 图片资源
+                  .width(this.isHeaderCompact ? 18 : 20).height(this.isHeaderCompact ? 18 : 20) // 缩小图片
                   }
-                  .height(this.isHeaderCompact ? 28 : 32).borderRadius(this.isHeaderCompact ? 14 : 16) // 缩小按钮高度
-                  .backgroundColor('rgba(255,255,255,0.2)')
-                  .padding(this.isHeaderCompact ? { left: 6, right: 6, top: 4, bottom: 4 } : { left: 10, right: 10,top:6,bottom:8}) // 添加左右内边距，使其变为椭圆形
-                }
-                .alignItems(VerticalAlign.Center)
-              }
-              .width('96%') // 调整宽度
+              .height(this.isHeaderCompact ? 28 : 32).borderRadius(this.isHeaderCompact ? 14 : 16) // 缩小按钮高度
+              .backgroundColor('rgba(255,255,255,0.2)')
+              .padding(this.isHeaderCompact ? { left: 6, right: 6, top: 4, bottom: 4 } : { left: 10, right: 10,top:6,bottom:8}) // 添加左右内边距，使其变为椭圆形
+            }
+            .alignItems(VerticalAlign.Center)
+          }
+          .width('96%') // 调整宽度
               .height(this.isHeaderCompact ? 48 : 64) // 动态高度
-              .padding(this.isHeaderCompact ? { left: 8, right: 8, top: 4, bottom: 4 } : { left: 8, right: 8, top: 10, bottom: 10 }) // 动态padding
-              .margin({ top: this.isFromNavBar ? (this.isHeaderCompact ? 70 : 80) : (this.isHeaderCompact ? 10 : 20), bottom: 10 }) // 根据进入方式调整顶部margin
+          .padding(this.isHeaderCompact ? { left: 8, right: 8, top: 4, bottom: 4 } : { left: 8, right: 8, top: 10, bottom: 10 }) // 动态padding
+          .margin({ top: this.isFromNavBar ? (this.isHeaderCompact ? 70 : 80) : (this.isHeaderCompact ? 10 : 20), bottom: 10 }) // 根据进入方式调整顶部margin
               .alignItems(VerticalAlign.Center)
               .justifyContent(FlexAlign.SpaceBetween) // 改变布局方式
               .zIndex(10) // 提高z-index，确保在背景之上
               .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP]) // 避开顶部系统安全区域
+          .expandSafeArea([SafeAreaType.KEYBOARD])
+
 
               // 聊天消息列表 (Z-index: 2)
               Scroll(this.scrollController) {
@@ -1041,9 +1042,10 @@ export struct Chat {
                 .padding({ left: 12, right: 12, top: 10, bottom: 10 })
               }
               .width('100%')
+          .expandSafeArea([SafeAreaType.KEYBOARD])
               .layoutWeight(1) // 占据剩余垂直空间
-              .zIndex(10) // 提高z-index，确保在背景之上
-              .expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
+          .zIndex(5) // 提高z-index，确保在背景之上
+          //.expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
               .scrollBar(BarState.Off) // 隐藏滚动条
               .edgeEffect(EdgeEffect.Spring) // 添加边缘弹性效果
               .onReachEnd(() => {
@@ -1057,23 +1059,23 @@ export struct Chat {
                   inputMethodController.stopInputSession();
                   this.isInputFocused = false;
                 }
-                
+
                 // 只有在点赞特效开启时才响应点赞特效
                 if (!this.isLikeEffectEnabled) {
                   return;
                 }
-                
+
                 // 在消息列表区域点击时触发点赞特效
                 console.info(`Scroll点击位置: ${event.x}, ${event.y}`)
-                
+
                 // 计算Canvas中的实际坐标
                 // Column有padding: left:8, right:8, bottom: 56
                 // Scroll组件有padding: left: 12, right: 12
                 const canvasX = event.x + 8 + 12 // 加上Column和Scroll的left padding
                 const canvasY = event.y + 56 // 加上Column的bottom padding
-                
+
                 console.info(`Canvas坐标: ${canvasX}, ${canvasY}`)
-                
+
                 // 添加多个点赞图标，创造更丰富的效果
                 this.addLikeIcon(canvasX, canvasY)
                 // 在点击位置周围添加一些随机偏移的图标
@@ -1157,7 +1159,7 @@ export struct Chat {
                   .onClick(async () => {
                     this.showExtraInputs = !this.showExtraInputs;
                     console.log('打开更多功能面板');
-                    
+
                     // 如果打开面板，则生成回复建议
                     if (this.showExtraInputs) {
                       await this.generateReplySuggestions();
@@ -1316,14 +1318,14 @@ export struct Chat {
           .padding({ left:8,right:8, bottom: 56 }) // 底部padding与底部导航栏高度一致，避免重叠
           .zIndex(2) // 确保Column在背景图片之上
 
-          // 底部导航栏 (Z-index: 4)
-          Column() {
-            // Blank() // 移除 Blank()
-          }
-          .width('100%')
-          .alignItems(HorizontalAlign.Center)
-          .zIndex(4) // 确保在最上层
-          .align(Alignment.Bottom) // 确保对齐到 Stack 的底部
+      // 底部导航栏 (Z-index: 4)
+      Column() {
+        // Blank() // 移除 Blank()
+      }
+      .width('100%')
+      .alignItems(HorizontalAlign.Center)
+      .zIndex(4) // 确保在最上层
+      .align(Alignment.Bottom) // 确保对齐到 Stack 的底部
 
           // 点赞特效Canvas (Z-index: 1，在背景之上但在UI元素之下)
           if (this.isLikeEffectEnabled) {
@@ -1340,72 +1342,72 @@ export struct Chat {
               })
           }
 
-          // 新增：角色入场动画层 (Z-index: 5，最上层) - 动画结束后保持背景图片
-          if (this.figureImageUrl) {
-            Stack() {
-              // 背景大图 - 动画结束后保持显示
-              Image(this.figureImageUrl)
-                .width('100%')
-                .height('100%')
-                .objectFit(ImageFit.Cover)
-                .position({ x: 0, y: 0 })
-                .align(Alignment.TopStart) // 确保图片从左上角开始填充
-                .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-                .opacity(this._showIntroAnimation ? this._introBgOpacity : 1.0) // 动画时使用动画透明度，结束后保持完全不透明
+      // 新增：角色入场动画层 (Z-index: 5，最上层) - 动画结束后保持背景图片
+      if (this.figureImageUrl) {
+        Stack() {
+          // 背景大图 - 动画结束后保持显示
+          Image(this.figureImageUrl)
+            .width('100%')
+            .height('100%')
+            .objectFit(ImageFit.Cover)
+            .position({ x: 0, y: 0 })
+            .align(Alignment.TopStart) // 确保图片从左上角开始填充
+            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+            .opacity(this._showIntroAnimation ? this._introBgOpacity : 1.0) // 动画时使用动画透明度，结束后保持完全不透明
 
-              // 渐变背景 - 只在动画进行时显示
-              if (this._showIntroAnimation) {
-                Row()
-                  .width('100%')
-                  .height('100%')
-                  .backgroundImage('linear-gradient(135deg, #f8b6d8 0%, #fbeee6 100%)')
-              }
+          // 渐变背景 - 只在动画进行时显示
+          if (this._showIntroAnimation) {
+            Row()
+              .width('100%')
+              .height('100%')
+              .backgroundImage('linear-gradient(135deg, #f8b6d8 0%, #fbeee6 100%)')
+          }
 
-              // 中央角色卡片 - 只在动画进行时显示
-              if (this._showIntroAnimation) {
+          // 中央角色卡片 - 只在动画进行时显示
+          if (this._showIntroAnimation) {
+            Column() {
+              Blank().height('1fr')
+
+              Row() {
                 Column() {
-                  Blank().height('1fr')
-
-                  Row() {
-                    Column() {
-                      Image(this.figureImageUrl ?? '')
-                        .width(320)
-                        .height(180)
-                        .borderRadius(12)
-                        .objectFit(ImageFit.Cover)
-                        .opacity(this._introOpacity * this._introCenterOpacity)
-                    }
-                    .backgroundColor('#fff')
-                    .borderRadius(16)
-                    .border({ width: 4, color: '#fff' })
-                    .shadow({ radius: 24, color: '#00000044', offsetX: 0, offsetY: 12 })
-                    .padding(6)
-                    .scale({ x: this._introScale * this._introCenterScale, y: this._introScale * this._introCenterScale })
-                    .translate({ x: 0, y: this._introOffsetY })
-                    .rotate({ angle: this._introRotate })
-                  }
-                  .width('100%')
-                  .justifyContent(FlexAlign.Center)
-
-                  // 角色名称
-                  Text(this.figureName || '')
-                    .fontSize(24)
-                    .fontWeight(FontWeight.Bold)
-                    .fontColor('#333')
-                    .margin({ top: 20 })
-                    .opacity(this._introNameOpacity)
-                    .translate({ x: 0, y: this._introNameOffsetY })
-
-                  Blank().height('1fr')
+                  Image(this.figureImageUrl ?? '')
+                    .width(320)
+                    .height(180)
+                    .borderRadius(12)
+                    .objectFit(ImageFit.Cover)
+                    .opacity(this._introOpacity * this._introCenterOpacity)
                 }
-                .width('100%')
-                .height('100%')
+                .backgroundColor('#fff')
+                .borderRadius(16)
+                .border({ width: 4, color: '#fff' })
+                .shadow({ radius: 24, color: '#00000044', offsetX: 0, offsetY: 12 })
+                .padding(6)
+                .scale({ x: this._introScale * this._introCenterScale, y: this._introScale * this._introCenterScale })
+                .translate({ x: 0, y: this._introOffsetY })
+                .rotate({ angle: this._introRotate })
               }
+              .width('100%')
+              .justifyContent(FlexAlign.Center)
+
+              // 角色名称
+              Text(this.figureName || '')
+                .fontSize(24)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#333')
+                .margin({ top: 20 })
+                .opacity(this._introNameOpacity)
+                .translate({ x: 0, y: this._introNameOffsetY })
+
+              Blank().height('1fr')
             }
             .width('100%')
             .height('100%')
-            .zIndex(this._showIntroAnimation ? 5 : 0) // 动画时z-index为5，结束后为1
           }
+        }
+        .width('100%')
+        .height('100%')
+        .zIndex(this._showIntroAnimation ? 5 : 0) // 动画时z-index为5，结束后为1
+      }
 
           // 录音弹窗
           if (this.showRecordPanel) {
@@ -1606,73 +1608,332 @@ export struct Chat {
   // 检查麦克风权限
   private async checkMicrophonePermission(): Promise<void> {
     try {
-      // 直接尝试申请权限，如果已授权会直接返回成功
-      const granted = await this.requestMicrophonePermission();
-      this.hasMicrophonePermission = granted;
-      console.log('麦克风权限状态:', this.hasMicrophonePermission ? '已授权' : '未授权');
+      let atManager = abilityAccessCtrl.createAtManager();
+      let context = getContext();
+      if (!context) {
+        console.error('无法获取应用上下文');
+        this.hasMicrophonePermission = false;
+        return;
+      }
+
+      // 获取应用的tokenID
+      const tokenID = context.applicationInfo.accessTokenId;
+
+      // 先检查当前权限状态
+      const permissionStatus = await atManager.verifyAccessToken(tokenID, 'ohos.permission.MICROPHONE');
+      console.log('当前麦克风权限状态:', permissionStatus);
+
+      if (permissionStatus === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED) {
+        this.hasMicrophonePermission = true;
+        console.log('麦克风权限已授权');
+        return;
+      }
+
+      // 如果权限未授权，但不主动申请，等待用户使用时再申请
+      this.hasMicrophonePermission = false;
+      console.log('麦克风权限未授权，将在使用时申请');
+
     } catch (error) {
       console.error('权限检查失败:', error);
       this.hasMicrophonePermission = false;
     }
   }
 
-  // 申请麦克风权限
-  private async requestMicrophonePermission(): Promise<boolean> {
-    let atManager = abilityAccessCtrl.createAtManager();
+  // 初始化语音识别引擎
+  private async initSpeechRecognition(): Promise<void> {
     try {
-      await atManager.requestPermissionsFromUser(globalThis.abilityContext, ['ohos.permission.MICROPHONE']);
-      // 权限申请成功，假设用户已授权
-      return true;
+      console.log('初始化语音识别引擎...');
+
+      // 在真机环境下预初始化语音识别引擎
+      if (!this.isVirtualMachine()) {
+        // 这里可以预创建引擎，但实际使用时再创建更稳定
+        console.log('真机环境，语音识别引擎将在使用时创建');
+      } else {
+        console.log('虚拟机环境，跳过语音识别引擎初始化');
+      }
+    } catch (error) {
+      console.error('语音识别引擎初始化失败:', error);
+    }
+  }
+
+  // 申请麦克风权限 - 优化版本
+  private async requestMicrophonePermission(): Promise<boolean> {
+    try {
+      console.log('=== 开始权限申请流程 ===');
+
+      // 获取应用上下文
+      let context = getContext();
+      if (!context) {
+        console.error('无法获取应用上下文');
+        promptAction.showToast({
+          message: '无法获取应用上下文，请重启应用',
+          duration: 3000
+        });
+        return false;
+      }
+
+      let atManager = abilityAccessCtrl.createAtManager();
+      console.log('权限管理器创建成功');
+
+      // 先检查权限状态
+      try {
+        // 获取应用的tokenID
+        const tokenID = context.applicationInfo.accessTokenId;
+        const permissionStatus = await atManager.verifyAccessToken(tokenID, 'ohos.permission.MICROPHONE');
+        console.log('麦克风权限状态:', permissionStatus);
+
+        if (permissionStatus === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED) {
+          console.log('麦克风权限已授权');
+          return true;
+        } else if (permissionStatus === abilityAccessCtrl.GrantStatus.PERMISSION_DENIED) {
+          console.log('麦克风权限已被拒绝');
+        } else {
+          console.log('麦克风权限状态未知:', permissionStatus);
+        }
+      } catch (verifyError) {
+        console.error('权限状态检查失败:', verifyError);
+      }
+
+      // 申请权限
+      console.log('开始申请麦克风权限...');
+      const permissions: Permissions[] = ['ohos.permission.MICROPHONE'];
+
+      // 显示权限申请提示
+      promptAction.showToast({
+        message: '正在申请麦克风权限，请在弹出的对话框中点击"允许"',
+        duration: 2000
+      });
+
+      // 尝试申请权限（最多3次）
+      for (let i = 0; i < 3; i++) {
+        try {
+          console.log(`第${i + 1}次尝试申请权限...`);
+
+          // 设置超时机制
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('权限申请超时')), 10000); // 10秒超时
+          });
+
+          const permissionPromise = atManager.requestPermissionsFromUser(context, permissions);
+          const result = await Promise.race([permissionPromise, timeoutPromise]);
+
+          console.log(`第${i + 1}次权限申请结果:`, JSON.stringify(result));
+
+          // 检查申请结果
+          if (result && Array.isArray(result.authResults) && result.authResults.length > 0) {
+            const granted = result.authResults[0] === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED;
+            console.log('麦克风权限申请结果:', granted ? '成功' : '失败');
+
+            if (granted) {
+              promptAction.showToast({
+                message: '麦克风权限已获得',
+                duration: 1000
+              });
+              return true;
+            } else {
+              console.log('权限被拒绝，authResults:', result.authResults);
+
+              // 根据拒绝原因提供不同的提示
+              const deniedReason = result.authResults[0];
+              if (deniedReason === abilityAccessCtrl.GrantStatus.PERMISSION_DENIED) {
+                promptAction.showToast({
+                  message: '麦克风权限被拒绝，请在设置中手动开启',
+                  duration: 3000
+                });
+              } else {
+                promptAction.showToast({
+                  message: '麦克风权限申请失败，请重试',
+                  duration: 3000
+                });
+              }
+              return false;
+            }
+          } else {
+            console.log('权限申请结果为空或格式错误:', result);
+          }
+
+          // 如果没有结果，等待一下再重试
+          if (i < 2) {
+            console.log('等待1秒后重试...');
+            await new Promise<void>(resolve => setTimeout(resolve, 1000));
+          }
+        } catch (retryError) {
+          console.error(`第${i + 1}次权限申请失败:`, retryError);
+          const errorMessage = retryError instanceof Error ? retryError.message : '未知错误';
+          console.error('错误详情:', errorMessage);
+
+          // 如果是超时错误，提供特殊提示
+          if (errorMessage.includes('超时')) {
+            promptAction.showToast({
+              message: '权限申请超时，请检查网络连接',
+              duration: 2000
+            });
+          }
+
+          if (i < 2) {
+            console.log('等待1秒后重试...');
+            await new Promise<void>(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      }
+
+      // 如果多次尝试都失败，提供详细的错误信息
+      console.error('所有权限申请尝试都失败了');
+      promptAction.showToast({
+        message: '麦克风权限申请失败，请检查系统设置或重启应用',
+        duration: 4000
+      });
+
+      return false;
     } catch (error) {
       console.error('申请麦克风权限失败:', error);
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      console.error('错误详情:', errorMessage);
+
+      promptAction.showToast({
+        message: '权限申请失败: ' + errorMessage,
+        duration: 4000
+      });
       return false;
     }
   }
 
   // 检测是否为虚拟机环境
   private isVirtualMachine(): boolean {
-    // 可以通过设备型号、环境变量等判断
-    // 这里简单返回true，表示虚拟机环境
-    return true; // 虚拟机中设为true，真机中设为false
+    try {
+      // 在ArkTS中，我们使用更简单的方法检测环境
+      // 通过尝试获取一些真机特有的API来判断
+      const context = getContext();
+
+      // 检查是否有真实的麦克风设备
+      // 在真机上，麦克风权限申请会成功，在模拟器上可能会失败
+      // 这里我们默认返回false，表示真机环境
+      return false;
+    } catch (error) {
+      console.log('设备检测失败，默认使用真机模式:', error);
+      return false; // 默认使用真机模式
+    }
   }
 
+
+
   private async startRecord() {
-    // 检查麦克风权限
-    if (!this.hasMicrophonePermission) {
-      console.log('麦克风权限未授权，尝试申请权限...');
-      const granted = await this.requestMicrophonePermission();
-      if (!granted) {
-        console.error('麦克风权限申请失败，无法录音');
-        // 可以显示提示信息
+    try {
+      console.log('开始录音流程...');
+
+      // 检查麦克风权限
+      if (!this.hasMicrophonePermission) {
+        console.log('麦克风权限未授权，尝试申请权限...');
+
+        // 显示权限申请提示
+        promptAction.showToast({
+          message: '正在申请麦克风权限...',
+          duration: 1000
+        });
+
+        const granted = await this.requestMicrophonePermission();
+        if (!granted) {
+          console.error('麦克风权限申请失败，无法录音');
+          // 显示更详细的提示信息
+          promptAction.showToast({
+            message: '麦克风权限被拒绝，请在设置中手动开启麦克风权限',
+            duration: 4000
+          });
+          return;
+        }
+        this.hasMicrophonePermission = true;
+
+        // 权限获得后，延迟一下再开始录音
+        setTimeout(() => {
+          this.startRecordingProcess();
+        }, 1000);
         return;
       }
-    }
 
-    this.isRecording = true;
-    this.recordDuration = 0;
-    this.fileName = Date.now().toString();
-    
-    // 虚拟机环境：模拟录音
-    if (this.isVirtualMachine()) {
-      console.log('虚拟机环境，使用模拟录音');
-      // 模拟录音文件生成
-      this.simulateRecord();
-    } else {
-      // 真机环境：真实录音
-      try {
-        await AudioCapturerManager.startRecord(this.fileName);
-        console.log('录音开始成功');
-      } catch (error) {
-        console.error('录音开始失败:', error);
-        this.isRecording = false;
+      // 如果已有权限，再次确认权限状态
+      const currentPermission = await AudioCapturerManager.checkMicrophonePermission();
+      if (!currentPermission) {
+        console.log('权限状态发生变化，重新申请权限...');
+        this.hasMicrophonePermission = false;
+        this.startRecord();
         return;
       }
-    }
 
-    this.recordTimer = setInterval(() => {
-      this.recordDuration += 1;
-      console.log('recordDuration:', this.recordDuration);
-    }, 1000);
+      // 如果已有权限，直接开始录音
+      this.startRecordingProcess();
+    } catch (error) {
+      console.error('录音启动失败:', error);
+      this.isRecording = false;
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      promptAction.showToast({
+        message: '录音启动失败: ' + errorMessage,
+        duration: 2000
+      });
+    }
+  }
+
+  // 新增：实际的录音开始流程
+  private async startRecordingProcess(): Promise<void> {
+    try {
+      this.isRecording = true;
+      this.recordDuration = 0;
+      this.fileName = Date.now().toString();
+
+      console.log('录音文件名:', this.fileName);
+
+      // 检测环境并选择录音方式
+      const isVM = this.isVirtualMachine();
+      console.log('当前环境:', isVM ? '虚拟机' : '真机');
+
+      if (isVM) {
+        // 虚拟机环境：模拟录音
+        console.log('虚拟机环境，使用模拟录音');
+        this.simulateRecord();
+      } else {
+        // 真机环境：真实录音
+        console.log('真机环境，使用真实录音');
+
+        // 再次检查权限
+        const hasPermission = await AudioCapturerManager.checkMicrophonePermission();
+        if (!hasPermission) {
+          console.error('录音前权限检查失败');
+          this.isRecording = false;
+          this.hasMicrophonePermission = false;
+          promptAction.showToast({
+            message: '麦克风权限未授权，请重新申请权限',
+            duration: 2000
+          });
+          return;
+        }
+
+        const filePath = await AudioCapturerManager.startRecord(this.fileName);
+        if (!filePath) {
+          console.error('录音开始失败');
+          this.isRecording = false;
+          promptAction.showToast({
+            message: '录音启动失败，请检查麦克风权限和设备状态',
+            duration: 3000
+          });
+          return;
+        }
+        console.log('录音开始成功，文件路径:', filePath);
+      }
+
+      // 开始计时
+      this.recordTimer = setInterval(() => {
+        this.recordDuration += 1;
+        console.log('录音时长:', this.recordDuration, '秒');
+      }, 1000);
+
+    } catch (error) {
+      console.error('录音流程启动失败:', error);
+      this.isRecording = false;
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      promptAction.showToast({
+        message: '录音流程启动失败: ' + errorMessage,
+        duration: 2000
+      });
+    }
   }
 
   // 模拟录音功能
@@ -1682,34 +1943,70 @@ export struct Chat {
   }
 
   private async stopAndSendRecord() {
-    clearInterval(this.recordTimer);
-    clearInterval(this.volumeTimer);
-    this.isRecording = false;
+    try {
+      console.log('停止录音并发送...');
 
-    if (this.isVirtualMachine()) {
-      // 虚拟机环境：模拟录音结束
-      console.log('虚拟机环境，模拟录音结束');
-    } else {
-      // 真机环境：真实录音结束
-      await AudioCapturerManager.stopRecord();
-    }
+      clearInterval(this.recordTimer);
+      clearInterval(this.volumeTimer);
+      this.isRecording = false;
 
-    if (this.isCancelRecord || this.recordDuration < 1) {
+      // 检查录音时长
+      if (this.recordDuration < 1) {
+        console.log('录音时长太短，取消发送');
+        this.recordDuration = 0;
+        this.isCancelRecord = false;
+        return;
+      }
+
+      // 检查是否取消录音
+      if (this.isCancelRecord) {
+        console.log('用户取消录音');
+        this.recordDuration = 0;
+        this.isCancelRecord = false;
+        return;
+      }
+
+      const isVM = this.isVirtualMachine();
+      console.log('停止录音，环境:', isVM ? '虚拟机' : '真机');
+
+      if (isVM) {
+        // 虚拟机环境：模拟录音结束
+        console.log('虚拟机环境，模拟录音结束');
+        this.simulateVoiceRecognition();
+      } else {
+        // 真机环境：真实录音结束
+        console.log('真机环境，停止真实录音');
+        const stopSuccess = await AudioCapturerManager.stopRecord();
+        if (!stopSuccess) {
+          console.error('录音停止失败');
+          promptAction.showToast({
+            message: '录音停止失败',
+            duration: 2000
+          });
+          return;
+        }
+
+        // 检查录音文件是否存在
+        const filePath = AudioCapturerManager.getRecordFilePath();
+        console.log('录音文件路径:', filePath);
+
+        // 开始语音识别
+        this.recognizeAudioFile(this.fileName);
+      }
+
       this.recordDuration = 0;
       this.isCancelRecord = false;
-      return;
-    }
 
-    // 虚拟机环境：模拟语音识别
-    if (this.isVirtualMachine()) {
-      this.simulateVoiceRecognition();
-    } else {
-      // 真机环境：真实语音识别
-      this.recognizeAudioFile(this.fileName);
+    } catch (error) {
+      console.error('停止录音失败:', error);
+      this.recordDuration = 0;
+      this.isCancelRecord = false;
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      promptAction.showToast({
+        message: '录音处理失败: ' + errorMessage,
+        duration: 2000
+      });
     }
-
-    this.recordDuration = 0;
-    this.isCancelRecord = false;
   }
 
   // 模拟语音识别
@@ -1721,9 +2018,29 @@ export struct Chat {
   }
 
   private recognizeAudioFile(fileName: string) {
+    console.log('开始语音识别，文件名:', fileName);
+
+    // 显示识别中提示
+    promptAction.showToast({
+      message: '正在识别语音...',
+      duration: 2000
+    });
+
     SpeechRecognizerManager.init2((res) => {
+      console.log('语音识别结果:', res);
       let text = res.result || '未识别到语音内容';
-      this.sendVoiceMessage(fileName, this.recordDuration, text);
+
+      if (text && text !== '未识别到语音内容' && !text.includes('失败')) {
+        console.log('语音识别成功:', text);
+        this.sendVoiceMessage(fileName, this.recordDuration, text);
+      } else {
+        console.log('语音识别失败或结果为空');
+        promptAction.showToast({
+          message: '语音识别失败，请重试',
+          duration: 2000
+        });
+        this.sendVoiceMessage(fileName, this.recordDuration, '语音识别失败');
+      }
     }, fileName);
   }
 
