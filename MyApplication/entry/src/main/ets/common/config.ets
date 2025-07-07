@@ -15,14 +15,14 @@ export class Config {
   // 开发环境配置
   private static readonly DEV_CONFIG: EnvironmentConfig = {
     //API_BASE_URL: 'http://localhost:8081/api', // 如果前后端在同一台机器，使用localhost
-     API_BASE_URL: 'http://10.255.18.25:8081/api', // 如果使用局域网IP
+     API_BASE_URL: 'http://10.255.6.210:8081/api', // 已更改为你的局域网IP
     TIMEOUT: 20000, // 10秒超时
     DEBUG: true
   };
 
   // 测试环境配置
   private static readonly TEST_CONFIG: EnvironmentConfig = {
-    API_BASE_URL: 'http://192.168.1.100:8081/api', // 替换为您的局域网IP
+    API_BASE_URL: 'http://10.255.6.210:8081/api', // 替换为您的局域网IP
     TIMEOUT: 20000, // 10秒超时
     DEBUG: true
   };

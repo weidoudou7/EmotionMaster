@@ -1,6 +1,7 @@
 import router from '@ohos.router';
 import { MusicDetailVO } from '../common/types';
 import { ApiService } from '../service/apiservice';
+import promptAction from '@ohos.promptAction';
 
 // 定义专栏项接口
 interface SectionItem {
@@ -339,7 +340,11 @@ export struct FMHomePage {
         }
         songs.push(detail);
       } catch (e) {
-        // 错误处理
+        console.error(`获取歌曲详情失败，ID: ${id}, 错误:`, e);
+        promptAction.showToast({
+          message: `获取歌曲 ${id} 失败，请检查网络或后端服务。`,
+          duration: 3000
+        });
       }
     }
     this.randomSongs = songs;
