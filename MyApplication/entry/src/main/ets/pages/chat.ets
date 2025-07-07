@@ -48,6 +48,7 @@ interface ChatParams {
   isFromCreateFigure?: boolean;
   description?: string; // 新增：描述词参数
   createdAiRoleId?: number; // 新增
+  isFromNavBar?: boolean; // 新增：是否从导航栏进入
 }
 
 // 新增：治愈天使信息接口
@@ -113,6 +114,7 @@ export struct Chat {
   };
 
   @State private createdAiRoleId: number = 0; // 新增：创建的AI角色ID
+  @State private isFromNavBar: boolean = false; // 新增：是否从导航栏进入
   @State private isVoiceMode: boolean = false;
   @State private isRecording: boolean = false;
   @State private showRecordPanel: boolean = false;
@@ -172,6 +174,7 @@ export struct Chat {
       this.isFromCreateFigure = params.isFromCreateFigure || false;
       this.description = params.description || '';
       this.createdAiRoleId = params.createdAiRoleId || 0; // 新增
+      this.isFromNavBar = params.isFromNavBar || false; // 新增
       // 添加调试日志
       console.log('=== Chat页面接收到的参数 ===');
       console.log('figureImageUrl:', this.figureImageUrl);
@@ -758,7 +761,7 @@ export struct Chat {
           .position({ x: 0, y: 0 })
           .zIndex(1)
           .align(Alignment.TopStart) // 确保图片从左上角开始填充
-          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+          // 移除expandSafeArea，让背景图片完全覆盖屏幕，包括导航栏区域
       }
 
       Column() {
@@ -892,11 +895,11 @@ export struct Chat {
           .width('96%') // 调整宽度
           .height(this.isHeaderCompact ? 48 : 64) // 动态高度
           .padding(this.isHeaderCompact ? { left: 8, right: 8, top: 4, bottom: 4 } : { left: 8, right: 8, top: 10, bottom: 10 }) // 动态padding
-          .margin({ top: this.isHeaderCompact ? 10 : 20, bottom: 10 }) // 调整顶部margin
+          .margin({ top: this.isFromNavBar ? (this.isHeaderCompact ? 70 : 80) : (this.isHeaderCompact ? 10 : 20), bottom: 10 }) // 根据进入方式调整顶部margin
           .alignItems(VerticalAlign.Center)
           .justifyContent(FlexAlign.SpaceBetween) // 改变布局方式
-          .zIndex(2)
-          .expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
+          .zIndex(10) // 提高z-index，确保在背景之上
+          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP]) // 避开顶部系统安全区域
 
           // 聊天消息列表 (Z-index: 2)
           Scroll(this.scrollController) {
@@ -910,11 +913,11 @@ export struct Chat {
               }, (item: ChatMessage) => item.id.toString())
             }
             .width('100%')
-            .padding({ left: 12, right: 12, top: 0, bottom: 10 })
+            .padding({ left: 12, right: 12, top: 10, bottom: 10 })
           }
           .width('100%')
           .layoutWeight(1) // 占据剩余垂直空间
-          .zIndex(2)
+          .zIndex(10) // 提高z-index，确保在背景之上
           .expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
           .scrollBar(BarState.Off) // 隐藏滚动条
           .edgeEffect(EdgeEffect.Spring) // 添加边缘弹性效果
@@ -1322,6 +1325,9 @@ export struct Chat {
         .zIndex(99)
       }
     }
+    .width('100%')
+    .height('100%')
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP]) // 避开顶部系统安全区域
   }
 
   // 好友消息组件（左侧）

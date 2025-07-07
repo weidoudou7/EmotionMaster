@@ -37,6 +37,12 @@ export struct ChatCommentPage {
   @State private pendingDeleteCommentId: number | null = null; // 待删除的评论ID
   @State private deleteConfirmTimeout: number | null = null; // 删除确认超时定时器
 
+  // 新增：动画相关状态
+  @State private arcRotation: number = 0;
+  @State private glowOpacity: number = 0.5;
+  @State private textOpacity: number = 0.8;
+  @State private lineScale: number = 1.0;
+
   aboutToAppear() {
     this.isActive = true;
     // 获取路由参数
@@ -60,6 +66,7 @@ export struct ChatCommentPage {
       console.info(`[评论] 路由参数 aiRoleId=${this.aiRoleId}, currentUserId=${this.currentUserId}`);
     }
     this.loadAllComments();
+    this.startAnimations();
   }
 
   aboutToDisappear() {
@@ -69,6 +76,29 @@ export struct ChatCommentPage {
       clearTimeout(this.deleteConfirmTimeout);
       this.deleteConfirmTimeout = null;
     }
+  }
+
+  // 新增：启动动画
+  private startAnimations() {
+    // 圆弧旋转动画
+    setInterval(() => {
+      this.arcRotation += 2
+    }, 50)
+    
+    // 线条缩放动画
+    setInterval(() => {
+      this.lineScale = this.lineScale === 1.0 ? 1.1 : 1.0
+    }, 1200)
+    
+    // 发光效果动画
+    setInterval(() => {
+      this.glowOpacity = this.glowOpacity === 0.5 ? 0.8 : 0.5
+    }, 1000)
+    
+    // 文字透明度动画
+    setInterval(() => {
+      this.textOpacity = this.textOpacity === 0.8 ? 1.0 : 0.8
+    }, 1500)
   }
 
   // 加载所有评论（包括主评论和回复）
@@ -423,25 +453,92 @@ export struct ChatCommentPage {
 
   build() {
     Stack() {
+      // 深色渐变背景
+      Column()
+        .width('100%')
+        .height('100%')
+        .linearGradient({
+          direction: GradientDirection.Bottom,
+          colors: [['#000000', 0.0], ['#0a0a0a', 0.5], ['#1a1a1a', 1.0]]
+        })
+      
+      // 旋转的圆弧背景装饰
+      Stack() {
+        // 多个同心圆弧轨道
+        ForEach([0, 1, 2, 3], (index: number) => {
+          Stack() {
+            // 圆弧轨道
+            Column()
+              .width(200 + index * 60)
+              .height(200 + index * 60)
+              .borderRadius((200 + index * 60) / 2)
+              .border({ width: 1, color: `rgba(64, 64, 64, ${0.3 - index * 0.05})` })
+              .position({ x: '50%', y: '50%' })
+              .translate({ x: -(200 + index * 60) / 2, y: -(200 + index * 60) / 2 })
+            
+            // 旋转的圆弧点
+            Column()
+              .width(8)
+              .height(8)
+              .backgroundColor(`rgba(255, 255, 255, ${0.6 - index * 0.1})`)
+              .borderRadius(4)
+              .position({ x: '50%', y: '50%' })
+              .translate({ 
+                x: -4 + Math.cos((this.arcRotation + index * 90) * Math.PI / 180) * (100 + index * 30),
+                y: -4 + Math.sin((this.arcRotation + index * 90) * Math.PI / 180) * (100 + index * 30)
+              })
+          }
+        })
+        
+        // 外圈装饰点
+        ForEach([0, 1, 2, 3, 4, 5, 6, 7], (index: number) => {
+          Column()
+            .width(4)
+            .height(4)
+            .backgroundColor(`rgba(192, 192, 192, ${0.4 - index * 0.03})`)
+            .borderRadius(2)
+            .position({ x: '50%', y: '50%' })
+            .translate({ 
+              x: -2 + Math.cos((this.arcRotation * 0.5 + index * 45) * Math.PI / 180) * 160,
+              y: -2 + Math.sin((this.arcRotation * 0.5 + index * 45) * Math.PI / 180) * 160
+            })
+        })
+      }
+      .width('100%')
+      .height('100%')
+      
+      // 主要内容区域
       Column() {
-        // 顶部栏
+        // 顶部导航栏 - 现代化设计
         Row() {
-          Button('<')
-            .backgroundColor('transparent')
-            .fontColor('#fff')
-            .fontSize(24)
+          // 返回按钮
+          Button('←')
+            .width(44)
+            .height(44)
+            .backgroundColor('rgba(255, 255, 255, 0.1)')
+            .borderRadius(22)
+            .fontColor('#ffffff')
+            .fontSize(18)
             .onClick(() => {
               router.back();
             })
-          Blank().width(8)
+            
+          // 标题
           Text(`${this.aiRoleName}的评论区`)
             .fontSize(22)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#fff')
+            .fontColor('#ffffff')
             .layoutWeight(1)
-          Button('...')
-            .backgroundColor('transparent')
-            .fontColor('#fff')
+            .textAlign(TextAlign.Center)
+            .opacity(this.textOpacity)
+          
+          // 功能按钮
+          Button('⋯')
+            .width(44)
+            .height(44)
+            .backgroundColor('rgba(255, 255, 255, 0.1)')
+            .borderRadius(22)
+            .fontColor('#ffffff')
             .fontSize(20)
             .onClick(() => setTimeout(() => { 
               if (!this.isActive) return; 
@@ -454,235 +551,395 @@ export struct ChatCommentPage {
               }
             }, 100))
         }
-        .padding({ left: 12, right: 12, top: 12, bottom: 8 })
+        .width('100%')
+        .padding({ left: 20, right: 20, top: 20, bottom: 20 })
+        .justifyContent(FlexAlign.SpaceBetween)
         .alignItems(VerticalAlign.Center)
 
         // 滚动内容区（包含用户信息和评论列表）
         List() {
-          // AI角色信息卡片
+          // AI角色信息卡片 - 现代化设计
           ListItem() {
-            Row() {
-              Image(this.aiRoleAvatar || 'https://img.zcool.cn/community/01b6c95d5b2e2fa801216518a8e3e2.jpg')
-                .width(64).height(64)
-                .borderRadius(32)
-                .objectFit(ImageFit.Cover)
-              Column() {
-                Text(this.aiRoleName)
-                  .fontSize(22)
-                  .fontWeight(FontWeight.Bold)
-                  .fontColor('#fff')
-                  .margin({ bottom: 2 })
-                Text(`${this.aiRoleType}风格角色`)
-                  .fontSize(14)
-                  .fontColor('rgba(255,255,255,0.7)')
-                  .margin({ bottom: 2 })
-                Row() {
-                  Text('类型：')
-                    .fontSize(14)
-                    .fontColor('rgba(255,255,255,0.7)')
-                  Text(this.aiRoleType)
-                    .fontSize(14)
-                    .fontColor('#FFD700')
-                    .fontWeight(FontWeight.Bold)
-                    .margin({ left: 2 })
+            Column() {
+              // 角色信息卡片
+              Row() {
+                // 角色头像
+                Stack() {
+                  if (this.aiRoleAvatar && this.aiRoleAvatar.trim() !== '') {
+                    Image(this.aiRoleAvatar)
+                      .width(80)
+                      .height(80)
+                      .borderRadius(40)
+                      .objectFit(ImageFit.Cover)
+                  } else {
+                    Text('🤖')
+                      .fontSize(36)
+                      .fontColor('#ffffff')
+                      .width(80)
+                      .height(80)
+                      .textAlign(TextAlign.Center)
+                      .backgroundColor('rgba(255, 255, 255, 0.1)')
+                      .borderRadius(40)
+                  }
+                  
+                  // 头像发光效果
+                  Circle()
+                    .width(100)
+                    .height(100)
+                    .fill('rgba(255, 255, 255, 0.05)')
+                    .stroke(`rgba(255, 255, 255, ${this.glowOpacity * 0.3})`)
+                    .strokeWidth(2)
+                    .position({ x: -10, y: -10 })
+                    .animation({
+                      duration: 3000,
+                      curve: Curve.EaseInOut,
+                      iterations: -1,
+                      playMode: PlayMode.Alternate
+                    })
+                    .scale({ x: this.lineScale, y: this.lineScale })
+                    .opacity(0.6)
                 }
-              }
-              .margin({ left: 12, right: 8 })
-              .alignItems(HorizontalAlign.Start)
-              Blank().layoutWeight(1)
-              Column() {
+                .width(80)
+                .height(80)
+                .borderRadius(40)
+                .border({ width: 2, color: 'rgba(255, 255, 255, 0.2)' })
+                .shadow({ radius: 8, color: '#00000040', offsetX: 0, offsetY: 4 })
+                
+                // 角色信息
+                Column() {
+                  Text(this.aiRoleName)
+                    .fontSize(24)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor('#ffffff')
+                    .opacity(this.textOpacity)
+                    .margin({ bottom: 8 })
+                    .textAlign(TextAlign.Start)
+                  
+                  Text(`${this.aiRoleType}风格角色`)
+                    .fontSize(16)
+                    .fontColor('rgba(255,255,255,0.8)')
+                    .margin({ bottom: 8 })
+                    .textAlign(TextAlign.Start)
+                  
+                  Row() {
+                    Text('类型：')
+                      .fontSize(14)
+                      .fontColor('rgba(255,255,255,0.7)')
+                    Text(this.aiRoleType)
+                      .fontSize(14)
+                      .fontColor('#FFD700')
+                      .fontWeight(FontWeight.Bold)
+                      .margin({ left: 2 })
+                  }
+                }
+                .layoutWeight(1)
+                .justifyContent(FlexAlign.Start)
+                .margin({ left: 20 })
+                .alignItems(HorizontalAlign.Start)
+                
+                // 返回聊天按钮
                 Button('返回聊天')
-                  .fontColor('#FFD700')
-                  .fontSize(16)
-                  .border({ width: 1, color: '#FFD700' })
+                  .width(100)
+                  .height(40)
+                  .backgroundColor('rgba(255, 255, 255, 0.15)')
                   .borderRadius(20)
-                  .backgroundColor('transparent')
-                  .width(80)
-                  .height(36)
+                  .fontSize(14)
+                  .fontColor('#ffffff')
+                  .fontWeight(FontWeight.Medium)
+                  .border({ width: 1, color: 'rgba(255, 255, 255, 0.2)' })
                   .onClick(() => {
                     router.back();
                   })
+                  .animation({
+                    duration: 200,
+                    curve: Curve.EaseInOut
+                  })
+                  .scale({ x: 1.0, y: 1.0 })
               }
-              .justifyContent(FlexAlign.Center)
-              .alignItems(HorizontalAlign.Center)
+              .width('100%')
+              .padding({ left: 25, right: 25, top: 25, bottom: 25 })
+              .backgroundColor('rgba(255, 255, 255, 0.08)')
+              .borderRadius(20)
+              .border({ width: 1, color: 'rgba(255, 255, 255, 0.15)' })
+              .shadow({ radius: 15, color: '#00000050', offsetX: 0, offsetY: 8 })
+              .margin({ left: 20, right: 20, bottom: 20 })
             }
-            .padding({ left: 16, right: 16, top: 8, bottom: 8 })
           }
           
-          // 评论总数
+          // 评论总数 - 现代化设计
           ListItem() {
-            Text(`全部评论 ${this.comments.length}`)
-              .fontSize(15)
-              .fontWeight(FontWeight.Bold)
-              .fontColor('#fff')
-              .margin({ left: 5, top: 8, bottom: 8 })
+            Row() {
+              Text('💬')
+                .fontSize(20)
+                .margin({ right: 8 })
+              Text(`全部评论 ${this.comments.length}`)
+                .fontSize(18)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#ffffff')
+                .opacity(this.textOpacity)
+            }
+            .width('100%')
+            .padding({ left: 25, right: 25, top: 15, bottom: 15 })
+            .backgroundColor('rgba(255, 255, 255, 0.05)')
+            .borderRadius(15)
+            .margin({ left: 20, right: 20, bottom: 15 })
           }
           
           // 评论列表
           if (this.comments.length === 0) {
             ListItem() {
-              Row() {
+              Column() {
+                Text('💭')
+                  .fontSize(48)
+                  .margin({ bottom: 16 })
                 Text('暂无评论，快来抢沙发吧~')
                   .fontSize(16)
                   .fontColor('rgba(255,255,255,0.6)')
-                  .margin({ top: 24, bottom: 24 })
-                  .width('100%')
                   .textAlign(TextAlign.Center)
               }
               .width('100%')
+              .padding({ top: 40, bottom: 40 })
               .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center)
             }
           }
           ForEach(this.comments, (item: CommentItem, idx: number) => {
             ListItem() {
               Column() {
-                // 主评论
-                Row() {
-                  Image(item.profileImage || 'https://img.zcool.cn/community/01b6c95d5b2e2fa801216518a8e3e2.jpg')
-                    .width(44).height(44)
-                    .borderRadius(22)
-                  Column() {
-                    Row() {
-                      Text(item.username || '未知用户')
-                        .fontSize(16)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor('#fff')
-                      if (item.isAuthor) {
-                        Text('作者')
-                          .fontSize(12)
-                          .fontColor('#FFD700')
-                          .margin({ left: 4 })
-                      }
-                      if (item.isTop) {
-                        Text('置顶')
-                          .fontSize(12)
-                          .fontColor('#fff')
-                          .backgroundColor('#333')
-                          .borderRadius(8)
-                          .margin({ left: 4 })
+                // 主评论 - 现代化设计
+                Column() {
+                  Row() {
+                    // 用户头像
+                    Stack() {
+                      if (item.profileImage && item.profileImage.trim() !== '') {
+                        Image(item.profileImage)
+                          .width(50)
+                          .height(50)
+                          .borderRadius(25)
+                          .objectFit(ImageFit.Cover)
+                      } else {
+                        Text('👤')
+                          .fontSize(24)
+                          .fontColor('#ffffff')
+                          .width(50)
+                          .height(50)
+                          .textAlign(TextAlign.Center)
+                          .backgroundColor('rgba(255, 255, 255, 0.1)')
+                          .borderRadius(25)
                       }
                     }
-                    Text(item.content)
-                      .fontSize(15)
-                      .fontColor('#fff')
-                      .margin({ top: 2, bottom: 2, right: 16 })
-                      .textOverflow({ overflow: TextOverflow.Clip })
+                    .width(50)
+                    .height(50)
+                    .borderRadius(25)
+                    .border({ width: 1, color: 'rgba(255, 255, 255, 0.2)' })
+                    .shadow({ radius: 4, color: '#00000030', offsetX: 0, offsetY: 2 })
+                    
+                    // 评论内容
+                    Column() {
+                      Row() {
+                        Text(item.username || '未知用户')
+                          .fontSize(16)
+                          .fontWeight(FontWeight.Bold)
+                          .fontColor('#ffffff')
+                          .opacity(this.textOpacity)
+                        if (item.isAuthor) {
+                          Text('作者')
+                            .fontSize(12)
+                            .fontColor('#FFD700')
+                            .backgroundColor('rgba(255, 215, 0, 0.2)')
+                            .borderRadius(8)
+                            .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+                            .margin({ left: 8 })
+                        }
+                        if (item.isTop) {
+                          Text('置顶')
+                            .fontSize(12)
+                            .fontColor('#ffffff')
+                            .backgroundColor('rgba(255, 255, 255, 0.2)')
+                            .borderRadius(8)
+                            .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+                            .margin({ left: 8 })
+                        }
+                      }
+                      .margin({ bottom: 8 })
+                      
+                      Text(item.content)
+                        .fontSize(15)
+                        .fontColor('#ffffff')
+                        .opacity(this.textOpacity)
+                        .margin({ bottom: 12 })
+                        .textAlign(TextAlign.Start)
+                        .width('100%')
+                      
+                      Row() {
+                        Text(this.formatTime(item.createdAt))
+                          .fontSize(12)
+                          .fontColor('rgba(255,255,255,0.5)')
+                        
+                        Text('回复')
+                          .fontSize(12)
+                          .fontColor('rgba(255,255,255,0.5)')
+                          .margin({ left: 16 })
+                          .onClick(() => {
+                            this.replyToComment = item;
+                            this.commentText = '';
+                          })
+                        
+                        // 删除主评论按钮（只有评论作者可以删除）
+                        if (item.userId === this.currentUserId) {
+                          Text('删除')
+                            .fontSize(12)
+                            .fontColor(this.pendingDeleteCommentId === item.id ? '#FF6B6B' : 'rgba(255,255,255,0.5)')
+                            .fontWeight(this.pendingDeleteCommentId === item.id ? FontWeight.Bold : FontWeight.Normal)
+                            .margin({ left: 16 })
+                            .onClick(() => this.deleteComment(item.id))
+                        }
+                        
+                        Blank().layoutWeight(1)
+                        
+                        // 爱心点赞
+                        Text(this.likedComments.has(item.id) ? '❤️' : '🤍')
+                          .fontSize(18)
+                          .margin({ right: 4 })
+                          .scale({ x: this.heartScales[item.id] || 1, y: this.heartScales[item.id] || 1 })
+                          .animation({
+                            duration: 200,
+                            curve: Curve.EaseInOut
+                          })
+                          .onClick(() => this.likeComment(item.id))
+                        
+                        Text(this.likeCounts[item.id] !== undefined ? this.likeCounts[item.id].toString() : item.likeCount.toString())
+                          .fontSize(12)
+                          .fontColor('rgba(255,255,255,0.5)')
+                          .margin({ right: 8 })
+                      }
                       .width('100%')
-                    Row() {
-                      Text(this.formatTime(item.createdAt))
-                        .fontSize(12)
-                        .fontColor('rgba(255,255,255,0.5)')
-                      Text('回复')
-                        .fontSize(12)
-                        .fontColor('rgba(255,255,255,0.5)')
-                        .margin({ left: 8 })
-                        .onClick(() => {
-                          this.replyToComment = item;
-                          this.commentText = '';
-                        })
-                      // 删除主评论按钮（只有评论作者可以删除）
-                      if (item.userId === this.currentUserId) {
-                        Text('删除')
-                          .fontSize(12)
-                          .fontColor(this.pendingDeleteCommentId === item.id ? '#FF6B6B' : 'rgba(255,255,255,0.5)')
-                          .fontWeight(this.pendingDeleteCommentId === item.id ? FontWeight.Bold : FontWeight.Normal)
-                          .margin({ left: 8 })
-                          .onClick(() => this.deleteComment(item.id))
-                      }
-                      Blank().layoutWeight(1)
-                      // 爱心点赞
-                      Text(this.likedComments.has(item.id) ? '❤️' : '🤍')
-                        .fontSize(18)
-                        .margin({ right: 2 })
-                        .scale({ x: this.heartScales[item.id] || 1, y: this.heartScales[item.id] || 1 })
-                        .animation({
-                          duration: 200,
-                          curve: Curve.EaseInOut
-                        })
-                        .onClick(() => this.likeComment(item.id))
-                      Text(this.likeCounts[item.id] !== undefined ? this.likeCounts[item.id].toString() : item.likeCount.toString())
-                        .fontSize(12)
-                        .fontColor('rgba(255,255,255,0.5)')
-                        .margin({ right: 16 })
+                      .alignItems(VerticalAlign.Center)
                     }
+                    .layoutWeight(1)
+                    .alignItems(HorizontalAlign.Start)
+                    .margin({ left: 12 })
                   }
-                  .margin({ left: 10, right: 0 })
-                  .alignItems(HorizontalAlign.Start)
-                  .layoutWeight(1)
                   .width('100%')
+                  .padding({ left: 20, right: 20, top: 16, bottom: 16 })
+                  .backgroundColor('rgba(255, 255, 255, 0.08)')
+                  .borderRadius(16)
+                  .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+                  .shadow({ radius: 8, color: '#00000030', offsetX: 0, offsetY: 4 })
                 }
-                .width('100%')
-                .padding({ top: 10, bottom: 10, left: 16, right: 0 })
+                .margin({ bottom: 12 })
                 
-                                // 渲染所有回复
+                                // 渲染所有回复 - 现代化设计
                 if (item.replies && Array.isArray(item.replies) && item.replies.length > 0) {
                   ForEach(item.replies, (reply: CommentItem, ridx: number) => {
-                    Row() {
-                      Image(reply.profileImage || 'https://img.zcool.cn/community/01b6c95d5b2e2fa801216518a8e3e2.jpg')
-                        .width(32).height(32)
-                        .borderRadius(16)
-                      Column() {
-                        Row() {
-                          Text(reply.username || '未知用户')
-                            .fontSize(14)
-                            .fontColor('#FFD700')
-                          if (reply.isAuthor) {
-                            Text('作者')
-                              .fontSize(11)
+                    Column() {
+                      Row() {
+                        // 回复用户头像
+                        Stack() {
+                          if (reply.profileImage && reply.profileImage.trim() !== '') {
+                            Image(reply.profileImage)
+                              .width(36)
+                              .height(36)
+                              .borderRadius(18)
+                              .objectFit(ImageFit.Cover)
+                          } else {
+                            Text('👤')
+                              .fontSize(18)
+                              .fontColor('#ffffff')
+                              .width(36)
+                              .height(36)
+                              .textAlign(TextAlign.Center)
+                              .backgroundColor('rgba(255, 255, 255, 0.1)')
+                              .borderRadius(18)
+                          }
+                        }
+                        .width(36)
+                        .height(36)
+                        .borderRadius(18)
+                        .border({ width: 1, color: 'rgba(255, 255, 255, 0.15)' })
+                        
+                        // 回复内容
+                        Column() {
+                          Row() {
+                            Text(reply.username || '未知用户')
+                              .fontSize(14)
                               .fontColor('#FFD700')
-                              .margin({ left: 4 })
+                              .fontWeight(FontWeight.Medium)
+                            if (reply.isAuthor) {
+                              Text('作者')
+                                .fontSize(10)
+                                .fontColor('#FFD700')
+                                .backgroundColor('rgba(255, 215, 0, 0.2)')
+                                .borderRadius(6)
+                                .padding({ left: 6, right: 6, top: 1, bottom: 1 })
+                                .margin({ left: 6 })
+                            }
                           }
-                        }
-                        Text(reply.content)
-                          .fontSize(14)
-                          .fontColor('#fff')
-                          .margin({ top: 2, bottom: 2, right: 16 })
-                          .textOverflow({ overflow: TextOverflow.Clip })
-                          .width('100%')
-                        Row() {
-                          Text(this.formatTime(reply.createdAt))
-                            .fontSize(11)
-                            .fontColor('rgba(255,255,255,0.5)')
-                          Text('回复')
-                            .fontSize(11)
-                            .fontColor('rgba(255,255,255,0.5)')
-                            .margin({ left: 8 })
-                            .onClick(() => {
-                              this.replyToComment = reply;
-                              this.commentText = '';
-                            })
-                          // 删除回复按钮（只有回复作者可以删除）
-                          if (reply.userId === this.currentUserId) {
-                            Text('删除')
+                          .margin({ bottom: 6 })
+                          
+                          Text(reply.content)
+                            .fontSize(14)
+                            .fontColor('#ffffff')
+                            .opacity(this.textOpacity)
+                            .margin({ bottom: 8 })
+                            .textAlign(TextAlign.Start)
+                            .width('100%')
+                          
+                          Row() {
+                            Text(this.formatTime(reply.createdAt))
                               .fontSize(11)
-                              .fontColor(this.pendingDeleteCommentId === reply.id ? '#FF6B6B' : 'rgba(255,255,255,0.5)')
-                              .fontWeight(this.pendingDeleteCommentId === reply.id ? FontWeight.Bold : FontWeight.Normal)
-                              .margin({ left: 8 })
-                              .onClick(() => this.deleteComment(reply.id))
+                              .fontColor('rgba(255,255,255,0.5)')
+                            
+                            Text('回复')
+                              .fontSize(11)
+                              .fontColor('rgba(255,255,255,0.5)')
+                              .margin({ left: 12 })
+                              .onClick(() => {
+                                this.replyToComment = reply;
+                                this.commentText = '';
+                              })
+                            
+                            // 删除回复按钮（只有回复作者可以删除）
+                            if (reply.userId === this.currentUserId) {
+                              Text('删除')
+                                .fontSize(11)
+                                .fontColor(this.pendingDeleteCommentId === reply.id ? '#FF6B6B' : 'rgba(255,255,255,0.5)')
+                                .fontWeight(this.pendingDeleteCommentId === reply.id ? FontWeight.Bold : FontWeight.Normal)
+                                .margin({ left: 12 })
+                                .onClick(() => this.deleteComment(reply.id))
+                            }
+                            
+                            Blank().layoutWeight(1)
+                            
+                            Text(this.likedComments.has(reply.id) ? '❤️' : '🤍')
+                              .fontSize(15)
+                              .margin({ right: 3 })
+                              .scale({ x: this.heartScales[reply.id] || 1, y: this.heartScales[reply.id] || 1 })
+                              .animation({
+                                duration: 200,
+                                curve: Curve.EaseInOut
+                              })
+                              .onClick(() => this.likeComment(reply.id))
+                            
+                            Text(this.likeCounts[reply.id] !== undefined ? this.likeCounts[reply.id].toString() : reply.likeCount.toString())
+                              .fontSize(11)
+                              .fontColor('rgba(255,255,255,0.5)')
+                              .margin({ right: 6 })
                           }
-                          Blank().layoutWeight(1)
-                          Text(this.likedComments.has(reply.id) ? '❤️' : '🤍')
-                            .fontSize(15)
-                            .margin({ right: 2 })
-                            .scale({ x: this.heartScales[reply.id] || 1, y: this.heartScales[reply.id] || 1 })
-                            .animation({
-                              duration: 200,
-                              curve: Curve.EaseInOut
-                            })
-                            .onClick(() => this.likeComment(reply.id))
-                          Text(this.likeCounts[reply.id] !== undefined ? this.likeCounts[reply.id].toString() : reply.likeCount.toString())
-                            .fontSize(11)
-                            .fontColor('rgba(255,255,255,0.5)')
-                            .margin({ right: 16 })
+                          .width('100%')
+                          .alignItems(VerticalAlign.Center)
                         }
+                        .layoutWeight(1)
+                        .alignItems(HorizontalAlign.Start)
+                        .margin({ left: 10 })
                       }
-                      .margin({ left: 10, right: 0 })
-                      .alignItems(HorizontalAlign.Start)
-                      .layoutWeight(1)
                       .width('100%')
+                      .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+                      .backgroundColor('rgba(255, 255, 255, 0.05)')
+                      .borderRadius(12)
+                      .border({ width: 1, color: 'rgba(255, 255, 255, 0.08)' })
+                      .margin({ left: 20, right: 20, bottom: 8 })
                     }
-                    .width('100%')
-                    .padding({ top: 6, bottom: 6, left: 60, right: 0 }) // 缩进显示
                   }, (reply: CommentItem) => reply.id.toString())
                 }
               }
@@ -692,77 +949,59 @@ export struct ChatCommentPage {
         .width('100%')
         .layoutWeight(1)
 
-        // 发送框上方显示"正在回复"
+        // 发送框上方显示"正在回复" - 现代化设计
         if (this.replyToComment) {
           Row() {
-            Text(`正在回复 @${this.replyToComment.username}：`)
+            Text(`💬 正在回复 @${this.replyToComment.username}：`)
               .fontSize(13)
               .fontColor('#FFD700')
+              .fontWeight(FontWeight.Medium)
             Button('取消')
               .fontSize(12)
-              .fontColor('#fff')
-              .backgroundColor('transparent')
+              .fontColor('#ffffff')
+              .backgroundColor('rgba(255, 255, 255, 0.1)')
+              .borderRadius(12)
+              .padding({ left: 12, right: 12, top: 6, bottom: 6 })
               .onClick(() => {
                 this.replyToComment = null;
                 this.commentText = '';
               })
           }
-          .margin({ bottom: 4 })
+          .width('100%')
+          .padding({ left: 20, right: 20, bottom: 8 })
+          .justifyContent(FlexAlign.SpaceBetween)
+          .alignItems(VerticalAlign.Center)
         }
-        // 发送框
+        
+        // 发送框 - 现代化设计
         Row() {
           TextInput({ 
             placeholder: this.replyToComment ? `回复 @${this.replyToComment.username}` : '发送善意的评论',
             text: this.commentText
           })
-            .width('60%')
-            .height(40)
-            .backgroundColor('rgba(255, 254, 254, 0.05)')
-            .fontColor('#fffcfcfc')
-            .borderRadius(20)
-            .padding({ left: 20 })
+            .width('75%')
+            .height(48)
+            .backgroundColor('rgba(255, 255, 255, 0.08)')
+            .fontColor('#ffffff')
+            .borderRadius(24)
+            .padding({ left: 20, right: 20 })
+            .border({ width: 1, color: 'rgba(255, 255, 255, 0.15)' })
+            .fontSize(16)
             .onChange((value: string) => {
               this.commentText = value;
             })
-          Blank().width(8)
-          Button('😊')
-            .backgroundColor('transparent')
-            .fontColor('#fff')
-            .width(40)
-            .height(40)
-            .onClick(() => setTimeout(() => { 
-              if (!this.isActive) return; 
-              try {
-                if (this.isActive) {
-                  promptAction.showToast({ message: '功能正在开发中' }); 
-                }
-              } catch (error) {
-                console.error('显示Toast失败:', error);
-              }
-            }, 100))
-          Blank().width(8)
-          Button('🖼️')
-            .backgroundColor('transparent')
-            .fontColor('#fff')
-            .width(40)
-            .height(40)
-            .onClick(() => setTimeout(() => { 
-              if (!this.isActive) return; 
-              try {
-                if (this.isActive) {
-                  promptAction.showToast({ message: '功能正在开发中' }); 
-                }
-              } catch (error) {
-                console.error('显示Toast失败:', error);
-              }
-            }, 100))
-          Blank().width(8)
+          
+          Blank().width(12)
+          
           Button('发送')
-            .backgroundColor(this.commentText.trim() ? '#FFD700' : 'rgba(255,255,255,0.3)')
-            .fontColor(this.commentText.trim() ? '#000' : 'rgba(255,255,255,0.5)')
-            .borderRadius(20)
-            .width(50)
-            .height(40)
+            .backgroundColor(this.commentText.trim() ? '#FFD700' : 'rgba(255,255,255,0.2)')
+            .fontColor(this.commentText.trim() ? '#000000' : 'rgba(255,255,255,0.5)')
+            .fontWeight(this.commentText.trim() ? FontWeight.Bold : FontWeight.Normal)
+            .borderRadius(24)
+            .width(80)
+            .height(48)
+            .fontSize(16)
+            .border({ width: 1, color: this.commentText.trim() ? '#FFD700' : 'rgba(255,255,255,0.15)' })
             .onClick(() => {
               if (this.commentText.trim()) {
                 if (this.replyToComment) {
@@ -772,9 +1011,15 @@ export struct ChatCommentPage {
                 }
               }
             })
+            .animation({
+              duration: 200,
+              curve: Curve.EaseInOut
+            })
+            .scale({ x: 1.0, y: 1.0 })
         }
         .width('100%')
-        .padding({ left: 16, right: 16, top: 8, bottom: 16 })
+        .padding({ left: 20, right: 20, top: 12, bottom: 20 })
+        .backgroundColor('rgba(0, 0, 0, 0.8)')
         .zIndex(10)
       }
       .width('100%')
@@ -782,6 +1027,5 @@ export struct ChatCommentPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#181818')
   }
 } 

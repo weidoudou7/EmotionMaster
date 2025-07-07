@@ -229,13 +229,14 @@ export struct BottomNavBar {
     Column(){
       Text(title)
         .padding({top:2})
-        .fontSize(20)
-        .fontColor(this.currentIndex == targetIndex?'#ffda7f':Color.White)
+        .fontSize(16)
+        .fontColor(this.currentIndex == targetIndex ? '#ffffff' : '#888888')
+        .fontWeight(this.currentIndex == targetIndex ? FontWeight.Bold : FontWeight.Normal)
     }
     //.opacity(0.4)透明度
     .backgroundColor('#121114')
     .width('100%')
-    .height(50)
+    .height(36)
     .justifyContent(FlexAlign.Center)
     .onClick(()=>{
       this.currentIndex = targetIndex
@@ -247,12 +248,13 @@ export struct BottomNavBar {
   TopTabBuilder(title:string,targetIndex:number){
     Column(){
       Text(title)
-        .fontSize(20)
-        .fontColor(this.chatTopTabIndex == targetIndex?'#ffda7f':Color.White)
+        .fontSize(16)
+        .fontColor(this.chatTopTabIndex == targetIndex ? '#ffffff' : '#888888')
+        .fontWeight(this.chatTopTabIndex == targetIndex ? FontWeight.Bold : FontWeight.Normal)
     }
     .backgroundColor('#121114')
     .width('100%')
-    .height(50)
+    .height(36)
     .justifyContent(FlexAlign.Center)
     .onClick(()=>{
       this.chatTopTabIndex = targetIndex
@@ -264,12 +266,13 @@ export struct BottomNavBar {
   TopTabBuilder2(title:string,targetIndex:number){
     Column(){
       Text(title)
-        .fontSize(20)
-        .fontColor(this.chatTopTabIndex2 == targetIndex?'#ffda7f':Color.White)
+        .fontSize(16)
+        .fontColor(this.chatTopTabIndex2 == targetIndex ? '#ffffff' : '#888888')
+        .fontWeight(this.chatTopTabIndex2 == targetIndex ? FontWeight.Bold : FontWeight.Normal)
     }
     .backgroundColor('#121114')
     .width('100%')
-    .height(50)
+    .height(36)
     .justifyContent(FlexAlign.Center)
     .onClick(()=>{
       this.chatTopTabIndex2 = targetIndex
@@ -285,22 +288,79 @@ export struct BottomNavBar {
         controller: this.tabsController
       }) {
         TabContent() {
-          // ====== 顶部标签栏+内容 ======
-          Column() {
-            Tabs({
-              index: this.chatTopTabIndex,
-              barPosition: BarPosition.Start
-            }) {
-              TabContent() {
-                Chat()
-              }.tabBar(this.TopTabBuilder("精选",0))
-              TabContent() {
-                FeaturedList()
-              }.tabBar(this.TopTabBuilder("综合",1))
+          // ====== 首页内容 ======
+          if (this.chatTopTabIndex === 0) {
+            // 精选页面 - 使用Stack让背景图片覆盖整个区域
+            Stack() {
+              // 背景层 - Chat页面（包含背景图片）
+              Chat({ isFromNavBar: true })
+                .width('100%')
+                .height('100%')
+              
+              // 浮动导航标签层
+              Row() {
+                ForEach(['精选', '综合'], (tab: string, idx: number) => {
+                  Column() {
+                    Text(tab)
+                      .fontSize(16)
+                      .fontColor(idx === 0 ? '#ffffff' : 'rgba(255,255,255,0.7)')
+                      .fontWeight(idx === 0 ? FontWeight.Bold : FontWeight.Normal)
+                    if (idx === 0) {
+                      Blank().height(2).width(24).backgroundColor('#ffffff').margin({ top: 2 })
+                    }
+                  }
+                  .onClick(() => { 
+                    this.chatTopTabIndex = idx;
+                    this.topTabsController.changeIndex(this.chatTopTabIndex);
+                  })
+                  .margin({ right: 24 })
+                }, (tab: string) => tab)
+                Blank()
+              }
+              .width('100%')
+              .height(60)
+              .padding({ left: 16, right: 16, top: 8, bottom: 4 })
+              .backgroundColor('rgba(0,0,0,0)')
+              .position({ x: 0, y: 0 })
+              .zIndex(20)
+              .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
             }
-            .scrollable(false) //禁止滑动切换
-            .animationDuration(0) //去掉切换页面的动画
-          }
+            .width('100%')
+            .height('100%')
+                      } else {
+              // 综合页面 - 显示导航标签+FeaturedList
+              Column() {
+                // 导航标签
+                Row() {
+                  ForEach(['精选', '综合'], (tab: string, idx: number) => {
+                    Column() {
+                      Text(tab)
+                        .fontSize(16)
+                        .fontColor(idx === 1 ? '#ffffff' : 'rgba(255,255,255,0.7)')
+                        .fontWeight(idx === 1 ? FontWeight.Bold : FontWeight.Normal)
+                      if (idx === 1) {
+                        Blank().height(2).width(24).backgroundColor('#ffffff').margin({ top: 2 })
+                      }
+                    }
+                    .onClick(() => { 
+                      this.chatTopTabIndex = idx;
+                      this.topTabsController.changeIndex(this.chatTopTabIndex);
+                    })
+                    .margin({ right: 24 })
+                  }, (tab: string) => tab)
+                  Blank()
+                }
+                .width('100%')
+                .height(60)
+                .padding({ left: 16, right: 16, top: 16, bottom: 8 })
+                .backgroundColor('rgba(0,0,0,0.3)')
+                .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
+                
+                // FeaturedList内容
+                FeaturedList({ isFromNavBar: true })
+                  .layoutWeight(1)
+              }
+            }
         }.tabBar(this.TabBuilder("首页",0))
 
         TabContent() {

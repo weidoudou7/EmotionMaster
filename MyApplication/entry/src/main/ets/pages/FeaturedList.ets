@@ -5,6 +5,11 @@ import { ApiService } from '../service/apiservice';
 import { getUserId } from '../common/constants';
 import { UserRolePreferenceAnalysis } from '../common/types';
 
+// 新增：路由参数接口
+interface FeaturedListParams {
+  isFromNavBar?: boolean;
+}
+
 interface FeaturedPerson {
    id: number | null;
    userId: number | null;
@@ -29,6 +34,7 @@ interface FeaturedPerson {
 @Component
 export struct FeaturedList {
   @State private selectedIndex: number = 0;
+  @State private isFromNavBar: boolean = false; // 新增：是否从导航栏进入
   private lastClickTime: number = 0;
   private lastClickIndex: number = -1;
   @State private isLoading: boolean = false;
@@ -41,8 +47,16 @@ export struct FeaturedList {
   @State glowOpacity: number = 0.5 // 发光效果透明度
   @State textOpacity: number = 0.8 // 文字透明度
   @State nebulaOpacity: number = 0.3 // 星云透明度
+  @State private recommendationOpacity: number = 1.0 // 推荐信息透明度
+  @State private scrollOffset: number = 0 // 滚动偏移量
 
   aboutToAppear() {
+    // 获取路由参数
+    const params = router.getParams() as FeaturedListParams;
+    if (params && params.isFromNavBar) {
+      this.isFromNavBar = params.isFromNavBar;
+    }
+    
     this.startGalaxyAnimations()
     this.loadPersonalizedFeaturedPersons();
   }
@@ -481,7 +495,7 @@ export struct FeaturedList {
       .width('100%')
       .height('100%')
       .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP,SafeAreaEdge.BOTTOM])
-      .padding({ left: 12, right: 12 })
+      .padding({ left: 12, right: 12, top: this.isFromNavBar ? 0 : 12 })
     }
     .width('100%')
     .height('100%')
