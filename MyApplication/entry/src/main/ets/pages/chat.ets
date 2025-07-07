@@ -1002,51 +1002,32 @@ export struct Chat {
                 })
             } else {
               // 语音输入模式
-              Row() {
-                Button() {
-                  Text(this.isRecording ? '松开发送' : '按住说话')
-                    .fontColor(Color.White)
-                    .fontSize(16)
-                }
-                .width('80%')
-                .height(48)
-                .backgroundColor('rgba(0,0,0,0.3)')
-                .borderRadius(24)
-                .onTouch((event: TouchEvent) => {
-                  if (event.type === TouchType.Down) {
-                    this.touchStartY = event.touches[0].y;
-                    this.isCancelRecord = false;
-                    this.showRecordPanel = true;
-                    this.startRecord();
-                  } else if (event.type === TouchType.Move) {
-                    if (this.touchStartY - event.touches[0].y > 50) {
-                      this.isCancelRecord = true;
-                    } else {
-                      this.isCancelRecord = false;
-                    }
-                  } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                    this.showRecordPanel = false;
-                    this.stopAndSendRecord();
-                  }
-                })
-
-                // 测试权限按钮
-                Button() {
-                  Text('测试权限')
-                    .fontColor(Color.White)
-                    .fontSize(12)
-                }
-                .width('18%')
-                .height(48)
-                .backgroundColor('rgba(255,0,0,0.3)')
-                .borderRadius(24)
-                .margin({ left: 8 })
-                .onClick(() => {
-                  this.testPermission();
-                })
+              Button() {
+                Text(this.isRecording ? '松开发送' : '按住说话')
+                  .fontColor(Color.White)
+                  .fontSize(16)
               }
               .width('100%')
-              .justifyContent(FlexAlign.SpaceBetween)
+              .height(48)
+              .backgroundColor('rgba(0,0,0,0.3)')
+              .borderRadius(24)
+              .onTouch((event: TouchEvent) => {
+                if (event.type === TouchType.Down) {
+                  this.touchStartY = event.touches[0].y;
+                  this.isCancelRecord = false;
+                  this.showRecordPanel = true;
+                  this.startRecord();
+                } else if (event.type === TouchType.Move) {
+                  if (this.touchStartY - event.touches[0].y > 50) {
+                    this.isCancelRecord = true;
+                  } else {
+                    this.isCancelRecord = false;
+                  }
+                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                  this.showRecordPanel = false;
+                  this.stopAndSendRecord();
+                }
+              })
             }
 
             // 右侧加号按钮 (用于更多功能)
@@ -1708,79 +1689,7 @@ export struct Chat {
     }
   }
 
-  // 测试权限申请功能
-  private async testPermission() {
-    try {
-      console.log('=== 开始权限测试 ===');
 
-      // 获取应用上下文
-      let context = getContext();
-      if (!context) {
-        console.error('无法获取应用上下文');
-        promptAction.showToast({
-          message: '无法获取应用上下文，请重启应用',
-          duration: 3000
-        });
-        return;
-      }
-
-      // 检查当前权限状态
-      console.log('检查AudioCapturerManager权限状态...');
-      const currentStatus = await AudioCapturerManager.checkMicrophonePermission();
-      console.log('AudioCapturerManager权限状态:', currentStatus);
-
-      // 直接检查权限状态
-      try {
-        let atManager = abilityAccessCtrl.createAtManager();
-        // 获取应用的tokenID
-        const tokenID = context.applicationInfo.accessTokenId;
-        const directStatus = await atManager.verifyAccessToken(tokenID, 'ohos.permission.MICROPHONE');
-        console.log('直接权限状态检查:', directStatus);
-
-        if (directStatus === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED) {
-          console.log('权限已授权');
-          promptAction.showToast({
-            message: '麦克风权限已授权',
-            duration: 2000
-          });
-          this.hasMicrophonePermission = true;
-          return;
-        } else {
-          console.log('权限未授权，状态:', directStatus);
-        }
-      } catch (directError) {
-        console.error('直接权限检查失败:', directError);
-      }
-
-      // 申请权限
-      console.log('开始申请权限...');
-      const granted = await this.requestMicrophonePermission();
-      console.log('权限申请最终结果:', granted);
-
-      if (granted) {
-        promptAction.showToast({
-          message: '权限申请成功',
-          duration: 2000
-        });
-        this.hasMicrophonePermission = true;
-      } else {
-        promptAction.showToast({
-          message: '权限申请失败，请检查系统设置',
-          duration: 3000
-        });
-        this.hasMicrophonePermission = false;
-      }
-    } catch (error) {
-      console.error('权限测试失败:', error);
-      const errorMessage = error instanceof Error ? error.message : '未知错误';
-      console.error('错误详情:', errorMessage);
-
-      promptAction.showToast({
-        message: '权限测试失败: ' + errorMessage,
-        duration: 3000
-      });
-    }
-  }
 
   private async startRecord() {
     try {
