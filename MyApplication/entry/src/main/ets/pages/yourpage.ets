@@ -4,6 +4,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
 import { UserInfo, UserStats, Dynamic } from '../common/types';
+import { Config } from '../common/config';
 import promptAction from '@ohos.promptAction';
 import preferences from '@ohos.data.preferences';
 
@@ -23,8 +24,9 @@ export struct YourPage {
   @State cardScale: number = 1.0; // 卡片缩放动画
   @State latestDynamic: Dynamic | null = null; // 最新动态
   @State lastClickTime: number = 0; // 上次点击时间，用于双击检测
-  @State lastAtticClickTime: number = 0; // 阁楼标签上次点击时间，用于双击检测
-
+  @State userAvatar: Resource | string = $r("app.media.image"); // 用户头像
+  @State showAvatarViewer: boolean = false; // 显示头像查看器
+  @State lastAtticClickTime: number = 0; // 阁楼标签上次点击
   // 银河系动画状态
   @State arcRotation: number = 0 // 圆弧旋转角度
   @State starTwinkle: number = 0 // 星星闪烁效果
@@ -85,15 +87,62 @@ export struct YourPage {
   // 异步加载用户信息（不阻塞页面显示）
   async loadUserInfoAsync() {
     try {
+      console.log('👤 [yourpage] 开始加载用户信息，用户UID:', this.UID);
+      
       const userInfo = await ApiService.getUserInfo(this.UID);
       this.userInfo = userInfo;
       this.yourname = userInfo.userName;
       this.UID = userInfo.userUID;
       this.ooo = userInfo.isPrivacyVisible;
+
+      // 更新头像显示
+      await this.updateAvatarDisplay(userInfo.userAvatar);
+      
+      console.log('👤 [yourpage] 用户信息加载完成');
     } catch (error) {
-      console.error('加载用户信息失败:', error);
+      console.error('👤 [yourpage] 加载用户信息失败:', error);
       // 不显示错误提示，避免影响用户体验
     }
+  }
+
+  // 更新头像显示
+  async updateAvatarDisplay(avatarUrl: string | undefined) {
+    console.log('🖼️ [yourpage] 开始更新头像显示');
+    console.log('🖼️ [yourpage] 原始头像URL:', avatarUrl);
+    
+    if (avatarUrl && avatarUrl !== '/avatars/default.png' && avatarUrl !== '') {
+      // 如果有后端头像，使用后端头像
+      let processedAvatarUrl = avatarUrl;
+      
+      // 处理头像URL - 如果是相对路径，拼接完整URL
+      if (avatarUrl.startsWith('/')) {
+        const baseUrl = Config.getApiBaseUrl().replace('/api', '');
+        processedAvatarUrl = baseUrl + avatarUrl;
+        console.log('🖼️ [yourpage] 处理后的头像URL:', processedAvatarUrl);
+      }
+      
+      this.userAvatar = processedAvatarUrl;
+      console.log('🖼️ [yourpage] 头像更新成功');
+    } else {
+      // 使用默认头像
+      this.userAvatar = $r("app.media.image");
+      console.log('🖼️ [yourpage] 使用默认头像');
+    }
+  }
+
+  // 获取头像URL（用于显示）
+  getAvatarUrl(): Resource | string {
+    return this.userAvatar;
+  }
+
+  // 显示头像查看器
+  showAvatarViewerDialog() {
+    this.showAvatarViewer = true;
+  }
+
+  // 关闭头像查看器
+  closeAvatarViewer() {
+    this.showAvatarViewer = false;
   }
 
   // 异步加载用户统计信息（不阻塞页面显示）
