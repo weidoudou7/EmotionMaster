@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ai.companion.mapper.UserBehaviorMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="UserBehaviorResultMap" type="com.ai.companion.entity.UserBehavior">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="user_id" property="userId" jdbcType="INTEGER"/>
+        <result column="role_id" property="roleId" jdbcType="INTEGER"/>
+        <result column="action_type" property="actionType" jdbcType="VARCHAR"/>
+        <result column="score" property="score" jdbcType="DOUBLE"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 基础字段 -->
+    <sql id="Base_Column_List">
+        id, user_id, role_id, action_type, score, created_at
+    </sql>
+
+    <!-- 插入用户行为记录 -->
+    <insert id="insertUserBehavior" parameterType="com.ai.companion.entity.UserBehavior" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_behavior (user_id, role_id, action_type, score, created_at)
+        VALUES (#{userId}, #{roleId}, #{actionType}, #{score}, #{createdAt})
+    </insert>
+
+    <!-- 根据ID查询用户行为记录 -->
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="UserBehaviorResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_behavior
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据用户ID查询用户行为记录 -->
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultMap="UserBehaviorResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_behavior
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据角色ID查询用户行为记录 -->
+    <select id="selectByRoleId" parameterType="java.lang.Integer" resultMap="UserBehaviorResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_behavior
+        WHERE role_id = #{roleId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据用户ID和角色ID查询用户行为记录 -->
+    <select id="selectByUserIdAndRoleId" resultMap="UserBehaviorResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_behavior
+        WHERE user_id = #{userId} AND role_id = #{roleId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据行为类型查询用户行为记录 -->
+    <select id="selectByActionType" parameterType="java.lang.String" resultMap="UserBehaviorResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_behavior
+        WHERE action_type = #{actionType}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据时间范围查询用户行为记录 -->
+    <select id="selectByTimeRange" resultMap="UserBehaviorResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_behavior
+        WHERE created_at BETWEEN #{startTime} AND #{endTime}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 查询用户对特定角色的行为统计 -->
+    <select id="selectUserRoleBehaviorStats" resultMap="UserBehaviorResultMap">
+        SELECT 
+            role_id,
+            action_type,
+            COUNT(*) as count,
+            AVG(score) as avg_score,
+            MAX(created_at) as last_action
+        FROM user_behavior
+        WHERE user_id = #{userId} AND role_id = #{roleId}
+        GROUP BY action_type
+        ORDER BY count DESC
+    </select>
+
+    <!-- 查询热门角色（基于行为次数） -->
+    <select id="selectPopularRoles" parameterType="java.lang.Integer" resultMap="UserBehaviorResultMap">
+        SELECT 
+            role_id,
+            COUNT(*) as action_count,
+            AVG(score) as avg_score
+        FROM user_behavior
+        GROUP BY role_id
+        ORDER BY action_count DESC, avg_score DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询活跃用户（基于行为次数） -->
+    <select id="selectActiveUsers" parameterType="java.lang.Integer" resultMap="UserBehaviorResultMap">
+        SELECT 
+            user_id,
+            COUNT(*) as action_count,
+            AVG(score) as avg_score
+        FROM user_behavior
+        GROUP BY user_id
+        ORDER BY action_count DESC, avg_score DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 根据ID删除用户行为记录 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM user_behavior WHERE id = #{id}
+    </delete>
+
+    <!-- 根据用户ID删除用户行为记录 -->
+    <delete id="deleteByUserId" parameterType="java.lang.Integer">
+        DELETE FROM user_behavior WHERE user_id = #{userId}
+    </delete>
+
+    <!-- 根据角色ID删除用户行为记录 -->
+    <delete id="deleteByRoleId" parameterType="java.lang.Integer">
+        DELETE FROM user_behavior WHERE role_id = #{roleId}
+    </delete>
+
+    <!-- 更新用户行为记录 -->
+    <update id="updateUserBehavior" parameterType="com.ai.companion.entity.UserBehavior">
+        UPDATE user_behavior
+        SET user_id = #{userId},
+            role_id = #{roleId},
+            action_type = #{actionType},
+            score = #{score},
+            created_at = #{createdAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 查询所有用户行为记录 -->
+    <select id="selectAll" resultMap="UserBehaviorResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_behavior
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 查询用户行为记录总数 -->
+    <select id="countAll" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM user_behavior
+    </select>
+
+    <!-- 根据用户ID查询行为记录总数 -->
+    <select id="countByUserId" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM user_behavior WHERE user_id = #{userId}
+    </select>
+
+    <!-- 根据角色ID查询行为记录总数 -->
+    <select id="countByRoleId" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM user_behavior WHERE role_id = #{roleId}
+    </select>
+
+    <!-- 高级查询：获取用户行为分析数据 -->
+    <select id="getUserBehaviorAnalysis" parameterType="java.lang.Integer" resultType="java.util.Map">
+        SELECT 
+            action_type,
+            COUNT(*) as count,
+            AVG(score) as avg_score,
+            MAX(created_at) as last_action,
+            MIN(created_at) as first_action
+        FROM user_behavior
+        WHERE user_id = #{userId}
+        GROUP BY action_type
+        ORDER BY count DESC
+    </select>
+
+    <!-- 高级查询：获取角色受欢迎度分析 -->
+    <select id="getRolePopularityAnalysis" parameterType="java.lang.Integer" resultType="java.util.Map">
+        SELECT 
+            role_id,
+            COUNT(*) as total_actions,
+            COUNT(DISTINCT user_id) as unique_users,
+            AVG(score) as avg_score,
+            SUM(CASE WHEN action_type = 'chat' THEN 1 ELSE 0 END) as chat_count,
+            SUM(CASE WHEN action_type = 'like' THEN 1 ELSE 0 END) as like_count
+        FROM user_behavior
+        WHERE role_id = #{roleId}
+        GROUP BY role_id
+    </select>
+
+    <!-- 高级查询：获取用户相似度数据 -->
+    <select id="getUserSimilarityData" parameterType="java.lang.Integer" resultType="java.util.Map">
+        SELECT 
+            ub1.user_id as user1,
+            ub2.user_id as user2,
+            COUNT(*) as common_actions,
+            AVG(ABS(ub1.score - ub2.score)) as score_difference
+        FROM user_behavior ub1
+        INNER JOIN user_behavior ub2 ON ub1.role_id = ub2.role_id 
+            AND ub1.action_type = ub2.action_type
+            AND ub1.user_id != ub2.user_id
+        WHERE ub1.user_id = #{userId}
+        GROUP BY ub1.user_id, ub2.user_id
+        HAVING common_actions > 0
+        ORDER BY common_actions DESC, score_difference ASC
+    </select>
+
+</mapper> 

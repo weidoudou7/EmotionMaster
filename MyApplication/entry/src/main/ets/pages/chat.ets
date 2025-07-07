@@ -87,7 +87,7 @@ export struct Chat {
   
   // 新增：聊天相关状态
   @State private isSending: boolean = false; // 是否正在发送消息
-  private chatId: string = Date.now().toString(); // 聊天会话ID
+  private chatId: string = '0'; // 聊天会话ID，初始化为0表示未创建
 
   @State readStateMap: Map<number, ReadStateCode> = new Map(); // 存储每条消息的朗读状态（key为消息id）
   @State isReaderInit: boolean = false; // 朗读控件初始化状态
@@ -159,6 +159,8 @@ export struct Chat {
   private settings: RenderingContextSettings = new RenderingContextSettings(true)
   private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings)
 
+  @State private isLoaded: boolean = false;
+
   aboutToAppear() {
     console.log('当前环境:', this.isVirtualMachine() ? '虚拟机' : '真机');
     
@@ -184,7 +186,9 @@ export struct Chat {
       console.log('description:', this.description);
       console.log('createdAiRoleId:', this.createdAiRoleId);
       console.log('========================');
-      if (this.figureImageUrl) {
+      
+      // 检查必要参数是否有效
+      if (this.figureImageUrl && this.figureName && this.createdAiRoleId > 0) {
         this.agentName = this.figureName;
         this.agentSubInfo = `${this.figureType}风格角色`;
         this.bgImage = this.figureImageUrl; // 设置背景图片为角色图片
@@ -198,31 +202,21 @@ export struct Chat {
           time: new Date().toLocaleTimeString().slice(0, 5)
         };
         this.chatData = [welcomeMessage, ...this.chatData];
+        
+        // 记录用户开始聊天行为
+        const userId = getUserId();
+        if (userId !== null && this.createdAiRoleId > 0) {
+          const userIdNumber: number = userId;
+          ApiService.recordChatAction(userIdNumber, this.createdAiRoleId);
+        }
+      } else {
+        console.log('❌ 参数不完整，降级为智能推荐');
+        // 参数不完整时，使用智能推荐逻辑
+        this.useIntelligentRecommendation();
       }
     } else {
-      // 如果没有传递参数，使用治愈天使作为默认设置
-      console.log('=== 使用治愈天使作为默认设置 ===');
-      this.figureImageUrl = this.healingAngelInfo.image;
-      this.figureType = this.healingAngelInfo.name;
-      this.figureName = this.healingAngelInfo.name;
-      this.isFromCreateFigure = true;
-      this.description = this.healingAngelInfo.desc;
-      this.agentName = this.healingAngelInfo.name;
-      this.agentSubInfo = `${this.healingAngelInfo.authorName} · ${this.healingAngelInfo.views} 连接者`;
-      this.bgImage = this.figureImageUrl; // 设置背景图片为治愈天使图片
-      this.agentAvatar = this.figureImageUrl; // 设置头像为治愈天使图片
-      
-      // 添加治愈天使的欢迎消息
-      const welcomeMessage: ChatMessage = {
-        id: this.chatData.length + 1,
-        isMe: false,
-        avatar: $r('app.media.splash'),
-        content: `你好！我是治愈天使，用微笑和温柔治愈人心的天使。无论你遇到什么困难，我都会陪伴在你身边，给你温暖和力量。让我们开始聊天吧~`,
-        time: new Date().toLocaleTimeString().slice(0, 5)
-      };
-      this.chatData = [welcomeMessage, ...this.chatData];
-      
-      console.log('治愈天使默认设置完成');
+      // 智能推荐逻辑
+      this.useIntelligentRecommendation();
     }
 
     // 每次进入chat时都调用createConversationRecord
@@ -249,6 +243,93 @@ export struct Chat {
       this._showIntroAnimation = true;
       this.startIntroAnimation();
     }
+
+    // 仅从导航栏进入时显示加载动画
+    if (this.isFromNavBar) {
+      this.isLoaded = false;
+      setTimeout(() => {
+        this.isLoaded = true;
+      }, 800);
+    } else {
+      this.isLoaded = true;
+    }
+
+    // 如果从导航栏进入且参数为空，则用当前对话AI角色信息补全
+    if (this.isFromNavBar && (!this.figureImageUrl || !this.figureName || this.createdAiRoleId <= 0)) {
+      this.figureImageUrl = typeof this.agentAvatar === 'string' ? this.agentAvatar : '';
+      this.figureName = this.agentName;
+      this.figureType = this.agentSubInfo;
+      this.description = this.description || '';
+      this.createdAiRoleId = this.createdAiRoleId || 1;
+    }
+  }
+
+  // 新增：智能推荐方法
+  private useIntelligentRecommendation() {
+    console.log('=== 开始智能推荐 ===');
+    const userId = getUserId();
+    if (userId !== null) {
+      const userIdNumber: number = userId; // 明确类型转换
+      ApiService.getHybridRecommendations(userIdNumber, 1)
+        .then((roles) => {
+          if (roles && roles.length > 0) {
+            const role = roles[0];
+            console.log('✅ 智能推荐成功:', role.roleName);
+            this.agentName = role.roleName;
+            this.agentAvatar = role.avatarUrl;
+            this.agentSubInfo = `${role.roleAuthor} · ${role.viewCount} 连接者`;
+            this.description = role.roleDescription;
+            this.createdAiRoleId = role.id || 0;
+            this.bgImage = role.avatarUrl;
+            // 新增：同步赋值给跳转ProfilePage用的参数
+            this.figureImageUrl = role.avatarUrl;
+            this.figureType = role.roleType;
+            this.figureName = role.roleName;
+            // 欢迎消息
+            const welcomeMessage: ChatMessage = {
+              id: this.chatData.length + 1,
+              isMe: false,
+              avatar: $r('app.media.splash'),
+              content: `你好！我是${role.roleName}，${role.roleDescription.substring(0, 50)}...让我们开始聊天吧~`,
+              time: new Date().toLocaleTimeString().slice(0, 5)
+            };
+            this.chatData = [welcomeMessage, ...this.chatData];
+            // 行为记录
+            if (role.id !== null) {
+              ApiService.recordChatAction(userIdNumber, role.id);
+            }
+          } else {
+            console.log('❌ 推荐结果为空，降级为治愈天使');
+            this.setDefaultAngel();
+          }
+        })
+        .catch((error: Error) => {
+          console.log('❌ 智能推荐失败，降级为治愈天使:', error.message);
+          this.setDefaultAngel();
+        });
+    } else {
+      console.log('❌ 用户未登录，使用治愈天使');
+      this.setDefaultAngel();
+    }
+  }
+
+  // 新增：治愈天使降级方法
+  private setDefaultAngel() {
+    console.log('🔄 设置治愈天使为默认角色');
+    this.agentName = this.healingAngelInfo.name;
+    this.agentAvatar = this.healingAngelInfo.image;
+    this.agentSubInfo = `${this.healingAngelInfo.authorName} · ${this.healingAngelInfo.views} 连接者`;
+    this.description = this.healingAngelInfo.desc;
+    this.createdAiRoleId = 364;
+    this.bgImage = this.healingAngelInfo.image;
+    const welcomeMessage: ChatMessage = {
+      id: this.chatData.length + 1,
+      isMe: false,
+      avatar: $r('app.media.splash'),
+      content: `你好！我是治愈天使，用微笑和温柔治愈人心的天使。无论你遇到什么困难，我都会陪伴在你身边，给你温暖和力量。让我们开始聊天吧~`,
+      time: new Date().toLocaleTimeString().slice(0, 5)
+    };
+    this.chatData = [welcomeMessage, ...this.chatData];
   }
 
   // 新增：组件销毁时清理动画
@@ -537,8 +618,16 @@ export struct Chat {
     // 监听朗读结束事件
     TextReader.on('requestMore', (id: string) => {
       // 根据朗读id找到对应的消息，更新状态为完成
-      const msgId = parseInt(id);
-      this.readStateMap.set(msgId, ReadStateCode.COMPLETED);
+      try {
+        const msgId = parseInt(id);
+        if (!isNaN(msgId)) {
+          this.readStateMap.set(msgId, ReadStateCode.COMPLETED);
+        } else {
+          console.warn('无效的消息ID:', id);
+        }
+      } catch (error) {
+        console.error('解析消息ID失败:', error, 'ID:', id);
+      }
     });
 
     // // 监听朗读错误事件
@@ -574,8 +663,21 @@ export struct Chat {
     try {
       let aiResponse: string;
 
-        console.log('使用featured_chat接口，描述词:', this.description);
-        aiResponse = await ApiService.featuredChat(userMessage, this.chatId, this.description);
+      // 记录用户发送消息行为
+      const userId = getUserId();
+      if (userId !== null && this.createdAiRoleId > 0) {
+        const userIdNumber: number = userId;
+        ApiService.recordChatAction(userIdNumber, this.createdAiRoleId);
+      }
+
+      // 确保有有效的对话ID
+      if (!this.chatId || this.chatId === '0') {
+        console.log('对话ID无效，先创建对话记录');
+        await this.createConversationRecord();
+      }
+      
+      console.log('使用featured_chat接口，描述词:', this.description);
+      aiResponse = await ApiService.featuredChat(userMessage, this.chatId, this.description);
 
 
       // 添加AI回复消息
@@ -643,13 +745,16 @@ export struct Chat {
       console.log('查找或创建对话 - 用户ID:', userId, 'AI角色ID:', aiRoleId, '标题:', title);
 
       // 使用findOrCreateConversation方法，自动处理查找和创建逻辑
-      const conversation = await ApiService.findOrCreateConversation(userId, aiRoleId, title);
+      const userIdNumber: number = userId;
+      const conversation = await ApiService.findOrCreateConversation(userIdNumber, aiRoleId, title);
       
       if (conversation && conversation.id) {
         this.chatId = conversation.id.toString();
         console.log('对话ID已设置:', this.chatId);
       } else {
         console.error('对话创建失败，未获取到有效的对话ID');
+        // 设置一个默认值，避免后续API调用失败
+        this.chatId = '0';
       }
 
     } catch (error) {
@@ -680,7 +785,7 @@ export struct Chat {
   private async analyzeEmotion(): Promise<void> {
     try {
       // 检查是否有有效的对话ID
-      if (!this.chatId || this.chatId === '0' || this.chatId === Date.now().toString()) {
+      if (!this.chatId || this.chatId === '0') {
         console.log('对话ID无效，跳过情绪分析');
         return;
       }
@@ -694,7 +799,12 @@ export struct Chat {
       console.log('开始分析对话情绪，对话ID:', this.chatId, '消息数量:', this.chatData.length);
       
       // 调用情绪分析API
-      const emotionResult = await ApiService.analyzeConversationEmotion(parseInt(this.chatId));
+      const conversationId = parseInt(this.chatId);
+      if (isNaN(conversationId) || conversationId <= 0) {
+        console.log('无效的对话ID，跳过情绪分析');
+        return;
+      }
+      const emotionResult = await ApiService.analyzeConversationEmotion(conversationId);
       
       console.log('情绪分析结果:', emotionResult);
       
@@ -713,7 +823,7 @@ export struct Chat {
   private async generateReplySuggestions(): Promise<void> {
     try {
       // 检查是否有有效的对话ID
-      if (!this.chatId || this.chatId === '0' || this.chatId === Date.now().toString()) {
+      if (!this.chatId || this.chatId === '0') {
         console.log('对话ID无效，跳过生成回复建议');
         return;
       }
@@ -728,7 +838,12 @@ export struct Chat {
       console.log('开始生成回复建议，对话ID:', this.chatId, '消息数量:', this.chatData.length);
       
       // 调用生成回复建议API
-      const suggestions = await ApiService.generateReplySuggestions(parseInt(this.chatId));
+      const conversationId = parseInt(this.chatId);
+      if (isNaN(conversationId) || conversationId <= 0) {
+        console.log('无效的对话ID，跳过生成回复建议');
+        return;
+      }
+      const suggestions = await ApiService.generateReplySuggestions(conversationId);
       
       console.log('回复建议生成结果:', suggestions);
       
@@ -751,583 +866,596 @@ export struct Chat {
   }
 
   build() {
-    Stack() {
-      // 全屏背景图片 (Z-index: 1) - 只在没有角色图片时显示
-      if (!this.figureImageUrl) {
-        Image(this.bgImage)
-          .width('100%')
-          .height('100%')
-          .objectFit(ImageFit.Cover)
-          .position({ x: 0, y: 0 })
-          .zIndex(1)
-          .align(Alignment.TopStart) // 确保图片从左上角开始填充
-          // 移除expandSafeArea，让背景图片完全覆盖屏幕，包括导航栏区域
-      }
+    Column() {
+      if (!this.isLoaded) {
+        Blank(24)
+        Text('加载中...')
+          .fontSize(20)
+          .fontWeight(FontWeight.Bold)
+          .margin({ top: 32 })
+      } else {
+        Stack() {
+          // 全屏背景图片 (Z-index: 1) - 只在没有角色图片时显示
+          if (!this.figureImageUrl) {
+            Image(this.bgImage)
+              .width('100%')
+              .height('100%')
+              .objectFit(ImageFit.Cover)
+              .position({ x: 0, y: 0 })
+              .zIndex(1)
+              .align(Alignment.TopStart) // 确保图片从左上角开始填充
+              // 移除expandSafeArea，让背景图片完全覆盖屏幕，包括导航栏区域
+          }
 
-      Column() {
-        // 只有在不显示入场动画时才显示聊天界面内容
-        if (!this._showIntroAnimation) {
-          // 顶部信息栏 (Z-index: 2)
-          Row() {
-            // 左侧：智能体头像和名称/连接者信息
-            Image($r('app.media.back'))
-              .width(25)
-              .onClick(()=>{
-                router.pushUrl({
-                  url: '/pages/FeaturedList'
-                });
-              })
-            Row() {
-              Image(this.agentAvatar)
-                .width(this.isHeaderCompact ? 24 : 30).height(this.isHeaderCompact ? 24 : 30).borderRadius(this.isHeaderCompact ? 12 : 24)
-                .margin({ right: this.isHeaderCompact ? 4 : 6 })
-                .objectFit(ImageFit.Cover)
+          Column() {
+            // 只有在不显示入场动画时才显示聊天界面内容
+            if (!this._showIntroAnimation) {
+              // 顶部信息栏 (Z-index: 2)
+              Row() {
+                // 左侧：智能体头像和名称/连接者信息
+                Image($r('app.media.back'))
+                  .width(25)
+                  .onClick(()=>{
+                    router.pushUrl({
+                      url: '/pages/FeaturedList'
+                    });
+                  })
+                Row() {
+                  Image(this.agentAvatar)
+                    .width(this.isHeaderCompact ? 24 : 30).height(this.isHeaderCompact ? 24 : 30).borderRadius(this.isHeaderCompact ? 12 : 24)
+                    .margin({ right: this.isHeaderCompact ? 4 : 6 })
+                    .objectFit(ImageFit.Cover)
+                    .onClick(() => {
+                      // 跳转到人物简介页面，传递AI角色参数
+                      router.pushUrl({
+                        url: 'pages/ProfilePage',
+                        params: {
+                          figureImageUrl: this.figureImageUrl,
+                          figureType: this.figureType,
+                          figureName: this.figureName,
+                          description: this.description,
+                          createdAiRoleId: this.createdAiRoleId,
+                        }
+                      });
+                    })
+
+                  Column() {
+                    Text(this.agentName)
+                      .fontSize(this.isHeaderCompact ? 12 : 14).fontWeight(FontWeight.Bold).fontColor(Color.White)
+                      .maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis })
+                    Text(this.agentSubInfo)
+                      .fontSize(this.isHeaderCompact ? 8 : 10).fontColor(Color.White).opacity(this.isHeaderCompact ? 0.5 : 0.8)
+                  }
+                  .alignItems(HorizontalAlign.Start)
+
+                  Image($r('app.media.plus_icon')) // TODO: 替换为实际的 plus_icon 图片资源
+                    .width(this.isHeaderCompact ? 18 : 25).height(this.isHeaderCompact ? 18 : 25) // 缩小图片
+                }
+                .alignItems(VerticalAlign.Center)
+                .padding(this.isHeaderCompact ? { left: 2, right: 5, top: 2, bottom: 2 } : { left: 2, right: 10, top: 5, bottom: 5 })
+                .borderRadius(this.isHeaderCompact ? 24 : 35)
+                .backgroundColor('rgba(255,255,255,0.2)')
+
+                // 点赞按钮
+                Button() {
+                  Row() {
+                    Text(this.isLikeEffectEnabled ? '💖' : '🤍') // 根据状态显示不同的爱心图标
+                      .fontSize(this.isHeaderCompact ? 14 : 16)
+                      .fontWeight(FontWeight.Bold)
+                  }
+                  .alignItems(VerticalAlign.Center)
+                  .height('100%')
+                }
+                .height(this.isHeaderCompact ? 28 : 32).borderRadius(this.isHeaderCompact ? 14 : 16) // 缩小按钮高度
+                .backgroundColor(this.isLikeEffectEnabled ? 'rgba(255,100,100,0.3)' : 'rgba(255,255,255,0.2)') // 根据状态改变背景色
+                .padding(this.isHeaderCompact ? { left: 6, right: 4 } : { left: 8, right: 6})
+                .margin({ left: this.isHeaderCompact ? 6 : 8 }) // 调整为左侧间距
                 .onClick(() => {
-                  // 跳转到人物简介页面，传递AI角色参数
+                  console.info('爱心按钮被点击');
+                  // 切换点赞特效的开启/关闭状态
+                  this.isLikeEffectEnabled = !this.isLikeEffectEnabled;
+                  console.log('点击点赞按钮，点赞特效状态:', this.isLikeEffectEnabled ? '开启' : '关闭');
+                  
+                  if (this.isLikeEffectEnabled) {
+                    // 开启特效时，启动动画循环并触发一次特效作为视觉反馈
+                    console.info('开启点赞特效');
+                    if (!this.animationId) {
+                      this.startLikeAnimation();
+                    }
+                    this.triggerLikeEffect();
+                  } else {
+                    // 关闭特效时，清除所有现有的特效
+                    console.info('关闭点赞特效');
+                    this.clearAllLikeEffects();
+                  }
+                })
+
+                // 消息按钮
+                Button() {
+                  Row() {
+                    Image($r('app.media.message_icon')) // TODO: 替换为实际的 message_icon 图片资源
+                      .width(this.isHeaderCompact ? 16 : 18).height(this.isHeaderCompact ? 16 : 18).margin({ right: 4 }) // 缩小图片
+                  }
+                  .alignItems(VerticalAlign.Center)
+                  .height('100%')
+                }
+                .height(this.isHeaderCompact ? 28 : 32).borderRadius(this.isHeaderCompact ? 14 : 16) // 缩小按钮高度
+                .backgroundColor('rgba(255,255,255,0.2)')
+                .padding(this.isHeaderCompact ? { left: 6, right: 4 } : { left: 8, right: 6})
+                .margin({ left: this.isHeaderCompact ? 6 : 8 }) // 调整为左侧间距
+                .onClick(() => {
+                  // 跳转到评论页面，传递AI角色信息
+                  // 获取当前AI角色ID，优先用this.aiRoleId或其它动态来源
                   router.pushUrl({
-                    url: 'pages/ProfilePage',
+                    url: 'pages/chatComment',
                     params: {
-                      figureImageUrl: this.figureImageUrl,
-                      figureType: this.figureType,
-                      figureName: this.figureName,
-                      description: this.description,
-                      createdAiRoleId: this.createdAiRoleId,
+                      aiRoleId: 311, //TODO : 实际为该界面对应的角色id
+                      aiRoleName: this.agentName,
+                      aiRoleAvatar: this.agentAvatar,
+                      aiRoleType: this.figureType || 'default',
+                      aiRoleDescription: this.description || '',
+                      currentUserId: 405 // TODO:实际应从用户数据获取
                     }
                   });
+                  console.log('跳转到评论页面，AI角色ID:', 311, '名称:', this.agentName);
                 })
 
-              Column() {
-                Text(this.agentName)
-                  .fontSize(this.isHeaderCompact ? 12 : 14).fontWeight(FontWeight.Bold).fontColor(Color.White)
-                  .maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis })
-                Text(this.agentSubInfo)
-                  .fontSize(this.isHeaderCompact ? 8 : 10).fontColor(Color.White).opacity(this.isHeaderCompact ? 0.5 : 0.8)
-              }
-              .alignItems(HorizontalAlign.Start)
+                Blank() // 占据剩余空间，将右侧按钮推到最右边
 
-              Image($r('app.media.plus_icon')) // TODO: 替换为实际的 plus_icon 图片资源
-                .width(this.isHeaderCompact ? 18 : 25).height(this.isHeaderCompact ? 18 : 25) // 缩小图片
-            }
-            .alignItems(VerticalAlign.Center)
-            .padding(this.isHeaderCompact ? { left: 2, right: 5, top: 2, bottom: 2 } : { left: 2, right: 10, top: 5, bottom: 5 })
-            .borderRadius(this.isHeaderCompact ? 24 : 35)
-            .backgroundColor('rgba(255,255,255,0.2)')
-
-            // 点赞按钮
-            Button() {
-              Row() {
-                Text(this.isLikeEffectEnabled ? '💖' : '🤍') // 根据状态显示不同的爱心图标
-                  .fontSize(this.isHeaderCompact ? 14 : 16)
-                  .fontWeight(FontWeight.Bold)
+                // 右侧按钮组
+                Row() {
+                  // 菜单按钮
+                  Button() {
+                    Image($r('app.media.menu_icon')) // TODO: 替换为实际的 menu_icon 图片资源
+                      .width(this.isHeaderCompact ? 18 : 20).height(this.isHeaderCompact ? 18 : 20) // 缩小图片
+                  }
+                  .height(this.isHeaderCompact ? 28 : 32).borderRadius(this.isHeaderCompact ? 14 : 16) // 缩小按钮高度
+                  .backgroundColor('rgba(255,255,255,0.2)')
+                  .padding(this.isHeaderCompact ? { left: 6, right: 6, top: 4, bottom: 4 } : { left: 10, right: 10,top:6,bottom:8}) // 添加左右内边距，使其变为椭圆形
+                }
+                .alignItems(VerticalAlign.Center)
               }
+              .width('96%') // 调整宽度
+              .height(this.isHeaderCompact ? 48 : 64) // 动态高度
+              .padding(this.isHeaderCompact ? { left: 8, right: 8, top: 4, bottom: 4 } : { left: 8, right: 8, top: 10, bottom: 10 }) // 动态padding
+              .margin({ top: this.isFromNavBar ? (this.isHeaderCompact ? 70 : 80) : (this.isHeaderCompact ? 10 : 20), bottom: 10 }) // 根据进入方式调整顶部margin
               .alignItems(VerticalAlign.Center)
-              .height('100%')
-            }
-            .height(this.isHeaderCompact ? 28 : 32).borderRadius(this.isHeaderCompact ? 14 : 16) // 缩小按钮高度
-            .backgroundColor(this.isLikeEffectEnabled ? 'rgba(255,100,100,0.3)' : 'rgba(255,255,255,0.2)') // 根据状态改变背景色
-            .padding(this.isHeaderCompact ? { left: 6, right: 4 } : { left: 8, right: 6})
-            .margin({ left: this.isHeaderCompact ? 6 : 8 }) // 调整为左侧间距
-            .onClick(() => {
-              console.info('爱心按钮被点击');
-              // 切换点赞特效的开启/关闭状态
-              this.isLikeEffectEnabled = !this.isLikeEffectEnabled;
-              console.log('点击点赞按钮，点赞特效状态:', this.isLikeEffectEnabled ? '开启' : '关闭');
-              
-              if (this.isLikeEffectEnabled) {
-                // 开启特效时，启动动画循环并触发一次特效作为视觉反馈
-                console.info('开启点赞特效');
-                if (!this.animationId) {
-                  this.startLikeAnimation();
+              .justifyContent(FlexAlign.SpaceBetween) // 改变布局方式
+              .zIndex(10) // 提高z-index，确保在背景之上
+              .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP]) // 避开顶部系统安全区域
+
+              // 聊天消息列表 (Z-index: 2)
+              Scroll(this.scrollController) {
+                Column({ space: 8 }) {
+                  ForEach(this.chatData, (item: ChatMessage) => {
+                    if (item.isMe) {
+                      this.MyMessage(item) // 右侧（自己发送）
+                    } else {
+                      this.FriendMessage(item) // 左侧（好友发送）
+                    }
+                  }, (item: ChatMessage) => item.id.toString())
                 }
-                this.triggerLikeEffect();
-              } else {
-                // 关闭特效时，清除所有现有的特效
-                console.info('关闭点赞特效');
-                this.clearAllLikeEffects();
+                .width('100%')
+                .padding({ left: 12, right: 12, top: 10, bottom: 10 })
               }
-            })
-
-            // 消息按钮
-            Button() {
-              Row() {
-                Image($r('app.media.message_icon')) // TODO: 替换为实际的 message_icon 图片资源
-                  .width(this.isHeaderCompact ? 16 : 18).height(this.isHeaderCompact ? 16 : 18).margin({ right: 4 }) // 缩小图片
-              }
-              .alignItems(VerticalAlign.Center)
-              .height('100%')
-            }
-            .height(this.isHeaderCompact ? 28 : 32).borderRadius(this.isHeaderCompact ? 14 : 16) // 缩小按钮高度
-            .backgroundColor('rgba(255,255,255,0.2)')
-            .padding(this.isHeaderCompact ? { left: 6, right: 4 } : { left: 8, right: 6})
-            .margin({ left: this.isHeaderCompact ? 6 : 8 }) // 调整为左侧间距
-            .onClick(() => {
-              // 跳转到评论页面，传递AI角色信息
-              // 获取当前AI角色ID，优先用this.aiRoleId或其它动态来源
-              router.pushUrl({
-                url: 'pages/chatComment',
-                params: {
-                  aiRoleId: 311, //TODO : 实际为该界面对应的角色id
-                  aiRoleName: this.agentName,
-                  aiRoleAvatar: this.agentAvatar,
-                  aiRoleType: this.figureType || 'default',
-                  aiRoleDescription: this.description || '',
-                  currentUserId: 405 // TODO:实际应从用户数据获取
-                }
-              });
-              console.log('跳转到评论页面，AI角色ID:', 311, '名称:', this.agentName);
-            })
-
-            Blank() // 占据剩余空间，将右侧按钮推到最右边
-
-            // 右侧按钮组
-            Row() {
-              // 菜单按钮
-              Button() {
-                Image($r('app.media.menu_icon')) // TODO: 替换为实际的 menu_icon 图片资源
-                  .width(this.isHeaderCompact ? 18 : 20).height(this.isHeaderCompact ? 18 : 20) // 缩小图片
-              }
-              .height(this.isHeaderCompact ? 28 : 32).borderRadius(this.isHeaderCompact ? 14 : 16) // 缩小按钮高度
-              .backgroundColor('rgba(255,255,255,0.2)')
-              .padding(this.isHeaderCompact ? { left: 6, right: 6, top: 4, bottom: 4 } : { left: 10, right: 10,top:6,bottom:8}) // 添加左右内边距，使其变为椭圆形
-            }
-            .alignItems(VerticalAlign.Center)
-          }
-          .width('96%') // 调整宽度
-          .height(this.isHeaderCompact ? 48 : 64) // 动态高度
-          .padding(this.isHeaderCompact ? { left: 8, right: 8, top: 4, bottom: 4 } : { left: 8, right: 8, top: 10, bottom: 10 }) // 动态padding
-          .margin({ top: this.isFromNavBar ? (this.isHeaderCompact ? 70 : 80) : (this.isHeaderCompact ? 10 : 20), bottom: 10 }) // 根据进入方式调整顶部margin
-          .alignItems(VerticalAlign.Center)
-          .justifyContent(FlexAlign.SpaceBetween) // 改变布局方式
-          .zIndex(10) // 提高z-index，确保在背景之上
-          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP]) // 避开顶部系统安全区域
-
-          // 聊天消息列表 (Z-index: 2)
-          Scroll(this.scrollController) {
-            Column({ space: 8 }) {
-              ForEach(this.chatData, (item: ChatMessage) => {
-                if (item.isMe) {
-                  this.MyMessage(item) // 右侧（自己发送）
-                } else {
-                  this.FriendMessage(item) // 左侧（好友发送）
-                }
-              }, (item: ChatMessage) => item.id.toString())
-            }
-            .width('100%')
-            .padding({ left: 12, right: 12, top: 10, bottom: 10 })
-          }
-          .width('100%')
-          .layoutWeight(1) // 占据剩余垂直空间
-          .zIndex(10) // 提高z-index，确保在背景之上
-          .expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
-          .scrollBar(BarState.Off) // 隐藏滚动条
-          .edgeEffect(EdgeEffect.Spring) // 添加边缘弹性效果
-          .onReachEnd(() => {
-            // 滚动到底部时的回调，可以用于加载更多历史消息
-            console.log('已滚动到聊天列表底部');
-          })
-          .onClick((event: ClickEvent) => {
-            // 点击消息列表区域收起键盘
-            if (this.isInputFocused) {
-              let inputMethodController = inputMethod.getController();
-              inputMethodController.stopInputSession();
-              this.isInputFocused = false;
-            }
-            
-            // 只有在点赞特效开启时才响应点赞特效
-            if (!this.isLikeEffectEnabled) {
-              return;
-            }
-            
-            // 在消息列表区域点击时触发点赞特效
-            console.info(`Scroll点击位置: ${event.x}, ${event.y}`)
-            
-            // 计算Canvas中的实际坐标
-            // Column有padding: left:8, right:8, bottom: 56
-            // Scroll组件有padding: left: 12, right: 12
-            const canvasX = event.x + 8 + 12 // 加上Column和Scroll的left padding
-            const canvasY = event.y + 56 // 加上Column的bottom padding
-            
-            console.info(`Canvas坐标: ${canvasX}, ${canvasY}`)
-            
-            // 添加多个点赞图标，创造更丰富的效果
-            this.addLikeIcon(canvasX, canvasY)
-            // 在点击位置周围添加一些随机偏移的图标
-            for (let i = 0; i < 3; i++) {
-              const offsetX = canvasX + (Math.random() - 0.5) * 60
-              const offsetY = canvasY + (Math.random() - 0.5) * 60
-              this.addLikeIcon(offsetX, offsetY)
-            }
-          })
-
-          // 底部输入区域 (Z-index: 4)
-          Row() {
-            // 左侧语音按钮
-            Image($r('app.media.voice_icon')) // TODO: 替换为实际的 ic_voice 图片资源
-              .width(26).height(26)
-              .margin({ right: 8 })
-              .onClick(() => {
-                this.isVoiceMode = !this.isVoiceMode; // 切换语音/文本输入模式
+              .width('100%')
+              .layoutWeight(1) // 占据剩余垂直空间
+              .zIndex(10) // 提高z-index，确保在背景之上
+              .expandSafeArea([SafeAreaType.KEYBOARD]) // 避开键盘区域
+              .scrollBar(BarState.Off) // 隐藏滚动条
+              .edgeEffect(EdgeEffect.Spring) // 添加边缘弹性效果
+              .onReachEnd(() => {
+                // 滚动到底部时的回调，可以用于加载更多历史消息
+                console.log('已滚动到聊天列表底部');
               })
-
-            // 输入框或语音按钮
-            if (!this.isVoiceMode) {
-              // 文本输入模式
-              TextInput({
-                text: this.inputText,
-                placeholder: '发送消息给' + this.agentName
-              })
-                .type(InputType.Normal)
-                .placeholderColor('#aaa')
-                .fontColor(Color.White)
-                .fontSize(16)
-                .layoutWeight(1) // 占据剩余空间
-                .height(48)
-                .borderWidth(0) // 设置边框宽度为0，移除边框
-                .padding({ left: 16, right: 16 })
-                .margin({ right: 8 })
-                .onChange((text: string) => {
-                  this.inputText = text;
-                })
-                .onFocus(() => {
-                  this.isInputFocused = true;
-                  // 新增：输入框获得焦点时滚动到底部
-                  this.scrollToBottom();
-                })
-                .onBlur(() => {
+              .onClick((event: ClickEvent) => {
+                // 点击消息列表区域收起键盘
+                if (this.isInputFocused) {
+                  let inputMethodController = inputMethod.getController();
+                  inputMethodController.stopInputSession();
                   this.isInputFocused = false;
-                })
-            } else {
-              // 语音输入模式
-              Button() {
-                Text(this.isRecording ? '松开发送' : '按住说话')
-                  .fontColor(Color.White)
-                  .fontSize(16)
-              }
-              .width('100%')
-              .height(48)
-              .backgroundColor('rgba(0,0,0,0.3)')
-              .borderRadius(24)
-              .onTouch((event: TouchEvent) => {
-                if (event.type === TouchType.Down) {
-                  this.touchStartY = event.touches[0].y;
-                  this.isCancelRecord = false;
-                  this.showRecordPanel = true;
-                  this.startRecord();
-                } else if (event.type === TouchType.Move) {
-                  if (this.touchStartY - event.touches[0].y > 50) {
-                    this.isCancelRecord = true;
-                  } else {
-                    this.isCancelRecord = false;
-                  }
-                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                  this.showRecordPanel = false;
-                  this.stopAndSendRecord();
                 }
-              })
-            }
-
-            // 右侧加号按钮 (用于更多功能)
-            Image($r('app.media.ic_add_circle')) // TODO: 替换为实际的 ic_add_circle 图片资源
-              .width(30).height(30)
-              .onClick(async () => {
-                this.showExtraInputs = !this.showExtraInputs;
-                console.log('打开更多功能面板');
                 
-                // 如果打开面板，则生成回复建议
-                if (this.showExtraInputs) {
-                  await this.generateReplySuggestions();
+                // 只有在点赞特效开启时才响应点赞特效
+                if (!this.isLikeEffectEnabled) {
+                  return;
+                }
+                
+                // 在消息列表区域点击时触发点赞特效
+                console.info(`Scroll点击位置: ${event.x}, ${event.y}`)
+                
+                // 计算Canvas中的实际坐标
+                // Column有padding: left:8, right:8, bottom: 56
+                // Scroll组件有padding: left: 12, right: 12
+                const canvasX = event.x + 8 + 12 // 加上Column和Scroll的left padding
+                const canvasY = event.y + 56 // 加上Column的bottom padding
+                
+                console.info(`Canvas坐标: ${canvasX}, ${canvasY}`)
+                
+                // 添加多个点赞图标，创造更丰富的效果
+                this.addLikeIcon(canvasX, canvasY)
+                // 在点击位置周围添加一些随机偏移的图标
+                for (let i = 0; i < 3; i++) {
+                  const offsetX = canvasX + (Math.random() - 0.5) * 60
+                  const offsetY = canvasY + (Math.random() - 0.5) * 60
+                  this.addLikeIcon(offsetX, offsetY)
                 }
               })
-              .margin({ right: 8 })
 
-            // 新增发送按钮（图标替换）
-            if (this.isSending) {
-              // 发送中状态
-              LoadingProgress()
-                .width(26)
-                .height(26)
-                .color(Color.White)
-            } else {
-              // 正常发送按钮
-              Image($r('app.media.send_icon'))
-                .width(26)
-                .height(26)
-                .opacity(this.inputText.trim().length > 0 ? 1 : 0.4) // 有内容高亮，无内容变淡
-                .onClick(() => {
-                  if (this.inputText.trim().length > 0) {
-                    this.sendMessage();
+              // 底部输入区域 (Z-index: 4)
+              Row() {
+                // 左侧语音按钮
+                Image($r('app.media.voice_icon')) // TODO: 替换为实际的 ic_voice 图片资源
+                  .width(26).height(26)
+                  .margin({ right: 8 })
+                  .onClick(() => {
+                    this.isVoiceMode = !this.isVoiceMode; // 切换语音/文本输入模式
+                  })
+
+                // 输入框或语音按钮
+                if (!this.isVoiceMode) {
+                  // 文本输入模式
+                  TextInput({
+                    text: this.inputText,
+                    placeholder: '发送消息给' + this.agentName
+                  })
+                    .type(InputType.Normal)
+                    .placeholderColor('#aaa')
+                    .fontColor(Color.White)
+                    .fontSize(16)
+                    .layoutWeight(1) // 占据剩余空间
+                    .height(48)
+                    .borderWidth(0) // 设置边框宽度为0，移除边框
+                    .padding({ left: 16, right: 16 })
+                    .margin({ right: 8 })
+                    .onChange((text: string) => {
+                      this.inputText = text;
+                    })
+                    .onFocus(() => {
+                      this.isInputFocused = true;
+                      // 新增：输入框获得焦点时滚动到底部
+                      this.scrollToBottom();
+                    })
+                    .onBlur(() => {
+                      this.isInputFocused = false;
+                    })
+                } else {
+                  // 语音输入模式
+                  Button() {
+                    Text(this.isRecording ? '松开发送' : '按住说话')
+                      .fontColor(Color.White)
+                      .fontSize(16)
                   }
-                })
+                  .width('100%')
+                  .height(48)
+                  .backgroundColor('rgba(0,0,0,0.3)')
+                  .borderRadius(24)
+                  .onTouch((event: TouchEvent) => {
+                    if (event.type === TouchType.Down) {
+                      this.touchStartY = event.touches[0].y;
+                      this.isCancelRecord = false;
+                      this.showRecordPanel = true;
+                      this.startRecord();
+                    } else if (event.type === TouchType.Move) {
+                      if (this.touchStartY - event.touches[0].y > 50) {
+                        this.isCancelRecord = true;
+                      } else {
+                        this.isCancelRecord = false;
+                      }
+                    } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                      this.showRecordPanel = false;
+                      this.stopAndSendRecord();
+                    }
+                  })
+                }
+
+                // 右侧加号按钮 (用于更多功能)
+                Image($r('app.media.ic_add_circle')) // TODO: 替换为实际的 ic_add_circle 图片资源
+                  .width(30).height(30)
+                  .onClick(async () => {
+                    this.showExtraInputs = !this.showExtraInputs;
+                    console.log('打开更多功能面板');
+                    
+                    // 如果打开面板，则生成回复建议
+                    if (this.showExtraInputs) {
+                      await this.generateReplySuggestions();
+                    }
+                  })
+                  .margin({ right: 8 })
+
+                // 新增发送按钮（图标替换）
+                if (this.isSending) {
+                  // 发送中状态
+                  LoadingProgress()
+                    .width(26)
+                    .height(26)
+                    .color(Color.White)
+                } else {
+                  // 正常发送按钮
+                  Image($r('app.media.send_icon'))
+                    .width(26)
+                    .height(26)
+                    .opacity(this.inputText.trim().length > 0 ? 1 : 0.4) // 有内容高亮，无内容变淡
+                    .onClick(() => {
+                      if (this.inputText.trim().length > 0) {
+                        this.sendMessage();
+                      }
+                    })
+                }
+              }
+              .height(50)
+              .width('100%')
+              .padding({ left: 24, right: 24, top: 8, bottom: 8 }) // 调整底部输入区域的左右间距
+              .backgroundColor('rgba(0,0,0,0.3)') // 底部输入区背景色
+              .justifyContent(FlexAlign.Center)
+              .alignItems(VerticalAlign.Center)
+              .zIndex(3)
+              .borderRadius(35)
+
+              if (this.showExtraInputs) {
+                Column() {
+                  // 第一个回复建议
+                  Row() {
+                    if (this.isLoadingSuggestions) {
+                      LoadingProgress()
+                        .width(20).height(20)
+                        .color(Color.White)
+                        .margin({ right: 12 })
+                      Text('正在生成回复建议...')
+                        .fontSize(16)
+                        .fontColor(Color.White)
+                        .fontWeight(FontWeight.Medium)
+                    } else {
+                      Text(this.replySuggestions[0] || '我理解你的感受')
+                        .fontSize(16)
+                        .fontColor(Color.White)
+                        .fontWeight(FontWeight.Medium)
+                        .maxLines(2)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    }
+                  }
+                  .width('100%')
+                  .height(50)
+                  .backgroundColor('rgba(255,255,255,0.08)')
+                  .borderRadius(12)
+                  .margin({ top: 4, bottom: 2 })
+                  .padding({ left: 16, right: 16 })
+                  .justifyContent(FlexAlign.Start)
+                  .alignItems(VerticalAlign.Center)
+                  .onClick(() => {
+                    if (!this.isLoadingSuggestions && this.replySuggestions[0]) {
+                      this.inputText = this.replySuggestions[0];
+                      this.showExtraInputs = false;
+                      console.log('选择回复建议1:', this.replySuggestions[0]);
+                    }
+                  })
+
+                  // 第二个回复建议
+                  Row() {
+                    if (this.isLoadingSuggestions) {
+                      LoadingProgress()
+                        .width(20).height(20)
+                        .color(Color.White)
+                        .margin({ right: 12 })
+                      Text('正在生成回复建议...')
+                        .fontSize(16)
+                        .fontColor(Color.White)
+                        .fontWeight(FontWeight.Medium)
+                    } else {
+                      Text(this.replySuggestions[1] || '需要聊聊吗？')
+                        .fontSize(16)
+                        .fontColor(Color.White)
+                        .fontWeight(FontWeight.Medium)
+                        .maxLines(2)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    }
+                  }
+                  .width('100%')
+                  .height(50)
+                  .backgroundColor('rgba(255,255,255,0.08)')
+                  .borderRadius(12)
+                  .margin({ top: 2, bottom: 2 })
+                  .padding({ left: 16, right: 16 })
+                  .justifyContent(FlexAlign.Start)
+                  .alignItems(VerticalAlign.Center)
+                  .onClick(() => {
+                    if (!this.isLoadingSuggestions && this.replySuggestions[1]) {
+                      this.inputText = this.replySuggestions[1];
+                      this.showExtraInputs = false;
+                      console.log('选择回复建议2:', this.replySuggestions[1]);
+                    }
+                  })
+
+                  // 第三个回复建议
+                  Row() {
+                    if (this.isLoadingSuggestions) {
+                      LoadingProgress()
+                        .width(20).height(20)
+                        .color(Color.White)
+                        .margin({ right: 12 })
+                      Text('正在生成回复建议...')
+                        .fontSize(16)
+                        .fontColor(Color.White)
+                        .fontWeight(FontWeight.Medium)
+                    } else {
+                      Text(this.replySuggestions[2] || '我在这里陪着你')
+                        .fontSize(16)
+                        .fontColor(Color.White)
+                        .fontWeight(FontWeight.Medium)
+                        .maxLines(2)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    }
+                  }
+                  .width('100%')
+                  .height(50)
+                  .backgroundColor('rgba(255,255,255,0.08)')
+                  .borderRadius(12)
+                  .margin({ top: 2, bottom: 4 })
+                  .padding({ left: 16, right: 16 })
+                  .justifyContent(FlexAlign.Start)
+                  .alignItems(VerticalAlign.Center)
+                  .onClick(() => {
+                    if (!this.isLoadingSuggestions && this.replySuggestions[2]) {
+                      this.inputText = this.replySuggestions[2];
+                      this.showExtraInputs = false;
+                      console.log('选择回复建议3:', this.replySuggestions[2]);
+                    }
+                  })
+                }
+                .width('100%')
+                .padding({ left: 24, right: 24 })
+              }
             }
           }
-          .height(50)
-          .width('100%')
-          .padding({ left: 24, right: 24, top: 8, bottom: 8 }) // 调整底部输入区域的左右间距
-          .backgroundColor('rgba(0,0,0,0.3)') // 底部输入区背景色
-          .justifyContent(FlexAlign.Center)
-          .alignItems(VerticalAlign.Center)
-          .zIndex(3)
-          .borderRadius(35)
-
-          if (this.showExtraInputs) {
-            Column() {
-              // 第一个回复建议
-              Row() {
-                if (this.isLoadingSuggestions) {
-                  LoadingProgress()
-                    .width(20).height(20)
-                    .color(Color.White)
-                    .margin({ right: 12 })
-                  Text('正在生成回复建议...')
-                    .fontSize(16)
-                    .fontColor(Color.White)
-                    .fontWeight(FontWeight.Medium)
-                } else {
-                  Text(this.replySuggestions[0] || '我理解你的感受')
-                    .fontSize(16)
-                    .fontColor(Color.White)
-                    .fontWeight(FontWeight.Medium)
-                    .maxLines(2)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                }
-              }
-              .width('100%')
-              .height(50)
-              .backgroundColor('rgba(255,255,255,0.08)')
-              .borderRadius(12)
-              .margin({ top: 4, bottom: 2 })
-              .padding({ left: 16, right: 16 })
-              .justifyContent(FlexAlign.Start)
-              .alignItems(VerticalAlign.Center)
-              .onClick(() => {
-                if (!this.isLoadingSuggestions && this.replySuggestions[0]) {
-                  this.inputText = this.replySuggestions[0];
-                  this.showExtraInputs = false;
-                  console.log('选择回复建议1:', this.replySuggestions[0]);
-                }
-              })
-
-              // 第二个回复建议
-              Row() {
-                if (this.isLoadingSuggestions) {
-                  LoadingProgress()
-                    .width(20).height(20)
-                    .color(Color.White)
-                    .margin({ right: 12 })
-                  Text('正在生成回复建议...')
-                    .fontSize(16)
-                    .fontColor(Color.White)
-                    .fontWeight(FontWeight.Medium)
-                } else {
-                  Text(this.replySuggestions[1] || '需要聊聊吗？')
-                    .fontSize(16)
-                    .fontColor(Color.White)
-                    .fontWeight(FontWeight.Medium)
-                    .maxLines(2)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                }
-              }
-              .width('100%')
-              .height(50)
-              .backgroundColor('rgba(255,255,255,0.08)')
-              .borderRadius(12)
-              .margin({ top: 2, bottom: 2 })
-              .padding({ left: 16, right: 16 })
-              .justifyContent(FlexAlign.Start)
-              .alignItems(VerticalAlign.Center)
-              .onClick(() => {
-                if (!this.isLoadingSuggestions && this.replySuggestions[1]) {
-                  this.inputText = this.replySuggestions[1];
-                  this.showExtraInputs = false;
-                  console.log('选择回复建议2:', this.replySuggestions[1]);
-                }
-              })
-
-              // 第三个回复建议
-              Row() {
-                if (this.isLoadingSuggestions) {
-                  LoadingProgress()
-                    .width(20).height(20)
-                    .color(Color.White)
-                    .margin({ right: 12 })
-                  Text('正在生成回复建议...')
-                    .fontSize(16)
-                    .fontColor(Color.White)
-                    .fontWeight(FontWeight.Medium)
-                } else {
-                  Text(this.replySuggestions[2] || '我在这里陪着你')
-                    .fontSize(16)
-                    .fontColor(Color.White)
-                    .fontWeight(FontWeight.Medium)
-                    .maxLines(2)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                }
-              }
-              .width('100%')
-              .height(50)
-              .backgroundColor('rgba(255,255,255,0.08)')
-              .borderRadius(12)
-              .margin({ top: 2, bottom: 4 })
-              .padding({ left: 16, right: 16 })
-              .justifyContent(FlexAlign.Start)
-              .alignItems(VerticalAlign.Center)
-              .onClick(() => {
-                if (!this.isLoadingSuggestions && this.replySuggestions[2]) {
-                  this.inputText = this.replySuggestions[2];
-                  this.showExtraInputs = false;
-                  console.log('选择回复建议3:', this.replySuggestions[2]);
-                }
-              })
-            }
-            .width('100%')
-            .padding({ left: 24, right: 24 })
-          }
-        }
-      }
-      .width('100%')
-      .height('100%')
-      .justifyContent(FlexAlign.SpaceBetween) // 顶部底部内容分开
-      .alignItems(HorizontalAlign.Center)
-      .padding({ left:8,right:8, bottom: 56 }) // 底部padding与底部导航栏高度一致，避免重叠
-      .zIndex(2) // 确保Column在背景图片之上
-
-      // 底部导航栏 (Z-index: 4)
-      Column() {
-        // Blank() // 移除 Blank()
-      }
-      .width('100%')
-      .alignItems(HorizontalAlign.Center)
-      .zIndex(4) // 确保在最上层
-      .align(Alignment.Bottom) // 确保对齐到 Stack 的底部
-
-      // 点赞特效Canvas (Z-index: 1，在背景之上但在UI元素之下)
-      if (this.isLikeEffectEnabled) {
-        Canvas(this.context)
           .width('100%')
           .height('100%')
-          .zIndex(1) // 降低z-index，确保在UI元素之下
-          .backgroundColor(Color.Transparent) // 设置为透明背景
-          .onReady(() => {
-            // Canvas已准备好，可以开始绘制
-            this.screenWidth = this.context.width
-            this.screenHeight = this.context.height
-            console.info(`点赞特效Canvas已准备就绪: ${this.screenWidth} x ${this.screenHeight}`)
-          })
-      }
+          .justifyContent(FlexAlign.SpaceBetween) // 顶部底部内容分开
+          .alignItems(HorizontalAlign.Center)
+          .padding({ left:8,right:8, bottom: 56 }) // 底部padding与底部导航栏高度一致，避免重叠
+          .zIndex(2) // 确保Column在背景图片之上
 
-      // 新增：角色入场动画层 (Z-index: 5，最上层) - 动画结束后保持背景图片
-      if (this.figureImageUrl) {
-        Stack() {
-          // 背景大图 - 动画结束后保持显示
-          Image(this.figureImageUrl)
-            .width('100%')
-            .height('100%')
-            .objectFit(ImageFit.Cover)
-            .position({ x: 0, y: 0 })
-            .align(Alignment.TopStart) // 确保图片从左上角开始填充
-            .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-            .opacity(this._showIntroAnimation ? this._introBgOpacity : 1.0) // 动画时使用动画透明度，结束后保持完全不透明
+          // 底部导航栏 (Z-index: 4)
+          Column() {
+            // Blank() // 移除 Blank()
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Center)
+          .zIndex(4) // 确保在最上层
+          .align(Alignment.Bottom) // 确保对齐到 Stack 的底部
 
-          // 渐变背景 - 只在动画进行时显示
-          if (this._showIntroAnimation) {
-            Row()
+          // 点赞特效Canvas (Z-index: 1，在背景之上但在UI元素之下)
+          if (this.isLikeEffectEnabled) {
+            Canvas(this.context)
               .width('100%')
               .height('100%')
-              .backgroundImage('linear-gradient(135deg, #f8b6d8 0%, #fbeee6 100%)')
+              .zIndex(1) // 降低z-index，确保在UI元素之下
+              .backgroundColor(Color.Transparent) // 设置为透明背景
+              .onReady(() => {
+                // Canvas已准备好，可以开始绘制
+                this.screenWidth = this.context.width
+                this.screenHeight = this.context.height
+                console.info(`点赞特效Canvas已准备就绪: ${this.screenWidth} x ${this.screenHeight}`)
+              })
           }
 
-          // 中央角色卡片 - 只在动画进行时显示
-          if (this._showIntroAnimation) {
-            Column() {
-              Blank().height('1fr')
+          // 新增：角色入场动画层 (Z-index: 5，最上层) - 动画结束后保持背景图片
+          if (this.figureImageUrl) {
+            Stack() {
+              // 背景大图 - 动画结束后保持显示
+              Image(this.figureImageUrl)
+                .width('100%')
+                .height('100%')
+                .objectFit(ImageFit.Cover)
+                .position({ x: 0, y: 0 })
+                .align(Alignment.TopStart) // 确保图片从左上角开始填充
+                .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+                .opacity(this._showIntroAnimation ? this._introBgOpacity : 1.0) // 动画时使用动画透明度，结束后保持完全不透明
 
-              Row() {
-                Column() {
-                  Image(this.figureImageUrl ?? '')
-                    .width(320)
-                    .height(180)
-                    .borderRadius(12)
-                    .objectFit(ImageFit.Cover)
-                    .opacity(this._introOpacity * this._introCenterOpacity)
-                }
-                .backgroundColor('#fff')
-                .borderRadius(16)
-                .border({ width: 4, color: '#fff' })
-                .shadow({ radius: 24, color: '#00000044', offsetX: 0, offsetY: 12 })
-                .padding(6)
-                .scale({ x: this._introScale * this._introCenterScale, y: this._introScale * this._introCenterScale })
-                .translate({ x: 0, y: this._introOffsetY })
-                .rotate({ angle: this._introRotate })
+              // 渐变背景 - 只在动画进行时显示
+              if (this._showIntroAnimation) {
+                Row()
+                  .width('100%')
+                  .height('100%')
+                  .backgroundImage('linear-gradient(135deg, #f8b6d8 0%, #fbeee6 100%)')
               }
-              .width('100%')
-              .justifyContent(FlexAlign.Center)
 
-              // 角色名称
-              Text(this.figureName || '')
-                .fontSize(24)
-                .fontWeight(FontWeight.Bold)
-                .fontColor('#333')
-                .margin({ top: 20 })
-                .opacity(this._introNameOpacity)
-                .translate({ x: 0, y: this._introNameOffsetY })
+              // 中央角色卡片 - 只在动画进行时显示
+              if (this._showIntroAnimation) {
+                Column() {
+                  Blank().height('1fr')
 
-              Blank().height('1fr')
+                  Row() {
+                    Column() {
+                      Image(this.figureImageUrl ?? '')
+                        .width(320)
+                        .height(180)
+                        .borderRadius(12)
+                        .objectFit(ImageFit.Cover)
+                        .opacity(this._introOpacity * this._introCenterOpacity)
+                    }
+                    .backgroundColor('#fff')
+                    .borderRadius(16)
+                    .border({ width: 4, color: '#fff' })
+                    .shadow({ radius: 24, color: '#00000044', offsetX: 0, offsetY: 12 })
+                    .padding(6)
+                    .scale({ x: this._introScale * this._introCenterScale, y: this._introScale * this._introCenterScale })
+                    .translate({ x: 0, y: this._introOffsetY })
+                    .rotate({ angle: this._introRotate })
+                  }
+                  .width('100%')
+                  .justifyContent(FlexAlign.Center)
+
+                  // 角色名称
+                  Text(this.figureName || '')
+                    .fontSize(24)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor('#333')
+                    .margin({ top: 20 })
+                    .opacity(this._introNameOpacity)
+                    .translate({ x: 0, y: this._introNameOffsetY })
+
+                  Blank().height('1fr')
+                }
+                .width('100%')
+                .height('100%')
+              }
             }
             .width('100%')
             .height('100%')
+            .zIndex(this._showIntroAnimation ? 5 : 0) // 动画时z-index为5，结束后为1
+          }
+
+          // 录音弹窗
+          if (this.showRecordPanel) {
+            // 蒙层
+            Stack() {
+              // 半透明背景
+              Row() {} // 空Row
+                .backgroundColor('rgba(0,0,0,0.3)')
+                .width('100%')
+                .height('100%')
+
+              // 录音弹窗
+              Column() {
+                // 声波动画
+                Row() {
+                  ForEach([1,2,3,4,5], (i: number) => {
+                    Blank()
+                      .width(6)
+                      .height(30) // 固定高度
+                      .backgroundColor(this.isCancelRecord ? '#ff4d4f' : '#00e0ff')
+                      .margin({ left: 2, right: 2 })
+                  })
+                }
+                .margin({ bottom: 12 })
+
+                // 状态提示
+                Text(this.isCancelRecord ? '松开手指，取消发送' : '上滑取消')
+                  .fontColor(this.isCancelRecord ? '#ff4d4f' : '#fff')
+                  .fontSize(16)
+                  .margin({ bottom: 8 })
+
+                // 实时时长
+                Text(`${this.recordDuration}"`)
+                  .fontColor('#fff')
+                  .fontSize(20)
+              }
+              .padding({ top: 40, bottom: 40, left: 30, right: 30 })
+              .backgroundColor('rgba(0,0,0,0.8)')
+              .borderRadius(16)
+              .align(Alignment.Center)
+            }
+            .zIndex(99)
           }
         }
         .width('100%')
         .height('100%')
-        .zIndex(this._showIntroAnimation ? 5 : 0) // 动画时z-index为5，结束后为1
-      }
-
-      // 录音弹窗
-      if (this.showRecordPanel) {
-        // 蒙层
-        Stack() {
-          // 半透明背景
-          Row() {} // 空Row
-            .backgroundColor('rgba(0,0,0,0.3)')
-            .width('100%')
-            .height('100%')
-
-          // 录音弹窗
-          Column() {
-            // 声波动画
-            Row() {
-              ForEach([1,2,3,4,5], (i: number) => {
-                Blank()
-                  .width(6)
-                  .height(30) // 固定高度
-                  .backgroundColor(this.isCancelRecord ? '#ff4d4f' : '#00e0ff')
-                  .margin({ left: 2, right: 2 })
-              })
-            }
-            .margin({ bottom: 12 })
-
-            // 状态提示
-            Text(this.isCancelRecord ? '松开手指，取消发送' : '上滑取消')
-              .fontColor(this.isCancelRecord ? '#ff4d4f' : '#fff')
-              .fontSize(16)
-              .margin({ bottom: 8 })
-
-            // 实时时长
-            Text(`${this.recordDuration}"`)
-              .fontColor('#fff')
-              .fontSize(20)
-          }
-          .padding({ top: 40, bottom: 40, left: 30, right: 30 })
-          .backgroundColor('rgba(0,0,0,0.8)')
-          .borderRadius(16)
-          .align(Alignment.Center)
-        }
-        .zIndex(99)
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP]) // 避开顶部系统安全区域
       }
     }
     .width('100%')
     .height('100%')
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP]) // 避开顶部系统安全区域
+    .backgroundColor('#eeeeee')
   }
 
   // 好友消息组件（左侧）

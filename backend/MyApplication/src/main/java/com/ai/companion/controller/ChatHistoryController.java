@@ -178,5 +178,49 @@ public class ChatHistoryController {
             return ApiResponse.error("查找对话时发生错误: " + e.getMessage());
         }
     }
+
+    /**
+     * 删除对话
+     * DELETE /ai/history/conversation/delete
+     */
+    @DeleteMapping("/conversation/delete")
+    public ApiResponse<Boolean> deleteConversation(@RequestBody DeleteConversationRequest request) {
+        try {
+            if (request.getId() == null) {
+                return ApiResponse.error("对话ID不能为空");
+            }
+
+            // 先检查对话是否存在
+            Conversation conversation = conversationMapper.selectById(request.getId());
+            if (conversation == null) {
+                return ApiResponse.error("对话不存在");
+            }
+
+            // 删除对话
+            int result = conversationMapper.deleteConversation(request.getId());
+            if (result > 0) {
+                return ApiResponse.success("对话删除成功", true);
+            } else {
+                return ApiResponse.error("对话删除失败");
+            }
+        } catch (Exception e) {
+            return ApiResponse.error("删除对话时发生错误: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 删除对话的请求体
+     */
+    public static class DeleteConversationRequest {
+        private Integer id;
+
+        public Integer getId() {
+            return id;
+        }
+
+        public void setId(Integer id) {
+            this.id = id;
+        }
+    }
 }
 

@@ -19,6 +19,9 @@ import java.awt.image.BufferedImage;
 import java.awt.Color;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/ai/role")
@@ -26,6 +29,7 @@ public class AIRoleController {
 
     private final AiRoleMapper aiRoleMapper;
     private final ChatClient chatClient;
+    private static final Logger log = LoggerFactory.getLogger(AIRoleController.class);
 
     @Autowired
     public AIRoleController(AiRoleMapper aiRoleMapper, ChatClient chatClient){
@@ -245,6 +249,33 @@ public class AIRoleController {
             
         } catch (Exception e) {
             return ApiResponse.error("获取用户AI角色列表失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取热门AI角色列表
+     */
+    @GetMapping("/popular")
+    public ApiResponse<List<AiRole>> getPopularRoles(@RequestParam(defaultValue = "10") int limit) {
+        try {
+            log.info("获取热门AI角色列表，限制数量: {}", limit);
+            
+            // 限制最大数量，避免性能问题
+            if (limit > 50) {
+                limit = 50;
+            }
+            
+            List<AiRole> popularRoles = aiRoleMapper.selectAll().stream()
+                    .sorted((a, b) -> Integer.compare(b.getViewCount(), a.getViewCount()))
+                    .limit(limit)
+                    .collect(Collectors.toList());
+            
+            log.info("成功获取热门AI角色，数量: {}", popularRoles.size());
+            return ApiResponse.success(popularRoles);
+            
+        } catch (Exception e) {
+            log.error("获取热门AI角色失败", e);
+            return ApiResponse.error("获取热门角色失败: " + e.getMessage());
         }
     }
 }

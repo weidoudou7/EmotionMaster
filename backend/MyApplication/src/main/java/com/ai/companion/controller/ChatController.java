@@ -172,7 +172,7 @@ public class ChatController {
             String aiResponse = chatClient.prompt()
                     .system(desc)
                     .user(prompt)
-                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
+                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversation.getId().toString()))
                     .call()
                     .content();
 

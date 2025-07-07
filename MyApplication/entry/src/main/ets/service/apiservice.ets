@@ -81,6 +81,14 @@ interface ImageMainColorResponse {
   mainColor: string;
 }
 
+// 在顶部添加类型声明
+interface UserBehaviorRequest {
+  userId: number;
+  roleId: number;
+  actionType: string;
+  score: number;
+}
+
 /**
  * API服务类
  */
@@ -1140,6 +1148,295 @@ export class ApiService {
       return response.data;
     } else {
       throw new Error(response.message || 'Failed to get conversations');
+    }
+  }
+
+  /**
+   * 删除对话
+   */
+  static async deleteConversation(conversationId: number): Promise<boolean> {
+    const url = `${API_BASE_URL}/ai/history/conversation/delete`;
+    const response = await ApiService.request<boolean>(url, {
+      method: http.RequestMethod.DELETE,
+      body: JSON.stringify({ id: conversationId })
+    });
+    if (response.success) {
+      return response.data;
+    } else {
+      throw new Error(response.message || 'Failed to delete conversation');
+    }
+  }
+
+  /**
+   * 获取高级混合推荐角色列表（优化版）
+   */
+  static async getHybridRecommendations(userId: number, limit: number = 10): Promise<AiRole[]> {
+    try {
+      console.log('🎯 ApiService.getHybridRecommendations 开始获取混合推荐');
+      console.log('🎯 用户ID:', userId);
+      console.log('🎯 推荐数量:', limit);
+
+      const url = `${API_BASE_URL}/recommendation/hybrid?userId=${userId}&limit=${limit}`;
+      console.log('🎯 请求URL:', url);
+
+      // 创建带超时的请求
+      const httpRequest = http.createHttp();
+      
+      // 设置较短的超时时间，避免长时间等待
+      const requestOptions: http.HttpRequestOptions = {
+        method: http.RequestMethod.GET,
+        header: {
+          'Content-Type': 'application/json'
+        },
+        readTimeout: 10000, // 10秒超时
+        connectTimeout: 5000 // 5秒连接超时
+      };
+
+      const startTime = Date.now();
+      
+      const response = await httpRequest.request(url, requestOptions);
+      httpRequest.destroy();
+
+      const endTime = Date.now();
+      console.log(`🎯 推荐请求耗时: ${endTime - startTime}ms`);
+
+      if (response.responseCode !== 200) {
+        console.log('❌ 混合推荐API返回错误状态码:', response.responseCode);
+        throw new Error(`HTTP error! status: ${response.responseCode}`);
+      }
+
+      let result: ApiResponse<AiRole[]>;
+      try {
+        result = JSON.parse(response.result.toString());
+        console.log('🎯 混合推荐响应:', result);
+
+        if (result.success) {
+          console.log('✅ 混合推荐获取成功，推荐数量:', result.data.length);
+          return result.data;
+        } else {
+          console.log('❌ 混合推荐获取失败，API返回错误:', result.message);
+          throw new Error(result.message || 'Failed to get hybrid recommendations');
+        }
+      } catch (parseError) {
+        console.error('❌ 解析混合推荐响应失败:', parseError);
+        throw new Error('解析推荐响应失败');
+      }
+
+    } catch (error) {
+      console.error('❌ 获取混合推荐失败:', error);
+      
+      // 降级策略：返回热门推荐
+      console.log('🔄 开始降级到热门推荐...');
+      try {
+        const fallbackRoles = await ApiService.getPopularRoles(limit);
+        console.log('✅ 降级成功，返回热门角色:', fallbackRoles.length);
+        return fallbackRoles;
+      } catch (fallbackError) {
+        console.error('❌ 降级也失败:', fallbackError);
+        throw new Error('推荐系统暂时不可用');
+      }
+    }
+  }
+
+  /**
+   * 获取热门角色列表（快速降级方案）
+   */
+  static async getPopularRoles(limit: number = 10): Promise<AiRole[]> {
+    try {
+      console.log('🔥 ApiService.getPopularRoles 获取热门角色');
+      console.log('🔥 推荐数量:', limit);
+
+      const url = `${API_BASE_URL}/ai-roles/popular?limit=${limit}`;
+      console.log('🔥 请求URL:', url);
+
+      const httpRequest = http.createHttp();
+      
+      const requestOptions: http.HttpRequestOptions = {
+        method: http.RequestMethod.GET,
+        header: {
+          'Content-Type': 'application/json'
+        },
+        readTimeout: 5000, // 5秒超时
+        connectTimeout: 3000 // 3秒连接超时
+      };
+
+      const response = await httpRequest.request(url, requestOptions);
+      httpRequest.destroy();
+
+      if (response.responseCode !== 200) {
+        console.log('❌ 热门角色API返回错误状态码:', response.responseCode);
+        throw new Error(`HTTP error! status: ${response.responseCode}`);
+      }
+
+      let result: ApiResponse<AiRole[]>;
+      try {
+        result = JSON.parse(response.result.toString());
+        console.log('🔥 热门角色响应:', result);
+
+        if (result.success) {
+          console.log('✅ 热门角色获取成功，数量:', result.data.length);
+          return result.data;
+        } else {
+          console.log('❌ 热门角色获取失败，API返回错误:', result.message);
+          throw new Error(result.message || 'Failed to get popular roles');
+        }
+      } catch (parseError) {
+        console.error('❌ 解析热门角色响应失败:', parseError);
+        throw new Error('解析热门角色响应失败');
+      }
+
+    } catch (error) {
+      console.error('❌ 获取热门角色失败:', error);
+      
+      // 最终降级：返回默认角色
+      console.log('🔄 返回默认角色列表...');
+      return ApiService.getDefaultRoles(limit);
+    }
+  }
+
+  /**
+   * 获取默认角色列表（最终降级方案）
+   */
+  static getDefaultRoles(limit: number): AiRole[] {
+    console.log('📋 返回默认角色列表');
+    
+    const defaultRoles: AiRole[] = [
+      {
+        id: 364,
+        userId: 574,
+        roleName: "治愈天使",
+        roleDescription: "温暖贴心的治愈系AI，为您带来心灵的慰藉",
+        roleType: "治愈系",
+        roleAuthor: "系统",
+        viewCount: 1000,
+        avatarUrl: "",
+        isTemplate: true,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 365,
+        userId: 574,
+        roleName: "智慧导师",
+        roleDescription: "博学多识的导师型AI，为您解答各种问题",
+        roleType: "教育系",
+        roleAuthor: "系统",
+        viewCount: 800,
+        avatarUrl: "",
+        isTemplate: true,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 366,
+        userId: 574,
+        roleName: "创意伙伴",
+        roleDescription: "充满创意的伙伴型AI，激发您的灵感",
+        roleType: "创意系",
+        roleAuthor: "系统",
+        viewCount: 600,
+        avatarUrl: "",
+        isTemplate: true,
+        createdAt: new Date().toISOString()
+      }
+    ];
+
+    return defaultRoles.slice(0, limit);
+  }
+
+  /**
+   * 记录用户行为数据（用于推荐算法学习）
+   */
+  static async recordUserBehavior(userId: number, roleId: number, actionType: string, score: number = 1.0): Promise<void> {
+    try {
+      console.log('📊 ApiService.recordUserBehavior 记录用户行为');
+      console.log('📊 用户ID:', userId, '角色ID:', roleId, '行为类型:', actionType, '评分:', score);
+
+      const url = `${API_BASE_URL}/recommendation/behavior`;
+      const requestBody: UserBehaviorRequest = {
+        userId: userId,
+        roleId: roleId,
+        actionType: actionType,
+        score: score
+      };
+
+      const response = await ApiService.request<void>(url, {
+        method: http.RequestMethod.POST,
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('📊 用户行为记录响应:', response);
+
+      if (response.success) {
+        console.log('✅ 用户行为记录成功');
+      } else {
+        console.log('❌ 用户行为记录失败，API返回错误:', response.message);
+        // 不抛出错误，避免影响用户体验
+      }
+    } catch (error) {
+      console.error('❌ 记录用户行为失败:', error);
+      // 不抛出错误，避免影响用户体验
+    }
+  }
+
+  /**
+   * 记录用户查看行为
+   */
+  static async recordViewAction(userId: number, roleId: number): Promise<void> {
+    return ApiService.recordUserBehavior(userId, roleId, 'view', 0.3);
+  }
+
+  /**
+   * 记录用户点击行为
+   */
+  static async recordClickAction(userId: number, roleId: number): Promise<void> {
+    return ApiService.recordUserBehavior(userId, roleId, 'click', 0.5);
+  }
+
+  /**
+   * 记录用户聊天行为
+   */
+  static async recordChatAction(userId: number, roleId: number): Promise<void> {
+    return ApiService.recordUserBehavior(userId, roleId, 'chat', 1.0);
+  }
+
+  /**
+   * 记录用户点赞行为
+   */
+  static async recordLikeAction(userId: number, roleId: number): Promise<void> {
+    return ApiService.recordUserBehavior(userId, roleId, 'like', 0.8);
+  }
+
+  /**
+   * 记录用户分享行为
+   */
+  static async recordShareAction(userId: number, roleId: number): Promise<void> {
+    return ApiService.recordUserBehavior(userId, roleId, 'share', 0.6);
+  }
+
+  /**
+   * 获取推荐解释
+   */
+  static async getRecommendationExplanation(userId: number, roleIds: number[]): Promise<string> {
+    try {
+      console.log('💡 ApiService.getRecommendationExplanation 获取推荐解释');
+      console.log('💡 用户ID:', userId, '角色IDs:', roleIds);
+
+      const roleIdsStr = roleIds.join(',');
+      const url = `${API_BASE_URL}/recommendation/explanation?userId=${userId}&roleIds=${roleIdsStr}`;
+      console.log('💡 请求URL:', url);
+
+      const response = await ApiService.request<string>(url);
+      console.log('💡 推荐解释响应:', response);
+
+      if (response.success) {
+        console.log('✅ 推荐解释获取成功:', response.data);
+        return response.data;
+      } else {
+        console.log('❌ 推荐解释获取失败，API返回错误:', response.message);
+        return '基于您的偏好为您推荐';
+      }
+    } catch (error) {
+      console.error('❌ 获取推荐解释失败:', error);
+      return '基于您的偏好为您推荐';
     }
   }
 

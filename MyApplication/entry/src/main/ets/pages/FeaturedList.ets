@@ -3,7 +3,7 @@ import http from '@ohos.net.http';
 import { Config } from '../common/config';
 import { ApiService } from '../service/apiservice';
 import { getUserId } from '../common/constants';
-import { UserRolePreferenceAnalysis } from '../common/types';
+import { UserRolePreferenceAnalysis, AiRole, RoleTypeStatistics } from '../common/types';
 
 // 新增：路由参数接口
 interface FeaturedListParams {
@@ -49,6 +49,9 @@ export struct FeaturedList {
   @State nebulaOpacity: number = 0.3 // 星云透明度
   @State private recommendationOpacity: number = 1.0 // 推荐信息透明度
   @State private scrollOffset: number = 0 // 滚动偏移量
+  @State private scrollY: number = 0;
+  @State private pulling: boolean = false;
+  private pullStartY: number = 0;
 
   aboutToAppear() {
     // 获取路由参数
@@ -102,34 +105,79 @@ export struct FeaturedList {
         return;
       }
 
-      console.log('开始分析用户角色偏好...');
+      console.log('开始使用高性能推荐算法...');
       
-      // 2. 分析用户角色偏好
-      const preference = await ApiService.analyzeUserRolePreference(userId, 10);
-      this.userPreference = preference;
+      // 2. 使用混合推荐算法获取推荐角色（带超时和降级）
+      const startTime = Date.now();
+      const recommendedRoles = await ApiService.getHybridRecommendations(userId, 20);
+      const endTime = Date.now();
       
-      console.log('用户偏好分析完成:', {
-        mostPreferredType: preference.mostPreferredRoleType,
-        totalConversations: preference.totalConversations,
-        analysis: preference.analysis
-      });
+      console.log(`推荐算法执行完成，耗时: ${endTime - startTime}ms`);
+      
+      if (recommendedRoles && recommendedRoles.length > 0) {
+        console.log('高性能推荐算法完成，推荐数量:', recommendedRoles.length);
+        
+        // 转换为FeaturedPerson格式
+        this.persons = recommendedRoles.map((role: AiRole): FeaturedPerson => ({
+          id: role.id,
+          userId: role.userId,
+          roleName: role.roleName,
+          roleDescription: role.roleDescription,
+          roleType: role.roleType,
+          roleAuthor: role.roleAuthor,
+          viewCount: role.viewCount,
+          avatarUrl: role.avatarUrl,
+          isTemplate: role.isTemplate,
+          createdAt: role.createdAt
+        }));
 
-      // 3. 根据偏好加载相关角色
-      if (preference.totalConversations > 0 && preference.mostPreferredRoleType !== '无数据') {
-        console.log('根据用户偏好加载角色，偏好类型:', preference.mostPreferredRoleType);
-        await this.fetchFeaturedPersonsByType(preference.mostPreferredRoleType);
+        // 异步获取推荐解释（不阻塞UI）
+        this.getRecommendationExplanationAsync(userId, recommendedRoles);
+
+        console.log('高性能推荐角色加载完成，数量:', this.persons.length);
       } else {
-        console.log('用户无对话记录或无偏好，加载默认特色人物');
+        console.log('高性能推荐算法无结果，加载默认特色人物');
         await this.fetchDefaultFeaturedPersons();
       }
 
     } catch (error) {
-      console.error('个性化推荐失败:', error);
-      this.errorMessage = '个性化推荐失败，加载默认内容';
+      console.error('高性能推荐算法失败:', error);
+      this.errorMessage = '推荐系统优化中，为您展示精选内容';
+      
+      // 快速降级到默认内容
       await this.fetchDefaultFeaturedPersons();
     } finally {
       this.isLoading = false;
       this.isAnalyzing = false;
+    }
+  }
+
+  /**
+   * 异步获取推荐解释（不阻塞UI）
+   */
+  private async getRecommendationExplanationAsync(userId: number, recommendedRoles: AiRole[]) {
+    try {
+      const roleIds = recommendedRoles.map(role => role.id).filter(id => id !== null) as number[];
+      if (roleIds.length > 0) {
+        const explanation = await ApiService.getRecommendationExplanation(userId, roleIds);
+        this.userPreference = {
+          totalConversations: recommendedRoles.length,
+          roleTypeCounts: [] as RoleTypeStatistics[],
+          mostPreferredRoleType: '智能推荐',
+          mostPreferredCount: recommendedRoles.length,
+          analysis: explanation
+        } as UserRolePreferenceAnalysis;
+      }
+    } catch (error) {
+      console.error('获取推荐解释失败:', error);
+      // 不影响主流程，使用默认解释
+      this.userPreference = {
+        totalConversations: recommendedRoles.length,
+        roleTypeCounts: [] as RoleTypeStatistics[],
+        mostPreferredRoleType: '智能推荐',
+        mostPreferredCount: recommendedRoles.length,
+        analysis: '基于您的偏好为您精选推荐'
+      } as UserRolePreferenceAnalysis;
     }
   }
 
@@ -389,107 +437,140 @@ export struct FeaturedList {
           .margin({ top: 100 })
         } else {
           // 角色网格
-          Grid() {
-            ForEach(this.persons, (item: FeaturedPerson, index: number) => {
-              GridItem() {
-                Stack() {
-                  // 角色卡片背景发光效果
-                  Column()
-                    .width('100%')
-                    .height('auto')
-                    .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
-                    .borderRadius(20)
-                    .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
-                  
-                  Column() {
-                    // 图片
-                    Image(item.avatarUrl)
+          Scroll() {
+            Grid() {
+              ForEach(this.persons, (item: FeaturedPerson, index: number) => {
+                GridItem() {
+                  Stack() {
+                    // 角色卡片背景发光效果
+                    Column()
                       .width('100%')
-                      .aspectRatio(1.2)
-                      .borderRadius(16)
-                      .objectFit(ImageFit.Cover)
-                      .border({ width: 2, color: 'rgba(255, 255, 255, 0.2)' })
+                      .height('auto')
+                      .backgroundColor(`rgba(255, 255, 255, ${this.glowOpacity * 0.02})`)
+                      .borderRadius(20)
+                      .border({ width: 1, color: `rgba(255, 255, 255, ${this.glowOpacity * 0.1})` })
                     
-                    // 内容区
                     Column() {
-                      Text(item.roleName)
-                        .fontSize(16)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor('#ffffff')
-                        .opacity(this.textOpacity)
-                        .margin({ top: 2, bottom: 2 })
-                        .maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                      // 图片
+                      Image(item.avatarUrl)
+                        .width('100%')
+                        .aspectRatio(1.2)
+                        .borderRadius(16)
+                        .objectFit(ImageFit.Cover)
+                        .border({ width: 2, color: 'rgba(255, 255, 255, 0.2)' })
                       
-                      Text(item.roleDescription)
-                        .fontSize(13)
-                        .fontColor('rgba(255, 255, 255, 0.8)')
-                        .opacity(this.textOpacity)
-                        .maxLines(2)
-                        .margin({ bottom: 2 })
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                      
-                      Row() {
-                        Text('@' + item.roleAuthor)
-                          .fontSize(12)
-                          .fontColor('rgba(255, 255, 255, 0.6)')
-                          .margin({ left: 4, right: 8 })
-                        // 浏览量
-                        Image($r('app.media.message_icon'))
-                          .width(14)
-                          .height(14)
-                        Text(item.viewCount.toString())
-                          .fontSize(12)
-                          .fontColor('rgba(255, 255, 255, 0.6)')
-                          .margin({ left: 2 })
+                      // 内容区
+                      Column() {
+                        Text(item.roleName)
+                          .fontSize(16)
+                          .fontWeight(FontWeight.Bold)
+                          .fontColor('#ffffff')
+                          .opacity(this.textOpacity)
+                          .margin({ top: 2, bottom: 2 })
+                          .maxLines(1)
+                          .textOverflow({ overflow: TextOverflow.Ellipsis })
+                        
+                        Text(item.roleDescription)
+                          .fontSize(13)
+                          .fontColor('rgba(255, 255, 255, 0.8)')
+                          .opacity(this.textOpacity)
+                          .maxLines(2)
+                          .margin({ bottom: 2 })
+                          .textOverflow({ overflow: TextOverflow.Ellipsis })
+                        
+                        Row() {
+                          Text('@' + item.roleAuthor)
+                            .fontSize(12)
+                            .fontColor('rgba(255, 255, 255, 0.6)')
+                            .margin({ left: 4, right: 8 })
+                          // 浏览量
+                          Image($r('app.media.message_icon'))
+                            .width(14)
+                            .height(14)
+                          Text(item.viewCount.toString())
+                            .fontSize(12)
+                            .fontColor('rgba(255, 255, 255, 0.6)')
+                            .margin({ left: 2 })
+                        }
+                        .alignItems(VerticalAlign.Center)
                       }
-                      .alignItems(VerticalAlign.Center)
+                      .padding({ left: 8, right: 8, bottom: 8 })
                     }
-                    .padding({ left: 8, right: 8, bottom: 8 })
+                    .width('100%')
+                    .backgroundColor('rgba(255, 255, 255, 0.03)')
+                    .borderRadius(20)
+                    .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
+                    .shadow({ radius: 12, color: '#00000030', offsetX: 0, offsetY: 4 })
                   }
-                  .width('100%')
-                  .backgroundColor('rgba(255, 255, 255, 0.03)')
-                  .borderRadius(20)
-                  .border({ width: 1, color: 'rgba(255, 255, 255, 0.1)' })
-                  .shadow({ radius: 12, color: '#00000030', offsetX: 0, offsetY: 4 })
-                }
-                .margin({ bottom: 4 })
-                .onClick(() => {
-                  const currentTime = Date.now();
-                  
-                  // 检查是否是双击（300ms内的两次点击）
-                  if (currentTime - this.lastClickTime < 300 && this.lastClickIndex === index) {
-                    // 双击事件 - 跳转到聊天页面
-                    router.pushUrl({
-                      url: 'pages/chat',
-                      params: {
-                        figureImageUrl: item.avatarUrl,
-                        figureType: item.roleType,
-                        figureName: item.roleName,
-                        isFromCreateFigure: true,
-                        description: item.roleDescription,
-                        createdAiRoleId:item.id
+                  .margin({ bottom: 4 })
+                  .onClick(() => {
+                    const currentTime = Date.now();
+                    
+                    // 检查是否是双击（300ms内的两次点击）
+                    if (currentTime - this.lastClickTime < 300 && this.lastClickIndex === index) {
+                      // 双击事件 - 跳转到聊天页面
+                      const userId = getUserId();
+                      if (userId && item.id) {
+                                            // 记录用户行为：开始聊天
+                        ApiService.recordChatAction(userId, item.id);
                       }
-                    });
-                    // 重置状态
-                    this.lastClickTime = 0;
-                    this.lastClickIndex = -1;
-                  } else {
-                    // 单击事件 - 选择卡片
-                    this.selectedIndex = index;
-                    this.lastClickTime = currentTime;
-                    this.lastClickIndex = index;
-                  }
-                })
-              }
-            }, (item: FeaturedPerson) => item.id?item.id.toString():"1")
+                      
+                      router.pushUrl({
+                        url: 'pages/chat',
+                        params: {
+                          figureImageUrl: item.avatarUrl,
+                          figureType: item.roleType,
+                          figureName: item.roleName,
+                          isFromCreateFigure: true,
+                          description: item.roleDescription,
+                          createdAiRoleId:item.id
+                        }
+                      });
+                      // 重置状态
+                      this.lastClickTime = 0;
+                      this.lastClickIndex = -1;
+                    } else {
+                      // 单击事件 - 选择卡片
+                      this.selectedIndex = index;
+                      this.lastClickTime = currentTime;
+                      this.lastClickIndex = index;
+                      
+                      // 记录用户行为：查看角色
+                      const userId = getUserId();
+                      if (userId && item.id) {
+                        ApiService.recordViewAction(userId, item.id);
+                      }
+                    }
+                  })
+                }
+              }, (item: FeaturedPerson) => item.id?item.id.toString():"1")
+            }
+            .columnsTemplate('1fr 1fr')
+            .columnsGap(12)
+            .rowsGap(16)
+            .width('100%')
+            .layoutWeight(1)
+            .scrollBar(BarState.Off)
           }
-          .columnsTemplate('1fr 1fr')
-          .columnsGap(12)
-          .rowsGap(16)
           .width('100%')
           .layoutWeight(1)
-          .scrollBar(BarState.Off)
+          .onScroll((xOffset: number, yOffset: number) => {
+            this.scrollY = yOffset;
+          })
+          .onTouch((event: TouchEvent) => {
+            if (event.type === TouchType.Down && this.scrollY <= 0) {
+              this.pulling = true;
+              this.pullStartY = event.touches[0].y;
+            } else if (event.type === TouchType.Move && this.pulling) {
+              const deltaY = event.touches[0].y - this.pullStartY;
+              if (deltaY > 80) { // 下拉超过80像素触发刷新
+                this.pulling = false;
+                this.loadPersonalizedFeaturedPersons();
+              }
+            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+              this.pulling = false;
+            }
+          })
         }
       }
       .width('100%')

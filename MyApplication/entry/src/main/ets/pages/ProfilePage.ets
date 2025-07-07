@@ -21,6 +21,7 @@ struct ProfilePage {
   @State private createdAiRoleId: number = 0
   @State private mainColor: string = '#ffffff'
   @State private pixelMap: PixelMap | undefined = undefined
+  @State private isLoaded: boolean = false
 
   async aboutToAppear() {
     const params = router.getParams() as ProfilePageParams;
@@ -30,6 +31,7 @@ struct ProfilePage {
     this.description = params.description ?? '';
     this.createdAiRoleId = params.createdAiRoleId ?? 0;
     await this.extractMainColorFromImage(this.figureImageUrl)
+    this.isLoaded = true // 主色和图片处理完成后再显示内容
   }
 
   async extractMainColorFromImage(url: string) {
@@ -71,41 +73,41 @@ struct ProfilePage {
   }
 
   build() {
-    Column({ space: 0 }) {
-      // 上半部分：图片
-      Image(this.figureImageUrl)
-        .width('100%')
-        .height('45%')
-        .objectFit(ImageFit.Cover)
-        .borderRadius(20)
-      
-      // 下半部分：信息
-      Column({ space: 12 }) {
-        Text(this.figureName)
-          .fontSize(24)
+    Column() {
+      if (!this.isLoaded) {
+        // 加载动画或提示
+        Blank(24)
+        Text('加载中...')
+          .fontSize(20)
           .fontWeight(FontWeight.Bold)
-          .margin({ top: 16 })
-        Text(`角色类型: ${this.figureType}`)
-          .fontSize(14)
-          .fontColor('#888')
-        Text(this.description)
-          .fontSize(16)
-          .margin({ top: 8, bottom: 16 })
-        // 按钮区
-        Row({ space: 16 }) {
-          Button('设置壁纸')
-          Button('设置关系')
-          Button('设置对话模型')
+          .margin({ top: 32 })
+      } else {
+        // 上半部分：图片
+        Image(this.figureImageUrl)
+          .width('100%')
+          .height('45%')
+          .objectFit(ImageFit.Cover)
+
+        // 下半部分：人物信息，背景始终为半透明白色
+        Column() {
+          Text(this.figureName)
+            .fontSize(24)
+            .fontWeight(FontWeight.Bold)
+            .margin({ bottom: 8 })
+          Text(this.figureType)
+            .fontSize(18)
+            .margin({ bottom: 8 })
+          Text(this.description)
+            .fontSize(16)
+            .maxLines(3)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
         }
-        Button('清空历史对话')
-          .backgroundColor('#eee')
-          .fontColor('#333')
-          .margin({ top: 16 })
+        .width('100%')
+        .height('55%')
+        .padding(24)
+        .backgroundColor('rgba(255,255,255,0.5)')
+        .borderRadius(20)
       }
-      .padding(20)
-      .backgroundColor('#f7f7f7')
-      .borderRadius({ topLeft: 24, topRight: 24 })
-      .offset({ y: -24 }) // 让下半部分稍微覆盖图片
     }
     .width('100%')
     .height('100%')

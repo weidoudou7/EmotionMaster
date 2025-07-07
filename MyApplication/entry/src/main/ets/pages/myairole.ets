@@ -2,6 +2,9 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { ApiService } from '../service/apiservice';
 import { AiRole } from '../common/types';
 import { getUserId } from '../common/constants';
+import http from '@ohos.net.http'
+import image from '@ohos.multimedia.image'
+import { effectKit } from '@kit.ArkGraphics2D'
 
 // 定义位置接口
 interface Position {
@@ -32,6 +35,8 @@ export struct MyAIRole {
   @State private glowOpacity: number = 0.5
   @State private textOpacity: number = 0.8
   @State private lineScale: number = 1.0
+  @State private mainColor: string = '#1a1a1a'
+  @State private pixelMap: PixelMap | undefined = undefined
 
   // 预计算六个位置（圆形布局）
   private rolePositions: Position[] = [
@@ -239,6 +244,12 @@ export struct MyAIRole {
       console.log('✅ 角色详情:', JSON.stringify(roles, null, 2));
       this.aiRoles = roles || [];
       console.log('✅ 设置aiRoles后，数组长度:', this.aiRoles.length);
+      // 自动选中第一个角色并提取主色
+      if (this.aiRoles.length > 0) {
+        this.selectedRole = this.aiRoles[0];
+        this.selectedIndex = 0;
+        await this.updateMainColorBySelectedRole();
+      }
       
     } catch (error) {
       console.error('❌ 加载AI角色失败:', error);
@@ -294,6 +305,48 @@ export struct MyAIRole {
     setInterval(() => {
       this.textOpacity = this.textOpacity === 0.8 ? 1.0 : 0.8
     }, 1500)
+  }
+
+  // 选中角色时提取主色
+  private async updateMainColorBySelectedRole() {
+    if (this.selectedRole && this.selectedRole.avatarUrl) {
+      await this.extractMainColorFromImage(this.selectedRole.avatarUrl)
+    } else {
+      this.mainColor = '#1a1a1a'
+    }
+  }
+
+  async extractMainColorFromImage(url: string) {
+    const httpRequest = http.createHttp()
+    try {
+      const response = await httpRequest.request(url, { method: http.RequestMethod.GET })
+      if (response.responseCode === 200 && response.result) {
+        let imageData: ArrayBuffer
+        if (response.result instanceof ArrayBuffer) {
+          imageData = response.result
+        } else {
+          this.mainColor = '#cccccc'
+          return
+        }
+        const imageSource = image.createImageSource(imageData)
+        const pixelMap = await imageSource.createPixelMap()
+        this.pixelMap = pixelMap
+        effectKit.createColorPicker(pixelMap, (err: Error | null, colorPicker: effectKit.ColorPicker | null) => {
+          if (!err && colorPicker) {
+            const color = colorPicker.getMainColorSync()
+            const alpha = color.alpha.toString(16).padStart(2, '0')
+            const red = color.red.toString(16).padStart(2, '0')
+            const green = color.green.toString(16).padStart(2, '0')
+            const blue = color.blue.toString(16).padStart(2, '0')
+            this.mainColor = `#${alpha}${red}${green}${blue}`
+          }
+        })
+      }
+    } catch (error) {
+      this.mainColor = '#cccccc'
+    } finally {
+      httpRequest.destroy()
+    }
   }
 
   build() {
@@ -642,47 +695,31 @@ export struct MyAIRole {
                     curve: Curve.EaseInOut
                   })
                   .onClick(() => {
-                    if (!this.isGathering && !this.isSpreading) {
-                      const currentTime = Date.now();
-                      const timeDiff = currentTime - this.lastClickTime;
-                      const isSameRole = this.lastClickIndex === index;
-                      
-                      if (timeDiff < 300 && isSameRole) {
-                        const selectedRole = this.getCurrentRoles()[index];
-                        console.log('双击角色，跳转到聊天:', selectedRole.roleName);
-                        console.log('传递的角色信息:', {
-                          figureImageUrl: selectedRole.avatarUrl,
-                          figureName: selectedRole.roleName,
-                          figureType: selectedRole.roleType,
-                          description: selectedRole.roleDescription,
+                    const currentTime = Date.now();
+                    const timeDiff = currentTime - this.lastClickTime;
+                    const isSameRole = this.lastClickIndex === index;
+                    if (timeDiff < 300 && isSameRole) {
+                      const selectedRole = this.getCurrentRoles()[index];
+                      let uiContext: UIContext = this.getUIContext();
+                      let router = uiContext.getRouter();
+                      router.pushUrl({ 
+                        url: 'pages/chat',
+                        params: {
+                          figureImageUrl: selectedRole.avatarUrl || '',
+                          figureName: selectedRole.roleName || '',
+                          figureType: selectedRole.roleType || '',
+                          description: selectedRole.roleDescription || '',
                           isFromCreateFigure: true,
-                          createdAiRoleId: selectedRole.id
-                        });
-                        
-                        let uiContext: UIContext = this.getUIContext();
-                        let router = uiContext.getRouter();
-                        router.pushUrl({ 
-                          url: 'pages/chat',
-                          params: {
-                            figureImageUrl: selectedRole.avatarUrl || '',
-                            figureName: selectedRole.roleName || '',
-                            figureType: selectedRole.roleType || '',
-                            description: selectedRole.roleDescription || '',
-                            isFromCreateFigure: true,
-                            createdAiRoleId: selectedRole.id || 0
-                          }
-                        });
-                        
-                        this.lastClickTime = 0;
-                        this.lastClickIndex = -1;
-                      } else {
-                        this.selectedRole = this.getCurrentRoles()[index];
-                        this.selectedIndex = index;
-                        console.log('选中角色:', this.getCurrentRoles()[index].roleName);
-                        
-                        this.lastClickTime = currentTime;
-                        this.lastClickIndex = index;
-                      }
+                          createdAiRoleId: selectedRole.id || 0
+                        }
+                      });
+                      this.lastClickTime = 0;
+                      this.lastClickIndex = -1;
+                    } else {
+                      this.selectedRole = this.getCurrentRoles()[index];
+                      this.selectedIndex = index;
+                      this.lastClickTime = currentTime;
+                      this.lastClickIndex = index;
                     }
                   })
                   .onHover((isHovered: boolean) => {
@@ -1054,10 +1091,9 @@ export struct MyAIRole {
         .width('100%')
         .layoutWeight(1)
       }
-      .width('100%')
-      .height('100%')
     }
     .width('100%')
     .height('100%')
+    .backgroundColor(this.mainColor)
   }
 }
