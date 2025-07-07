@@ -85,19 +85,18 @@ struct FMMeditationPage {
         Image($r('app.media.music_return'))
           .width(36)
           .height(36)
-          //.shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
           .onClick(() => router.back())
         Text('冥想')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1976D2')
+          .fontColor('#0D9FFB')
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
         Blank().width(36)
       }
       .width('100%')
       .padding({ left: 20, right: 20, top: 12, bottom: 12 })
-      .backgroundColor('#fff')
+      .backgroundColor('rgba(10,10,10,1)')
 
       // 主要内容区域
       Scroll() {
@@ -106,13 +105,13 @@ struct FMMeditationPage {
           Row() {
             Button('‹')
               .fontSize(24)
-              .fontColor('#1976D2')
-              .backgroundColor('#E3F2FD')
+              .fontColor('#0D9FFB')
+              .backgroundColor('rgba(13,159,251,0.10)')
               .borderRadius(20)
               .width(40)
               .height(40)
               .margin({ left: 16, right: 0 })
-              .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 2 })
+              .shadow({ radius: 4, color: '#0D9FFB20', offsetX: 0, offsetY: 2 })
               .onClick(() => this.switchCard('left'))
               .align(Alignment.Center)
             Column() {
@@ -124,10 +123,10 @@ struct FMMeditationPage {
                   Text(this.themes[this.currentCard])
                     .fontSize(20)
                     .fontWeight(FontWeight.Bold)
-                    .fontColor('#1976D2')
+                    .fontColor('#0D9FFB')
                   Text(this.themeDesc[this.currentCard])
                     .fontSize(15)
-                    .fontColor('#1976D2')
+                    .fontColor('#b0c4de')
                     .opacity(0.8)
                 }
                 .layoutWeight(1)
@@ -135,7 +134,7 @@ struct FMMeditationPage {
               .margin({ bottom: 8 })
               Text('5分钟正念冥想，放松身心')
                 .fontSize(13)
-                .fontColor('#1976D2')
+                .fontColor('#b0c4de')
                 .opacity(0.7)
                 .textAlign(TextAlign.Start)
             }
@@ -143,24 +142,24 @@ struct FMMeditationPage {
             .margin({ left: 8, right: 8 })
             Button('›')
               .fontSize(24)
-              .fontColor('#1976D2')
-              .backgroundColor('#E3F2FD')
+              .fontColor('#0D9FFB')
+              .backgroundColor('rgba(13,159,251,0.10)')
               .borderRadius(20)
               .width(40)
               .height(40)
               .margin({ left: 0, right: 16 })
-              .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 2 })
+              .shadow({ radius: 4, color: '#0D9FFB20', offsetX: 0, offsetY: 2 })
               .onClick(() => this.switchCard('right'))
               .align(Alignment.Center)
           }
-          .backgroundColor('#E3F2FD')
+          .backgroundColor('rgba(255,255,255,0.03)')
           .borderRadius(16)
           .padding(16)
           .width('92%')
           .height(110)
           .margin({ top: 4, bottom: 0 })
           .alignItems(VerticalAlign.Center)
-          .shadow({ radius: 8, color: 'rgba(0,0,0,0.13)', offsetX: 0, offsetY: 4 })
+          .shadow({ radius: 8, color: '#0D9FFB20', offsetX: 0, offsetY: 4 })
 
           // 指示点
           Row() {
@@ -168,7 +167,7 @@ struct FMMeditationPage {
               Blank()
                 .width(idx === this.currentCard ? 24 : 8)
                 .height(8)
-                .backgroundColor(idx === this.currentCard ? '#1976D2' : '#eee')
+                .backgroundColor(idx === this.currentCard ? '#0D9FFB' : 'rgba(255,255,255,0.15)')
                 .borderRadius(4)
                 .margin({ right: 4 })
                 .animation({ duration: 300, curve: Curve.EaseInOut })
@@ -182,8 +181,8 @@ struct FMMeditationPage {
           Row() {
             ForEach(TIME_OPTIONS, (opt: number, idx: number) => {
               Button(TIME_LABELS[idx])
-                .fontColor(this.selectedTimeIndex === idx ? '#fff' : '#1976D2')
-                .backgroundColor(this.selectedTimeIndex === idx ? '#1976D2' : '#E3F2FD')
+                .fontColor(this.selectedTimeIndex === idx ? '#fff' : '#0D9FFB')
+                .backgroundColor(this.selectedTimeIndex === idx ? '#0D9FFB' : 'rgba(13,159,251,0.10)')
                 .borderRadius(16)
                 .fontSize(14)
                 .width(90)
@@ -208,12 +207,12 @@ struct FMMeditationPage {
           // 引导区
           Column() {
             Text('请找一个安静舒适的位置，闭上眼睛，跟随引导语进行冥想。')
-              .fontColor('#388E3C')
+              .fontColor('#4CAF50')
               .fontSize(16)
               .margin({ bottom: 2 })
               .textAlign(TextAlign.Center)
             Text('放松身体，感受每一次呼吸。')
-              .fontColor('#888')
+              .fontColor('#b0c4de')
               .fontSize(14)
               .textAlign(TextAlign.Center)
           }
@@ -225,7 +224,7 @@ struct FMMeditationPage {
           Column() {
             Button(this.isPlaying ? '暂停' : '开始冥想')
               .fontColor('#fff')
-              .backgroundColor('#4CAF50')
+              .backgroundColor('#0D9FFB')
               .borderRadius(28)
               .fontSize(20)
               .fontWeight(FontWeight.Bold)
@@ -241,16 +240,16 @@ struct FMMeditationPage {
               })
             Row() {
               Text(this.formatTime(this.elapsedSeconds))
-                .fontColor('#1976D2')
+                .fontColor('#0D9FFB')
                 .fontSize(16)
                 .margin({ right: 10 })
               Progress({ value: this.progress*100 / this.duration })
                 .width('60%')
-                .color('#4CAF50')
-                .backgroundColor('#E0E0E0')
+                .color('#0D9FFB')
+                .backgroundColor('rgba(255,255,255,0.10)')
                 .borderRadius(8)
               Text(this.formatTime(this.duration))
-                .fontColor('#888')
+                .fontColor('#b0c4de')
                 .fontSize(16)
                 .margin({ left: 10 })
             }
@@ -265,9 +264,9 @@ struct FMMeditationPage {
           Row() {
             Column() {
               Text('累计冥想')
-                .fontColor('#888').fontSize(13)
+                .fontColor('#b0c4de').fontSize(13)
               Text(`${Math.floor(this.elapsedSeconds / 60)} 分钟`)
-                .fontColor('#1976D2').fontWeight(FontWeight.Bold).fontSize(20)
+                .fontColor('#0D9FFB').fontWeight(FontWeight.Bold).fontSize(20)
             }
             .layoutWeight(1)
           }
@@ -278,10 +277,10 @@ struct FMMeditationPage {
           Row() {
             Text('💡').fontSize(18).margin({ right: 8 })
             Text('温馨提示：冥想过程中如有杂念，不必焦虑，轻轻将注意力带回呼吸即可。')
-              .fontColor('#888')
+              .fontColor('#b0c4de')
               .fontSize(13)
           }
-          .backgroundColor('#F5F7FA')
+          .backgroundColor('rgba(255,255,255,0.03)')
           .borderRadius(12)
           .padding({ left: 16, right: 16, top: 10, bottom: 10 })
           .margin({ bottom: 36 })
@@ -290,10 +289,11 @@ struct FMMeditationPage {
         .alignItems(HorizontalAlign.Center)
       }
       .layoutWeight(1)
-      .backgroundColor('#F8F9FB')
+      .backgroundColor('rgba(10,10,10,1)')
     }
     .width('100%')
     .height('100%')
+    .backgroundColor('rgba(10,10,10,1)')
   }
 
   private formatTime(seconds: number): string {

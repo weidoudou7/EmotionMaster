@@ -383,4 +383,18 @@ public class UserController {
             return ApiResponse.error("插入测试用户失败: " + e.getMessage());
         }
     }
+
+    /**
+     * 根据UID获取UserID
+     */
+    @RequestMapping("/findIDByUID")
+    public ApiResponse<Integer> findIDByUID(@RequestParam String uid) {
+        UserInfoVO user = userService.getUserInfo(uid);
+        if(user != null) {
+            return ApiResponse.success(user.getId());
+        }else{
+            return null;
+        }
+    }
+
 } 

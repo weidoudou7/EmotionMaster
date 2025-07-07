@@ -10,6 +10,8 @@ import SpeechRecognizerManager from '../utils/SpeechRecognizerManager'
 import { Permissions } from '@kit.AbilityKit'
 import { AudioCapturerManager } from '../utils/AudioCapturerManager'
 import { getUserId } from '../common/constants';
+import promptAction from '@ohos.promptAction';
+import { globalUserData } from '../models/userdata';
 
 // 新增：点赞图标接口
 interface LikeIcon {

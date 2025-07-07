@@ -152,7 +152,7 @@
               @click="currentTopConversationChartType = type.value"
               :class="[
                 'chart-type-btn',
-                currentTopConversationChartType === type.value ? 'active' : ''
+                currentTopConversationChartType === type.value ? 'active' : '',
               ]"
             >
               <i :class="type.icon"></i>
@@ -1159,11 +1159,11 @@ const drawTopConversationChart = (data, labels) => {
           ])
         }
       }
-    ]
+    ],
   }
   if (currentTopConversationChartType.value === 'bar' || currentTopConversationChartType.value === 'line') {
     option.xAxis = { type: 'category', data: labels, axisLabel: { rotate: 45 } }
-    option.yAxis = { type: 'value' }
+    option.yAxis = { type: 'value',minInterval: 1,axisLabel:{formatter: '{value} 次'} }
     option.grid = { left: '3%', right: '4%', bottom: '3%', containLabel: true }
     option.series[0].type = currentTopConversationChartType.value
     option.series[0].itemStyle = {

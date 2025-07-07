@@ -6,19 +6,24 @@ import com.ai.companion.entity.Message;
 import com.ai.companion.entity.vo.ApiResponse;
 import com.ai.companion.mapper.AiRoleMapper;
 import com.ai.companion.service.ChatRecordService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import jakarta.servlet.http.HttpServletResponse;
-
+import org.springframework.http.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -57,6 +62,8 @@ public class ChatController {
             String result = chatClient.prompt()
                     .system(systemPrompt)
                     .user(userPrompt)
+                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "AIDescription"))
+                    .advisors(new SimpleLoggerAdvisor())
                     .call()
                     .content();
             
@@ -98,6 +105,7 @@ public class ChatController {
             String result = chatClient.prompt()
                     .system(systemPrompt)
                     .user(userInput)
+                    .advisors(new SimpleLoggerAdvisor())
                     .call()
                     .content();
 
@@ -165,14 +173,31 @@ public class ChatController {
             // 3.获取或创建对话
             Conversation conversation = chatRecordService.getOrCreateConversation(defaultUserId, chatId, null, null);
             
+            // 计算情感分值
+            String emotionResponse = getEmotionJson(prompt);
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree(emotionResponse);
+
+            Double score = Double.parseDouble(jsonNode.get("score").asText()) ;
+            String sentiment = jsonNode.get("sentiment").asText();
+
             // 4.保存用户消息到数据库
-            chatRecordService.saveMessage(conversation.getId(), "user", prompt, null, (byte)0, null);
+            chatRecordService.saveMessage(conversation.getId(), "user", prompt, null, (byte)(score*10), null);
+
+            // 情感增强提示词
+            String emotionPrompt = "该条消息用户的情绪分数为(-10到10，-10是最消极的，10是最积极的):"+score*10+"\n"
+                    +"该条消息用户的情绪为(可能值为:POSITIVE、WEAK_POSITIVE、NEGATIVE、WEAK_NEGATIVE、NEUTRAL)"+sentiment+"\n"
+                    +"请根据以上信息，并结合自己的身份，对用户进行合理的回应";
 
             // 5.生成AI回复
             String aiResponse = chatClient.prompt()
                     .system(desc)
-                    .user(prompt)
+                    .user(u->u.text("提示: {emotionPrompt}"+"\n"
+                            +" Context: {context} ")
+                            .params(Map.of("emotionPrompt",emotionPrompt,"context",prompt))
+                    )
                     .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversation.getId().toString()))
+                    .advisors(new SimpleLoggerAdvisor())
                     .call()
                     .content();
 
@@ -288,6 +313,7 @@ public class ChatController {
             String emotionResult = chatClient.prompt()
                     .system(systemPrompt)
                     .user(userPrompt)
+                    .advisors(new SimpleLoggerAdvisor())
                     .call()
                     .content();
 
@@ -386,6 +412,7 @@ public class ChatController {
             String replyResult = chatClient.prompt()
                     .system(systemPrompt)
                     .user(userPrompt)
+                    .advisors(new SimpleLoggerAdvisor())
                     .call()
                     .content();
 
@@ -513,4 +540,40 @@ public class ChatController {
             return getUserDefaultReply(moodTag);
         }
     }
+
+    /**
+     *
+     * @param text 传入需要分析的内容
+     * @return json格式情感分析内容
+     */
+    @RequestMapping(value = "/sentiment")
+    String getEmotionJson(String text) {
+
+        String engText = chatClient.prompt()
+                .user("请帮我把下面的话转换为英文，要求只返回英文，内容："+text)
+                .call()
+                .content();
+
+        String apiUrl = "https://api.api-ninjas.com/v1/sentiment?text=" + engText;
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "GH+Oa9ATa1BFNzluARTOGA==4brA6BivryQoRvJg");
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                apiUrl,
+                HttpMethod.GET,
+                entity,
+                String.class
+        );
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            return response.getBody();
+        } else {
+            return "Error: " + response.getStatusCode() + " " + response.getBody();
+        }
+
+    }
+
 }
