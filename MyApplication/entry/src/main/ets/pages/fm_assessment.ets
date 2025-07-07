@@ -368,18 +368,18 @@ struct FMAssessmentPage {
         Image($r('app.media.music_return'))
           .width(36)
           .height(36)
-          //.shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
           .onClick(() => router.back())
         Text('压力评估')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1976D2')
+          .fontColor('#0D9FFB')
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
         Blank().width(36)
       }
       .width('100%')
       .padding({ top: 16, left: 12, right: 12, bottom: 0 })
+      .backgroundColor('rgba(10,10,10,1)')
 
       // 内容区域
       if (this.currentStep === 'welcome') {
@@ -392,7 +392,7 @@ struct FMAssessmentPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#f8f9fa')
+    .backgroundColor('rgba(10,10,10,1)')
   }
 
   @Builder
@@ -406,11 +406,11 @@ struct FMAssessmentPage {
         Text('压力评估')
           .fontSize(24)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1976D2')
+          .fontColor('#0D9FFB')
           .margin({ bottom: 8 })
         Text('通过专业量表评估你的压力水平')
           .fontSize(16)
-          .fontColor('#666')
+          .fontColor('#b0c4de')
           .textAlign(TextAlign.Center)
           .margin({ bottom: 24 })
         
@@ -422,7 +422,7 @@ struct FMAssessmentPage {
               .margin({ right: 12 })
             Text('8个专业问题')
               .fontSize(16)
-              .fontColor('#333')
+              .fontColor('#b0c4de')
           }
           .margin({ bottom: 12 })
           
@@ -432,7 +432,7 @@ struct FMAssessmentPage {
               .margin({ right: 12 })
             Text('约3-5分钟完成')
               .fontSize(16)
-              .fontColor('#333')
+              .fontColor('#b0c4de')
           }
           .margin({ bottom: 12 })
           
@@ -442,7 +442,7 @@ struct FMAssessmentPage {
               .margin({ right: 12 })
             Text('隐私保护，数据安全')
               .fontSize(16)
-              .fontColor('#333')
+              .fontColor('#b0c4de')
           }
         }
         .margin({ bottom: 32 })
@@ -450,18 +450,18 @@ struct FMAssessmentPage {
         Button('开始评估')
           .width('100%')
           .height(48)
-          .backgroundColor('#1976D2')
+          .backgroundColor('#0D9FFB')
           .fontColor('#fff')
           .fontSize(16)
           .fontWeight(FontWeight.Bold)
           .borderRadius(24)
           .onClick(() => this.startAssessment())
       }
-      .backgroundColor('#fff')
+      .backgroundColor('rgba(255,255,255,0.03)')
       .borderRadius(20)
       .padding(24)
       .margin({ top: 40, left: 16, right: 16 })
-      .shadow({ radius: 12, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 4 })
+      .shadow({ radius: 12, color: '#0D9FFB20', offsetX: 0, offsetY: 4 })
     }
     .layoutWeight(1)
     .justifyContent(FlexAlign.Center)
@@ -475,12 +475,12 @@ struct FMAssessmentPage {
         Progress({ value: this.progress, total: 100 })
           .width('80%')
           .height(6)
-          .color('#1976D2')
-          .backgroundColor('#e0e0e0')
+          .color('#0D9FFB')
+          .backgroundColor('rgba(255,255,255,0.10)')
           .borderRadius(3)
-        Text(`${this.currentQuestionIndex + 1}/${ASSESSMENT_QUESTIONS.length}`)
+        Text(`${Math.min(this.currentQuestionIndex + 1, ASSESSMENT_QUESTIONS.length)}/${ASSESSMENT_QUESTIONS.length}`)
           .fontSize(14)
-          .fontColor('#666')
+          .fontColor('#b0c4de')
           .margin({ left: 12 })
       }
       .padding({ left: 16, right: 16, top: 16, bottom: 24 })
@@ -494,70 +494,71 @@ struct FMAssessmentPage {
           Text('正在分析结果...')
             .fontSize(20)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1976D2')
+            .fontColor('#0D9FFB')
             .margin({ bottom: 16 })
           Progress({ value: 50, total: 100 })
             .width(200)
             .height(8)
-            .color('#1976D2')
-            .backgroundColor('#e0e0e0')
+            .color('#0D9FFB')
+            .backgroundColor('rgba(255,255,255,0.10)')
             .borderRadius(4)
         }
         .layoutWeight(1)
         .justifyContent(FlexAlign.Center)
       } else {
         Column() {
-          // 问题标题
-          Text(ASSESSMENT_QUESTIONS[this.currentQuestionIndex].category)
-            .fontSize(14)
-            .fontColor('#1976D2')
-            .backgroundColor('#E3F2FD')
-            .borderRadius(12)
-            .padding({ left: 12, right: 12, top: 4, bottom: 4 })
-            .margin({ bottom: 16 })
-          
-          // 问题内容
-          Text(ASSESSMENT_QUESTIONS[this.currentQuestionIndex].question)
-            .fontSize(18)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#333')
-            .textAlign(TextAlign.Center)
-            .margin({ bottom: 32 })
-            .opacity(this.questionOpacity)
-            .translate({ x: this.questionTranslateX })
-
-          // 选项列表
-          ForEach(ASSESSMENT_QUESTIONS[this.currentQuestionIndex].options, (option: AssessmentOption, index: number) => {
-            Row() {
-              Column() {
-                Text(option.text)
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Bold)
-                  .fontColor(this.selectedOption === option.value ? '#fff' : '#333')
-                  .margin({ bottom: 4 })
-                Text(option.description)
-                  .fontSize(14)
-                  .fontColor(this.selectedOption === option.value ? '#fff' : '#666')
+          // 只在currentQuestionIndex有效时渲染题目
+          if (this.currentQuestionIndex < ASSESSMENT_QUESTIONS.length) {
+            // 问题标题
+            Text(ASSESSMENT_QUESTIONS[this.currentQuestionIndex].category)
+              .fontSize(14)
+              .fontColor('#0D9FFB')
+              .backgroundColor('rgba(13,159,251,0.10)')
+              .borderRadius(12)
+              .padding({ left: 12, right: 12, top: 4, bottom: 4 })
+              .margin({ bottom: 16 })
+            // 问题内容
+            Text(ASSESSMENT_QUESTIONS[this.currentQuestionIndex].question)
+              .fontSize(18)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#ffffff')
+              .textAlign(TextAlign.Center)
+              .margin({ bottom: 32 })
+              .opacity(this.questionOpacity)
+              .translate({ x: this.questionTranslateX })
+            // 选项列表
+            ForEach(ASSESSMENT_QUESTIONS[this.currentQuestionIndex].options, (option: AssessmentOption, index: number) => {
+              Row() {
+                Column() {
+                  Text(option.text)
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor(this.selectedOption === option.value ? '#fff' : '#0D9FFB')
+                    .margin({ bottom: 4 })
+                  Text(option.description)
+                    .fontSize(14)
+                    .fontColor(this.selectedOption === option.value ? '#fff' : '#b0c4de')
+                }
+                .layoutWeight(1)
               }
-              .layoutWeight(1)
-            }
-            .width('100%')
-            .padding(16)
-            .backgroundColor(this.selectedOption === option.value ? '#1976D2' : '#fff')
-            .borderRadius(12)
-            .border({ width: this.selectedOption === option.value ? 0 : 1, color: '#e0e0e0' })
-            .margin({ bottom: 12 })
-            .shadow({ radius: 4, color: 'rgba(0,0,0,0.05)', offsetX: 0, offsetY: 2 })
-            .scale({ x: this.optionScale, y: this.optionScale })
-            .opacity(this.optionOpacity)
-            .onClick(() => this.selectOption(ASSESSMENT_QUESTIONS[this.currentQuestionIndex].id, option.value))
-          }, (option: AssessmentOption) => `${this.currentQuestionIndex}-${option.value}`)
+              .width('100%')
+              .padding(16)
+              .backgroundColor(this.selectedOption === option.value ? '#0D9FFB' : 'rgba(255,255,255,0.03)')
+              .borderRadius(12)
+              .border({ width: this.selectedOption === option.value ? 0 : 1, color: this.selectedOption === option.value ? 'transparent' : 'rgba(255,255,255,0.08)' })
+              .margin({ bottom: 12 })
+              .shadow({ radius: 4, color: '#0D9FFB10', offsetX: 0, offsetY: 2 })
+              .scale({ x: this.optionScale, y: this.optionScale })
+              .opacity(this.optionOpacity)
+              .onClick(() => this.selectOption(ASSESSMENT_QUESTIONS[this.currentQuestionIndex].id, option.value))
+            }, (option: AssessmentOption) => `${this.currentQuestionIndex}-${option.value}`)
+          }
         }
-        .backgroundColor('#fff')
+        .backgroundColor('rgba(255,255,255,0.03)')
         .borderRadius(20)
         .padding(24)
         .margin({ left: 16, right: 16 })
-        .shadow({ radius: 12, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 4 })
+        .shadow({ radius: 12, color: '#0D9FFB20', offsetX: 0, offsetY: 4 })
       }
     }
     .layoutWeight(1)
@@ -584,7 +585,7 @@ struct FMAssessmentPage {
                     .width(40)
                     .height(8)
                     .backgroundColor(level <= this.getStressLevelNumber(this.assessmentResult!.stressLevel) ? 
-                      this.assessmentResult!.levelColor : '#e0e0e0')
+                      this.assessmentResult!.levelColor : 'rgba(255,255,255,0.10)')
                     .borderRadius(4)
                     .margin({ right: 8 })
                 }, (level: number) => level.toString())
@@ -593,14 +594,14 @@ struct FMAssessmentPage {
               
               Text(`总分：${this.assessmentResult.totalScore}/32`)
                 .fontSize(16)
-                .fontColor('#666')
+                .fontColor('#b0c4de')
             }
             .margin({ bottom: 24 })
 
             // 描述
             Text(this.assessmentResult.levelDescription)
               .fontSize(16)
-              .fontColor('#333')
+              .fontColor('#b0c4de')
               .textAlign(TextAlign.Center)
               .margin({ bottom: 24 })
 
@@ -609,7 +610,7 @@ struct FMAssessmentPage {
               Text('详细分析')
                 .fontSize(18)
                 .fontWeight(FontWeight.Bold)
-                .fontColor('#333')
+                .fontColor('#0D9FFB')
                 .margin({ bottom: 16 })
 
               ForEach(this.assessmentResult.categoryScores, (category: CategoryScore) => {
@@ -617,7 +618,7 @@ struct FMAssessmentPage {
                   Row() {
                     Text(category.category)
                       .fontSize(16)
-                      .fontColor('#333')
+                      .fontColor('#b0c4de')
                       .layoutWeight(1)
                     Text(category.description)
                       .fontSize(14)
@@ -629,7 +630,7 @@ struct FMAssessmentPage {
                     .width('100%')
                     .height(6)
                     .color(this.getCategoryColor(category.percentage))
-                    .backgroundColor('#e0e0e0')
+                    .backgroundColor('rgba(255,255,255,0.10)')
                     .borderRadius(3)
                 }
                 .margin({ bottom: 16 })
@@ -642,30 +643,30 @@ struct FMAssessmentPage {
               Text('个性化建议')
                 .fontSize(18)
                 .fontWeight(FontWeight.Bold)
-                .fontColor('#333')
+                .fontColor('#0D9FFB')
                 .margin({ bottom: 16 })
 
               ForEach(this.assessmentResult.recommendations, (recommendation: string, index: number) => {
                 Row() {
                   Text(`${index + 1}.`)
                     .fontSize(16)
-                    .fontColor('#1976D2')
+                    .fontColor('#0D9FFB')
                     .fontWeight(FontWeight.Bold)
                     .margin({ right: 8 })
                   Text(recommendation)
                     .fontSize(16)
-                    .fontColor('#333')
+                    .fontColor('#b0c4de')
                     .layoutWeight(1)
                 }
                 .margin({ bottom: 12 })
               }, (recommendation: string) => recommendation)
             }
           }
-          .backgroundColor('#fff')
+          .backgroundColor('rgba(255,255,255,0.03)')
           .borderRadius(20)
           .padding(24)
           .margin({ top: 16, left: 16, right: 16, bottom: 16 })
-          .shadow({ radius: 12, color: 'rgba(0,0,0,0.1)', offsetX: 0, offsetY: 4 })
+          .shadow({ radius: 12, color: '#0D9FFB20', offsetX: 0, offsetY: 4 })
           .opacity(this.resultOpacity)
           .scale({ x: this.resultScale, y: this.resultScale })
 
@@ -674,19 +675,19 @@ struct FMAssessmentPage {
             Button('重新评估')
               .layoutWeight(1)
               .height(48)
-              .backgroundColor('#fff')
-              .fontColor('#1976D2')
+              .backgroundColor('rgba(255,255,255,0.03)')
+              .fontColor('#0D9FFB')
               .fontSize(16)
               .fontWeight(FontWeight.Bold)
               .borderRadius(24)
-              .border({ width: 1, color: '#1976D2' })
+              .border({ width: 1, color: '#0D9FFB' })
               .margin({ right: 8 })
               .onClick(() => this.restartAssessment())
 
             Button('返回首页')
               .layoutWeight(1)
               .height(48)
-              .backgroundColor('#1976D2')
+              .backgroundColor('#0D9FFB')
               .fontColor('#fff')
               .fontSize(16)
               .fontWeight(FontWeight.Bold)

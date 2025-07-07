@@ -919,7 +919,11 @@ export struct Chat {
               }
             })
 
-            // 消息按钮
+
+
+            Blank() // 占据剩余空间，将右侧按钮推到最右边
+
+            // 评论按钮
             Button() {
               Row() {
                 Image($r('app.media.message_icon')) // TODO: 替换为实际的 message_icon 图片资源
@@ -949,20 +953,6 @@ export struct Chat {
               console.log('跳转到评论页面，AI角色ID:', this.createdAiRoleId, '名称:', this.agentName);
             })
 
-            Blank() // 占据剩余空间，将右侧按钮推到最右边
-
-            // 右侧按钮组
-            Row() {
-              // 菜单按钮
-              Button() {
-                Image($r('app.media.menu_icon')) // TODO: 替换为实际的 menu_icon 图片资源
-                  .width(this.isHeaderCompact ? 18 : 20).height(this.isHeaderCompact ? 18 : 20) // 缩小图片
-              }
-              .height(this.isHeaderCompact ? 28 : 32).borderRadius(this.isHeaderCompact ? 14 : 16) // 缩小按钮高度
-              .backgroundColor('rgba(255,255,255,0.2)')
-              .padding(this.isHeaderCompact ? { left: 6, right: 6, top: 4, bottom: 4 } : { left: 10, right: 10,top:6,bottom:8}) // 添加左右内边距，使其变为椭圆形
-            }
-            .alignItems(VerticalAlign.Center)
           }
           .width('100%') // 调整宽度
           .height(this.isHeaderCompact ? 48 : 64) // 动态高度
