@@ -166,7 +166,8 @@ export struct FeaturedList {
           mostPreferredRoleType: '智能推荐',
           mostPreferredCount: recommendedRoles.length,
           analysis: explanation
-        } as UserRolePreferenceAnalysis;
+        };
+        this.userPreference = result;
       }
     } catch (error) {
       console.error('获取推荐解释失败:', error);
@@ -177,7 +178,8 @@ export struct FeaturedList {
         mostPreferredRoleType: '智能推荐',
         mostPreferredCount: recommendedRoles.length,
         analysis: '基于您的偏好为您精选推荐'
-      } as UserRolePreferenceAnalysis;
+      };
+      this.userPreference = result;
     }
   }
 

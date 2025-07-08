@@ -216,3 +216,34 @@ export interface UserRolePreferenceAnalysis {
   mostPreferredCount: number;
   analysis: string;
 }
+
+// 头像上传请求接口
+export interface AvatarUploadRequest {
+  avatarData: string;
+  fileName: string;
+}
+
+// 头像上传响应接口
+export interface AvatarUploadResponse {
+  avatarUrl: string;
+}
+
+// 预览头像响应接口
+export interface PreviewAvatarResponse {
+  previewSeed: number;
+  previewImage: string;
+}
+
+// 文件选择器选项接口
+export interface FilePickerOptions {
+  type: Array<string>;
+  count?: number;
+}
+
+// 文件信息接口
+export interface FileInfo {
+  uri: string;
+  name: string;
+  size: number;
+  type: string;
+}

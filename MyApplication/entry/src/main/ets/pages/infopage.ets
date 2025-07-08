@@ -4,9 +4,12 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import promptAction from '@ohos.promptAction';
 import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
-import { UserInfo } from '../common/types';
+import { UserInfo, AvatarUploadRequest } from '../common/types';
 import { Config } from '../common/config';
 import { BottomNavBar } from './BottomNavBar';
+import picker from '@ohos.file.picker';
+import fs from '@ohos.file.fs';
+import util from '@ohos.util';
 
 @Entry
 @Component
@@ -30,6 +33,7 @@ export struct InfoPage {
   @State isGeneratingPreview: boolean = false; // 正在生成预览
   @State isAvatarLoading: boolean = false; // 头像加载状态
   @State showAvatarViewer: boolean = false; // 显示头像查看器
+  @State isUploadingAvatar: boolean = false; // 正在上传头像
 
   // 页面生命周期
   aboutToAppear() {
@@ -299,6 +303,82 @@ export struct InfoPage {
     this.showGenderDialog = false;
   }
 
+  // 选择并上传本地图片
+  async selectAndUploadImage() {
+    try {
+      console.log('📁 [infopage] 开始选择本地图片...');
+      
+      this.isUploadingAvatar = true;
+      promptAction.showToast({ message: '正在选择图片...' });
+
+      // 创建图片选择器
+      const photoPicker = new picker.PhotoViewPicker();
+      const photoSelectOptions: picker.PhotoSelectOptions = {
+        MIMEType: picker.PhotoViewMIMETypes.IMAGE_TYPE,
+        maxSelectNumber: 1
+      };
+
+      // 选择图片
+      const photoView = await photoPicker.select(photoSelectOptions);
+      const uris = photoView.photoUris;
+
+      if (uris && uris.length > 0) {
+        const uri = uris[0];
+        console.log('📁 [infopage] 选择的图片URI:', uri);
+        
+        // 读取图片文件
+        const fileData: ArrayBuffer = await fs.readFile(uri);
+        console.log('📁 [infopage] 图片文件大小:', fileData.byteLength);
+        
+        // 转换为base64
+        const base64Data: string = this.arrayBufferToBase64(fileData);
+        console.log('📁 [infopage] 图片base64长度:', base64Data.length);
+        
+        // 上传到后端
+        promptAction.showToast({ message: '正在上传图片...' });
+        
+        const uploadData: AvatarUploadRequest = {
+          avatarData: base64Data,
+          fileName: `avatar_${Date.now()}.jpg`
+        };
+        const uploadResponse = await ApiService.uploadAvatar(this.userUID, uploadData);
+        
+        if (uploadResponse && uploadResponse.avatarUrl) {
+          console.log('📁 [infopage] 图片上传成功，URL:', uploadResponse.avatarUrl);
+          
+          // 更新本地显示
+          await this.updateAvatarDisplay(uploadResponse.avatarUrl);
+          
+          // 刷新用户信息
+          await this.loadUserInfoAsync();
+          
+          promptAction.showToast({ message: '头像上传成功' });
+        } else {
+          promptAction.showToast({ message: '头像上传失败' });
+        }
+      } else {
+        console.log('📁 [infopage] 未选择图片');
+        promptAction.showToast({ message: '未选择图片' });
+      }
+    } catch (error) {
+      console.error('📁 [infopage] 选择或上传图片失败:', error);
+      promptAction.showToast({ message: '图片上传失败，请重试' });
+    } finally {
+      this.isUploadingAvatar = false;
+    }
+  }
+
+  // ArrayBuffer转Base64
+  arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    // 使用ArkTS内置的base64编码
+    return util.TextEncoder.create('utf-8').encode(binary).toString('base64');
+  }
+
   build() {
     Stack() {
       // 渐变背景
@@ -406,9 +486,13 @@ export struct InfoPage {
                 }
 
                 // 加载状态遮罩
-                if (this.isAvatarLoading) {
+                if (this.isAvatarLoading || this.isUploadingAvatar) {
                   Column() {
                     LoadingProgress().width(40).height(40)
+                    Text(this.isUploadingAvatar ? '上传中...' : '处理中...')
+                      .fontSize(14)
+                      .fontColor('#fff')
+                      .margin({ top: 8 })
                   }
                   .width(200)
                   .height(200)
@@ -444,20 +528,29 @@ export struct InfoPage {
               // 头像操作按钮
               Row() {
                 Button('查看大图')
-                  .width(100)
+                  .width(80)
                   .height(40)
                   .backgroundColor('rgba(255,255,255,0.1)')
                   .fontColor('#fff')
                   .borderRadius(20)
                   .onClick(() => this.showAvatarViewerDialog())
 
+                Button('上传图片')
+                  .width(80)
+                  .height(40)
+                  .backgroundColor('rgba(255,255,255,0.15)')
+                  .fontColor('#fff')
+                  .borderRadius(20)
+                  .margin({ left: 10 })
+                  .onClick(() => this.selectAndUploadImage())
+
                 Button('生成新头像')
-                  .width(100)
+                  .width(80)
                   .height(40)
                   .backgroundColor('rgba(255,255,255,0.2)')
                   .fontColor('#fff')
                   .borderRadius(20)
-                  .margin({ left: 20 })
+                  .margin({ left: 10 })
                   .onClick(() => this.generatePreviewAvatar())
               }
               .justifyContent(FlexAlign.Center)
