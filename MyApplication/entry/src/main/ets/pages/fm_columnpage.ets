@@ -299,6 +299,7 @@ struct ColumnPage {
           .width(36)
           .height(36)
           .fillColor(Color.White)
+          //.shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
           .position({ x: 16, y: 16 })
           .onClick(() => router.back())
         // 卡片内容整体下移
@@ -308,11 +309,11 @@ struct ColumnPage {
             Row() {
               Text(this.currentColumn.icon)
                 .fontSize(32)
-                .fontColor(this.currentColumn.iconColor || '#0D9FFB')
+                .fontColor(this.currentColumn.iconColor || '#666')
             }
             .width(60)
             .height(60)
-            .backgroundColor(this.currentColumn.bgColor || 'rgba(13,159,251,0.10)')
+            .backgroundColor(this.currentColumn.bgColor || '#F5F5F5')
             .borderRadius(8)
             .justifyContent(FlexAlign.Center)
             .alignItems(VerticalAlign.Center)
@@ -328,12 +329,12 @@ struct ColumnPage {
           Text(this.currentColumn.name)
             .fontSize(20)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#0D9FFB')
+            .fontColor('#1976D2')
             .textAlign(TextAlign.Center)
             .margin({ bottom: 4 })
           Text(this.currentColumn.description)
             .fontSize(14)
-            .fontColor('#b0c4de')
+            .fontColor('#666')
             .maxLines(2)
             .textAlign(TextAlign.Center)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -341,13 +342,13 @@ struct ColumnPage {
         }
         .width('100%')
         .padding(20)
-        .backgroundColor('rgba(255,255,255,0.03)')
+        .backgroundColor(this.currentColumn.bgColor || '#E3F2FD')
         .borderRadius(16)
-        .border({ width: 1, color: 'rgba(255,255,255,0.10)' })
-        .shadow({ radius: 8, color: '#0D9FFB20', offsetX: 0, offsetY: 4 })
+        .shadow({ radius: 8, color: 'rgba(0,0,0,0.10)', offsetX: 0, offsetY: 4 })
         .margin({ top: 65, left: 16, right: 16, bottom: 8 })
       }
       .width('100%')
+
 
       // 文章列表
       List() {
@@ -359,11 +360,11 @@ struct ColumnPage {
       }
       .width('100%')
       .layoutWeight(1)
-      .backgroundColor('rgba(10,10,10,1)')
+      .backgroundColor('#f8f8f8')
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('rgba(10,10,10,1)')
+    .backgroundColor('#f8f8f8')
   }
 
   @Builder
@@ -375,14 +376,14 @@ struct ColumnPage {
           Text(article.title)
             .fontSize(16)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#ffffff')
+            .fontColor('#333')
             .maxLines(2)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .margin({ bottom: 8 })
 
           Text(article.subtitle)
             .fontSize(14)
-            .fontColor('#b0c4de')
+            .fontColor('#666')
             .maxLines(2)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .margin({ bottom: 8 })
@@ -391,10 +392,10 @@ struct ColumnPage {
           Row() {
             Text(article.author)
               .fontSize(12)
-              .fontColor('#7fa1c7')
+              .fontColor('#999')
             Text(` · ${article.readTime}`)
               .fontSize(12)
-              .fontColor('#7fa1c7')
+              .fontColor('#999')
           }
           .margin({ bottom: 8 })
 
@@ -404,7 +405,7 @@ struct ColumnPage {
               Text(tag)
                 .fontSize(12)
                 .fontColor('#0D9FFB')
-                .backgroundColor('rgba(13,159,251,0.10)')
+                .backgroundColor('#E3F2FD')
                 .borderRadius(12)
                 .padding({ left: 8, right: 8, top: 4, bottom: 4 })
                 .margin({ right: 6 })
@@ -418,11 +419,11 @@ struct ColumnPage {
           Row() {
             Text(article.icon)
               .fontSize(28)
-              .fontColor(article.iconColor || '#0D9FFB')
+              .fontColor(article.iconColor || '#666')
           }
           .width(80)
           .height(80)
-          .backgroundColor(article.bgColor || 'rgba(13,159,251,0.10)')
+          .backgroundColor(article.bgColor || '#F5F5F5')
           .borderRadius(8)
           .justifyContent(FlexAlign.Center)
           .alignItems(VerticalAlign.Center)
@@ -440,11 +441,8 @@ struct ColumnPage {
     }
     .width('100%')
     .padding(16)
-    .backgroundColor('rgba(255,255,255,0.03)')
-    .borderRadius(16)
-    .border({ width: 1, color: 'rgba(255,255,255,0.10)' })
+    .backgroundColor('#fff')
     .margin({ bottom: 8 })
-    .shadow({ radius: 8, color: '#0D9FFB10', offsetX: 0, offsetY: 2 })
     .onClick(() => {
       this.goToArticleDetail(article, columnType);
       console.log("进入了:"+article.title)

@@ -323,15 +323,15 @@ struct ArticleDetail {
         Column(){
         ForEach(this.parseInlineMarkdown(block.content), (seg: InlineMarkdownSegment, idx: number) => {
           if (seg.type === 'bolditalic') {
-            Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#ffffff').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
+            Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#222').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
           } else if (seg.type === 'bold') {
-            Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#ffffff').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
+            Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#222').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
           } else if (seg.type === 'italic') {
-            Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#b0c4de').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
+            Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#444').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
           } else if (seg.type === 'code') {
-            Text(seg.text).fontColor('#0D9FFB').backgroundColor('rgba(13,159,251,0.10)').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
+            Text(seg.text).fontColor('#d6336c').backgroundColor('#f5f5f5').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
           } else {
-            Text(seg.text).fontColor('#ffffff').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
+            Text(seg.text).fontColor('#333').fontSize(block.level === 1 ? 22 : block.level === 2 ? 20 : 18)
           }
         })
         }
@@ -344,15 +344,15 @@ struct ArticleDetail {
         Column(){
         ForEach(this.parseInlineMarkdown(block.content), (seg: InlineMarkdownSegment, idx: number) => {
           if (seg.type === 'bolditalic') {
-            Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#ffffff').fontSize(16)
+            Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#222').fontSize(16)
           } else if (seg.type === 'bold') {
-            Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#ffffff').fontSize(16)
+            Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#222').fontSize(16)
           } else if (seg.type === 'italic') {
-            Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#b0c4de').fontSize(16)
+            Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#444').fontSize(16)
           } else if (seg.type === 'code') {
-            Text(seg.text).fontColor('#0D9FFB').backgroundColor('rgba(13,159,251,0.10)').fontSize(16)
+            Text(seg.text).fontColor('#d6336c').backgroundColor('#f5f5f5').fontSize(16)
           } else {
-            Text(seg.text).fontColor('#ffffff').fontSize(16)
+            Text(seg.text).fontColor('#333').fontSize(16)
           }
         })
           }
@@ -365,33 +365,33 @@ struct ArticleDetail {
           Row() {
             // 有序列表支持 - 用条件渲染
             if (item.match(/^(\d+)\.\s(.*)$/)) {
-              Text(item.replace(/^(\d+)\..*/, '$1.')).fontSize(16).fontColor('#0D9FFB').margin({ right: 8 })
+              Text(item.replace(/^(\d+)\..*/, '$1.')).fontSize(16).fontColor('#666').margin({ right: 8 })
               ForEach(this.parseInlineMarkdown(item.replace(/^\d+\.\s/, '')), (seg: InlineMarkdownSegment, idx: number) => {
                 if (seg.type === 'bolditalic') {
-                  Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#ffffff').fontSize(16)
+                  Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#222').fontSize(16)
                 } else if (seg.type === 'bold') {
-                  Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#ffffff').fontSize(16)
+                  Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#222').fontSize(16)
                 } else if (seg.type === 'italic') {
-                  Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#b0c4de').fontSize(16)
+                  Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#444').fontSize(16)
                 } else if (seg.type === 'code') {
-                  Text(seg.text).fontColor('#0D9FFB').backgroundColor('rgba(13,159,251,0.10)').fontSize(16)
+                  Text(seg.text).fontColor('#d6336c').backgroundColor('#f5f5f5').fontSize(16)
                 } else {
-                  Text(seg.text).fontColor('#ffffff').fontSize(16)
+                  Text(seg.text).fontColor('#333').fontSize(16)
                 }
               })
             } else {
-              Text('•').fontSize(16).fontColor('#0D9FFB').margin({ right: 8 })
+              Text('•').fontSize(16).fontColor('#666').margin({ right: 8 })
               ForEach(this.parseInlineMarkdown(item), (seg: InlineMarkdownSegment, idx: number) => {
                 if (seg.type === 'bolditalic') {
-                  Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#ffffff').fontSize(16)
+                  Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#222').fontSize(16)
                 } else if (seg.type === 'bold') {
-                  Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#ffffff').fontSize(16)
+                  Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#222').fontSize(16)
                 } else if (seg.type === 'italic') {
-                  Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#b0c4de').fontSize(16)
+                  Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#444').fontSize(16)
                 } else if (seg.type === 'code') {
-                  Text(seg.text).fontColor('#0D9FFB').backgroundColor('rgba(13,159,251,0.10)').fontSize(16)
+                  Text(seg.text).fontColor('#d6336c').backgroundColor('#f5f5f5').fontSize(16)
                 } else {
-                  Text(seg.text).fontColor('#ffffff').fontSize(16)
+                  Text(seg.text).fontColor('#333').fontSize(16)
                 }
               })
             }
@@ -406,9 +406,9 @@ struct ArticleDetail {
       Column() {
         Text(block.content)
           .fontSize(14)
-          .fontColor('#0D9FFB')
+          .fontColor('#fff')
           .lineHeight(20)
-          .backgroundColor('rgba(13,159,251,0.10)')
+          .backgroundColor('#2d3748')
           .borderRadius(8)
           .padding(12)
           .width('100%')
@@ -419,28 +419,28 @@ struct ArticleDetail {
       Column() {
         ForEach(this.parseInlineMarkdown(block.content), (seg: InlineMarkdownSegment, idx: number) => {
           if (seg.type === 'bolditalic') {
-            Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#ffffff').fontSize(16)
+            Text(seg.text).fontWeight(FontWeight.Bold).fontStyle(FontStyle.Italic).fontColor('#222').fontSize(16)
           } else if (seg.type === 'bold') {
-            Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#ffffff').fontSize(16)
+            Text(seg.text).fontWeight(FontWeight.Bold).fontColor('#222').fontSize(16)
           } else if (seg.type === 'italic') {
-            Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#b0c4de').fontSize(16)
+            Text(seg.text).fontStyle(FontStyle.Italic).fontColor('#444').fontSize(16)
           } else if (seg.type === 'code') {
-            Text(seg.text).fontColor('#0D9FFB').backgroundColor('rgba(13,159,251,0.10)').fontSize(16)
+            Text(seg.text).fontColor('#d6336c').backgroundColor('#f5f5f5').fontSize(16)
           } else {
-            Text(seg.text).fontColor('#ffffff').fontSize(16)
+            Text(seg.text).fontColor('#333').fontSize(16)
           }
         })
       }
-      .backgroundColor('rgba(255,255,255,0.03)')
+      .backgroundColor('#f7fafc')
       .borderRadius(8)
-      .border({ width: { left: 4 }, color: '#0D9FFB' })
+      .border({ width: { left: 4 }, color: '#e2e8f0' })
       .padding(12)
       .width('100%')
       .margin({ top: 8, bottom: 8 })
       .padding({ left: 16, right: 16 })
     } else if (block.type === 'divider') {
       Divider()
-        .color('rgba(255,255,255,0.08)')
+        .color('#e2e8f0')
         .width('100%')
         .margin({ top: 16, bottom: 16 })
     }
@@ -491,14 +491,14 @@ struct ArticleDetail {
       Row() {
         Button('‹')
           .fontSize(24)
-          .fontColor('#ffffff')
+          .fontColor('#333')
           .backgroundColor('transparent')
           .onClick(() => router.back())
 
         Text(this.articleTitle)
           .fontSize(18)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#ffffff')
+          .fontColor('#333')
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .layoutWeight(1)
@@ -506,12 +506,17 @@ struct ArticleDetail {
           .onClick(()=>{
             console.log(this.articleTitle+' '+this.articleType)
           })
+
+        Button('⋮')
+          .fontSize(20)
+          .fontColor('#333')
+          .backgroundColor('transparent')
       }
       .width('100%')
       .height(56)
       .padding({ left: 16, right: 16 })
-      .backgroundColor('rgba(10,10,10,1)')
-      .border({ width: { bottom: 1 }, color: 'rgba(255,255,255,0.08)' })
+      .backgroundColor('#fff')
+      .border({ width: { bottom: 1 }, color: '#f0f0f0' })
 
       // 文章内容
       Scroll() {
@@ -520,7 +525,7 @@ struct ArticleDetail {
           Text(this.articleTitle)
             .fontSize(24)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#ffffff')
+            .fontColor('#333')
             .margin({ top: 20, bottom: 12 })
             .padding({ left: 16, right: 16 })
 
@@ -528,7 +533,7 @@ struct ArticleDetail {
           if (this.loading) {
             Text(this.articleContent)
               .fontSize(16)
-              .fontColor('#b0c4de')
+              .fontColor('#999')
               .lineHeight(24)
               .padding({ left: 16, right: 16, bottom: 40 })
           } else {
@@ -544,7 +549,7 @@ struct ArticleDetail {
         .width('100%')
       }
       .layoutWeight(1)
-      .backgroundColor('rgba(10,10,10,1)')
+      .backgroundColor('#fff')
 
       // 底部操作栏
       Row() {
@@ -552,19 +557,18 @@ struct ArticleDetail {
           Button('📖')
             .fontSize(20)
             .backgroundColor('transparent')
-            .fontColor('#ffffff')
         }
 
       }
       .width('100%')
       .height(60)
       .padding({ left: 16, right: 16 })
-      .backgroundColor('rgba(10,10,10,1)')
-      .border({ width: { top: 1 }, color: 'rgba(255,255,255,0.08)' })
+      .backgroundColor('#fff')
+      .border({ width: { top: 1 }, color: '#f0f0f0' })
       .alignItems(VerticalAlign.Center)
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('rgba(10,10,10,1)')
+    .backgroundColor('#fff')
   }
 } 

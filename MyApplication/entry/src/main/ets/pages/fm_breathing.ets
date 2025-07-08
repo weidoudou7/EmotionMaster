@@ -414,26 +414,26 @@ struct FMBreathingPage {
         Image($r('app.media.music_return'))
           .width(36)
           .height(36)
+          //.shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
           .onClick(() => router.back())
         Text('呼吸训练')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#0D9FFB')
+          .fontColor('#1976D2')
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
         Button('⚙️')
           .fontSize(18)
-          .fontColor('#0D9FFB')
-          .backgroundColor('rgba(255,255,255,0.03)')
+          .fontColor('#1976D2')
+          .backgroundColor('#fff')
           .borderRadius(18)
           .width(36)
           .height(36)
-          .shadow({ radius: 4, color: '#0D9FFB20', offsetX: 0, offsetY: 2 })
+          .shadow({ radius: 4, color: 'rgba(0,0,0,0.08)', offsetX: 0, offsetY: 2 })
           .onClick(() => this.showSettings = true)
       }
       .width('100%')
       .padding({ top: 16, left: 12, right: 12, bottom: 16 })
-      .backgroundColor('rgba(10,10,10,1)')
 
       // 可滚动内容区域
       Scroll() {
@@ -444,8 +444,9 @@ struct FMBreathingPage {
               Text('选择呼吸模式')
                 .fontSize(16)
                 .fontWeight(FontWeight.Bold)
-                .fontColor('#0D9FFB')
+                .fontColor('#333')
                 .margin({ bottom: 12 })
+              
               ForEach(BREATHING_PATTERNS, (pattern: BreathingPattern, idx: number) => {
                 Row() {
                   Text(pattern.emoji)
@@ -455,10 +456,10 @@ struct FMBreathingPage {
                     Text(pattern.name)
                       .fontSize(16)
                       .fontWeight(FontWeight.Bold)
-                      .fontColor('#ffffff')
+                      .fontColor('#333')
                     Text(pattern.description)
                       .fontSize(13)
-                      .fontColor('#b0c4de')
+                      .fontColor('#666')
                       .margin({ top: 2 })
                     Text(`${pattern.inhaleTime}-${pattern.holdTime}-${pattern.exhaleTime}${pattern.holdAfterExhale > 0 ? '-' + pattern.holdAfterExhale : ''}`)
                       .fontSize(12)
@@ -469,9 +470,8 @@ struct FMBreathingPage {
                 }
                 .width('100%')
                 .padding(16)
-                .backgroundColor(this.selectedPatternIndex === idx ? 'rgba(255,255,255,0.03)' : 'rgba(10,10,10,1)')
+                .backgroundColor(this.selectedPatternIndex === idx ? pattern.bgColor : '#f8f9fa')
                 .borderRadius(12)
-                .border({ width: this.selectedPatternIndex === idx ? 1 : 1, color: this.selectedPatternIndex === idx ? '#0D9FFB' : 'rgba(255,255,255,0.08)' })
                 .margin({ bottom: 8 })
                 .onClick(() => {
                   this.selectedPatternIndex = idx;
@@ -488,13 +488,15 @@ struct FMBreathingPage {
               Text('训练时长')
                 .fontSize(16)
                 .fontWeight(FontWeight.Bold)
-                .fontColor('#0D9FFB')
+                .fontColor('#333')
                 .margin({ bottom: 12 })
+              
+              // 第一行：1、3、5分钟
               Row() {
                 ForEach([0, 1, 2], (idx: number) => {
                   Button(this.durationLabels[idx])
-                    .fontColor(this.selectedDuration === this.durationOptions[idx] ? '#fff' : '#0D9FFB')
-                    .backgroundColor(this.selectedDuration === this.durationOptions[idx] ? '#0D9FFB' : 'rgba(13,159,251,0.10)')
+                    .fontColor(this.selectedDuration === this.durationOptions[idx] ? '#fff' : '#1976D2')
+                    .backgroundColor(this.selectedDuration === this.durationOptions[idx] ? '#1976D2' : '#E3F2FD')
                     .borderRadius(16)
                     .fontSize(14)
                     .padding({ left: 16, right: 16, top: 8, bottom: 8 })
@@ -507,11 +509,13 @@ struct FMBreathingPage {
               .width('100%')
               .justifyContent(FlexAlign.Center)
               .margin({ bottom: 8 })
+              
+              // 第二行：10、15分钟
               Row() {
                 ForEach([3, 4], (idx: number) => {
                   Button(this.durationLabels[idx])
-                    .fontColor(this.selectedDuration === this.durationOptions[idx] ? '#fff' : '#0D9FFB')
-                    .backgroundColor(this.selectedDuration === this.durationOptions[idx] ? '#0D9FFB' : 'rgba(13,159,251,0.10)')
+                    .fontColor(this.selectedDuration === this.durationOptions[idx] ? '#fff' : '#1976D2')
+                    .backgroundColor(this.selectedDuration === this.durationOptions[idx] ? '#1976D2' : '#E3F2FD')
                     .borderRadius(16)
                     .fontSize(14)
                     .padding({ left: 16, right: 16, top: 8, bottom: 8 })
@@ -536,8 +540,9 @@ struct FMBreathingPage {
               Circle()
                 .width(280)
                 .height(280)
-                .fill('rgba(255,255,255,0.03)')
+                .fill(this.currentPattern.bgColor)
                 .opacity(0.3)
+              
               // 动态呼吸圆圈
               Circle()
                 .width(200)
@@ -545,19 +550,20 @@ struct FMBreathingPage {
                 .fill(this.currentPattern.color)
                 .opacity(this.circleOpacity)
                 .scale({ x: this.circleScale, y: this.circleScale })
+              
               // 中心文字
               Column() {
                 if (this.isPlaying) {
                   Text(this.getPhaseText())
                     .fontSize(32)
                     .fontWeight(FontWeight.Bold)
-                    .fontColor('#ffffff')
+                    .fontColor('#fff')
                     .margin({ bottom: 8 })
                     .opacity(this.textOpacity)
                     .translate({ y: this.textTranslateY })
                   Text(`${Math.max(0, this.getRemainingTime())}s`)
                     .fontSize(18)
-                    .fontColor('#b0c4de')
+                    .fontColor('#fff')
                     .opacity(0.9)
                 } else if (this.isPaused) {
                   Text('⏸️')
@@ -566,7 +572,7 @@ struct FMBreathingPage {
                   Text('已暂停')
                     .fontSize(20)
                     .fontWeight(FontWeight.Bold)
-                    .fontColor('#b0c4de')
+                    .fontColor('#333')
                 } else {
                   Text(this.currentPattern.emoji)
                     .fontSize(48)
@@ -574,7 +580,7 @@ struct FMBreathingPage {
                   Text('准备开始')
                     .fontSize(20)
                     .fontWeight(FontWeight.Bold)
-                    .fontColor('#b0c4de')
+                    .fontColor('#333')
                 }
               }
             }
@@ -586,7 +592,7 @@ struct FMBreathingPage {
             Row() {
               Button(this.isPlaying ? '暂停' : (this.isPaused ? '继续' : '开始'))
                 .fontColor('#fff')
-                .backgroundColor(this.isPlaying ? '#FF5722' : '#0D9FFB')
+                .backgroundColor(this.isPlaying ? '#FF5722' : '#4CAF50')
                 .borderRadius(24)
                 .fontSize(18)
                 .fontWeight(FontWeight.Bold)
@@ -599,6 +605,7 @@ struct FMBreathingPage {
                     this.startBreathing();
                   }
                 })
+              
               if (this.isPlaying || this.isPaused) {
                 Button('停止')
                   .fontColor('#fff')
@@ -622,17 +629,18 @@ struct FMBreathingPage {
                 Row() {
                   Text(`呼吸次数: ${this.breathCount}`)
                     .fontSize(14)
-                    .fontColor('#b0c4de')
+                    .fontColor('#666')
                   Text(`剩余时间: ${Math.max(0, Math.floor((this.selectedDuration - this.elapsedSeconds) / 60))}:${Math.max(0, (this.selectedDuration - this.elapsedSeconds) % 60).toString().padStart(2, '0')}`)
                     .fontSize(14)
-                    .fontColor('#b0c4de')
+                    .fontColor('#666')
                 }
                 .width('100%')
                 .justifyContent(FlexAlign.SpaceBetween)
                 .margin({ bottom: 8 })
+                
                 Progress({ value: this.totalProgress })
-                  .color('#0D9FFB')
-                  .backgroundColor('rgba(255,255,255,0.10)')
+                  .color(this.currentPattern.color)
+                  .backgroundColor('#E0E0E0')
                   .width('100%')
                   .height(6)
                   .borderRadius(3)
@@ -652,7 +660,6 @@ struct FMBreathingPage {
       .layoutWeight(1)
       .scrollBar(BarState.Off)
       .edgeEffect(EdgeEffect.Spring)
-      .backgroundColor('rgba(10,10,10,1)')
 
       // 设置弹窗
       if (this.showSettings) {
@@ -662,51 +669,55 @@ struct FMBreathingPage {
             .width('100%')
             .height('100%')
             .onClick(() => this.showSettings = false)
+          
           Column() {
             Text('设置')
               .fontSize(18)
               .fontWeight(FontWeight.Bold)
-              .fontColor('#0D9FFB')
               .margin({ bottom: 16 })
+            
             Row() {
               Text('引导语音')
                 .fontSize(16)
-                .fontColor('#b0c4de')
+                .fontColor('#333')
               Toggle({ type: ToggleType.Switch, isOn: true })
                 .margin({ left: 16 })
             }
             .width('100%')
             .justifyContent(FlexAlign.SpaceBetween)
             .margin({ bottom: 12 })
+            
             Row() {
               Text('背景音乐')
                 .fontSize(16)
-                .fontColor('#b0c4de')
+                .fontColor('#333')
               Toggle({ type: ToggleType.Switch, isOn: false })
                 .margin({ left: 16 })
             }
             .width('100%')
             .justifyContent(FlexAlign.SpaceBetween)
             .margin({ bottom: 12 })
+            
             Row() {
               Text('振动提醒')
                 .fontSize(16)
-                .fontColor('#b0c4de')
+                .fontColor('#333')
               Toggle({ type: ToggleType.Switch, isOn: true })
                 .margin({ left: 16 })
             }
             .width('100%')
             .justifyContent(FlexAlign.SpaceBetween)
             .margin({ bottom: 20 })
+            
             Button('确定')
               .fontColor('#fff')
-              .backgroundColor('#0D9FFB')
+              .backgroundColor('#1976D2')
               .borderRadius(12)
               .width('100%')
               .onClick(() => this.showSettings = false)
           }
           .width('80%')
-          .backgroundColor('rgba(10,10,10,1)')
+          .backgroundColor('#fff')
           .borderRadius(16)
           .padding(24)
           .alignSelf(ItemAlign.Center)
@@ -718,6 +729,6 @@ struct FMBreathingPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('rgba(10,10,10,1)')
+    .backgroundColor('#F8F9FB')
   }
 } 

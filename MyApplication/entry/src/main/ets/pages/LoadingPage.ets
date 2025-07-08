@@ -22,6 +22,7 @@ export struct LoadingPage {
   @State private glowOpacity: number = 0.5
   @State private textOpacity: number = 0.8
   @State private arcRotation: number = 0
+  @State private preloadImageUrls: string[] = []
 
   private description: string = ''
   private styles: string[] = ['古风', '赛博', '卡通', '动漫', 'Q版']
@@ -57,17 +58,9 @@ export struct LoadingPage {
     }, 1200)
   }
 
-  private async preloadImages(urls: string[]): Promise<void> {
-    const promises = urls.map(url => {
-      const httpRequest = http.createHttp();
-      return httpRequest.request(url, {
-        method: http.RequestMethod.GET,
-        readTimeout: 10000,
-        connectTimeout: 5000
-      }).then(() => httpRequest.destroy())
-        .catch(() => httpRequest.destroy());
-    });
-    await Promise.all(promises);
+  private preloadImage(url: string): void {
+    // 将URL添加到预加载列表中，Image组件会自动加载
+    this.preloadImageUrls.push(url)
   }
 
   private async startGeneration() {
@@ -75,6 +68,7 @@ export struct LoadingPage {
     this.hasError = false
     this.generatedUrls = []
     this.successfulStyles = []
+    this.preloadImageUrls = []
     this.progress = 0
     this.currentBgUrl = ''
 
@@ -88,6 +82,8 @@ export struct LoadingPage {
           this.generatedUrls.push(imageUrl)
           this.successfulStyles.push(style)
           this.currentBgUrl = imageUrl
+          // 立即使用Image组件预加载这个URL
+          this.preloadImage(imageUrl)
           // 只有在成功生成图片后才增加进度
           this.progress = (this.successfulStyles.length / this.styles.length) * 100
         }
@@ -95,8 +91,6 @@ export struct LoadingPage {
         console.error(`生成${style}风格图片失败:`, error)
       }
     }
-
-    await this.preloadImages(this.generatedUrls);
 
     this.isGenerating = false
     
@@ -172,6 +166,20 @@ export struct LoadingPage {
       }
       .width('100%')
       .height('100%')
+      
+      // 隐藏的预加载图片区域
+      Stack() {
+        ForEach(this.preloadImageUrls, (url: string, index: number) => {
+          Image(url)
+            .width(1)
+            .height(1)
+            .opacity(0)
+            .position({ x: -1000, y: -1000 })
+        })
+      }
+      .width(0)
+      .height(0)
+      .opacity(0)
       
       // 主要内容区域
       Column() {
