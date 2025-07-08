@@ -10,6 +10,7 @@ import com.ai.companion.service.UserService;
 import com.ai.companion.service.DynamicService;
 import com.ai.companion.service.UserRelationService;
 import com.ai.companion.service.AvatarGeneratorService;
+import com.ai.companion.service.OssService;
 import com.ai.companion.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -42,7 +43,10 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private AvatarGeneratorService avatarGeneratorService;
 
-    // 头像存储路径
+    @Autowired
+    private OssService ossService;
+
+    // 头像存储路径（保留用于兼容性）
     private static final String AVATAR_UPLOAD_PATH = "uploads/avatars/";
 
     static {
@@ -116,35 +120,32 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("只能上传图片文件");
         }
 
-        // 生成唯一文件名
-        String originalFilename = file.getOriginalFilename();
-        String extension = "";
-        if (originalFilename != null && originalFilename.contains(".")) {
-            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        }
-        String filename = userUID + "_" + UUID.randomUUID().toString() + extension;
-
         try {
-            // 保存文件
-            Path uploadPath = Paths.get(AVATAR_UPLOAD_PATH);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            Path filePath = uploadPath.resolve(filename);
-            Files.copy(file.getInputStream(), filePath);
-
+            // 生成OSS对象名称
+            String originalFilename = file.getOriginalFilename();
+            String objectName = ((OssServiceImpl) ossService).generateObjectName(userUID, originalFilename);
+            
+            System.out.println("🖼️ [UserService] 开始上传头像到OSS");
+            System.out.println("🖼️ [UserService] 用户UID: " + userUID);
+            System.out.println("🖼️ [UserService] OSS对象名称: " + objectName);
+            
+            // 上传到OSS
+            String avatarUrl = ossService.uploadFile(file, objectName);
+            
+            System.out.println("🖼️ [UserService] OSS上传成功，URL: " + avatarUrl);
+            
             // 更新用户头像信息
-            String avatarUrl = "/avatars/" + filename;
             User user = userMapper.selectByUID(userUID);
             if (user != null) {
                 user.setUserAvatar(avatarUrl);
                 user.setUpdateTime(LocalDateTime.now());
                 userMapper.updateUser(user);
+                System.out.println("🖼️ [UserService] 用户头像信息已更新到数据库");
             }
 
             return avatarUrl;
-        } catch (IOException e) {
+        } catch (Exception e) {
+            System.err.println("❌ [UserService] 头像上传失败: " + e.getMessage());
             throw new RuntimeException("头像上传失败: " + e.getMessage());
         }
     }
@@ -156,6 +157,10 @@ public class UserServiceImpl implements UserService {
         }
 
         try {
+            System.out.println("🖼️ [UserService] 开始处理Base64头像上传");
+            System.out.println("🖼️ [UserService] 用户UID: " + userUID);
+            System.out.println("🖼️ [UserService] 图片数据长度: " + imageData.length());
+            
             // 解析base64数据
             String[] parts = imageData.split(",");
             if (parts.length != 2) {
@@ -165,42 +170,52 @@ public class UserServiceImpl implements UserService {
             String header = parts[0];
             String base64Data = parts[1];
 
-            // 确定文件扩展名
+            System.out.println("🖼️ [UserService] Base64头部信息: " + header);
+            System.out.println("🖼️ [UserService] Base64数据长度: " + base64Data.length());
+
+            // 确定文件扩展名和内容类型
             String extension = ".jpg"; // 默认扩展名
+            String contentType = "image/jpeg"; // 默认内容类型
             if (header.contains("image/png")) {
                 extension = ".png";
+                contentType = "image/png";
             } else if (header.contains("image/gif")) {
                 extension = ".gif";
+                contentType = "image/gif";
             } else if (header.contains("image/webp")) {
                 extension = ".webp";
+                contentType = "image/webp";
             }
 
-            // 生成唯一文件名
-            String filename = userUID + "_" + UUID.randomUUID().toString() + extension;
+            System.out.println("🖼️ [UserService] 检测到的文件扩展名: " + extension);
+            System.out.println("🖼️ [UserService] 内容类型: " + contentType);
+
+            // 生成OSS对象名称
+            String objectName = ((OssServiceImpl) ossService).generateObjectName(userUID, "avatar" + extension);
+            
+            System.out.println("🖼️ [UserService] 生成的对象名称: " + objectName);
 
             // 解码base64数据
             byte[] imageBytes = java.util.Base64.getDecoder().decode(base64Data);
+            System.out.println("🖼️ [UserService] 解码后的图片字节数: " + imageBytes.length);
 
-            // 保存文件
-            Path uploadPath = Paths.get(AVATAR_UPLOAD_PATH);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            Path filePath = uploadPath.resolve(filename);
-            Files.write(filePath, imageBytes);
+            // 上传到OSS
+            String avatarUrl = ossService.uploadBytes(imageBytes, objectName, contentType);
+            
+            System.out.println("🖼️ [UserService] OSS上传成功，URL: " + avatarUrl);
 
             // 更新用户头像信息
-            String avatarUrl = "/avatars/" + filename;
             User user = userMapper.selectByUID(userUID);
             if (user != null) {
                 user.setUserAvatar(avatarUrl);
                 user.setUpdateTime(LocalDateTime.now());
                 userMapper.updateUser(user);
+                System.out.println("🖼️ [UserService] 用户头像信息已更新到数据库");
             }
 
             return avatarUrl;
         } catch (Exception e) {
+            System.err.println("❌ [UserService] Base64头像上传失败: " + e.getMessage());
             throw new RuntimeException("头像上传失败: " + e.getMessage());
         }
     }
