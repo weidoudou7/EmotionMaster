@@ -39,6 +39,14 @@
           "abilities": ["MainAbility"],
           "when": "always"
         }
+      },
+      {
+        "name": "ohos.permission.READ_MEDIA",
+        "reason": "$string:app_name",
+        "usedScene": {
+          "abilities": ["MainAbility"],
+          "when": "always"
+        }
       }
     ],
     "abilities": [

@@ -255,20 +255,18 @@ export class ApiService {
       console.log('📁 [ApiService] 文件名:', uploadData.fileName);
       console.log('📁 [ApiService] 图片数据长度:', uploadData.avatarData.length);
       
-      const response = await ApiService.request<AvatarUploadResponse>(`${API_BASE_URL}/user/upload-avatar`, {
+      const response = await ApiService.request<string>(`${API_BASE_URL}/user/${userUID}/avatar/base64`, {
         method: http.RequestMethod.POST,
         body: JSON.stringify({
-          userUID: userUID,
-          avatarData: uploadData.avatarData,
-          fileName: uploadData.fileName
+          imageData: uploadData.avatarData
         })
       });
 
       if (response.success) {
-        console.log('📁 [ApiService] 头像上传成功，URL:', response.data.avatarUrl);
+        console.log('📁 [ApiService] 头像上传成功，URL:', response.data);
         
         // 处理头像URL - 如果是相对路径，拼接完整URL
-        let avatarUrl = response.data.avatarUrl;
+        let avatarUrl = response.data;
         if (avatarUrl && avatarUrl.startsWith('/')) {
           const baseUrl = Config.getApiBaseUrl().replace('/api', '');
           avatarUrl = baseUrl + avatarUrl;

@@ -8,8 +8,7 @@ import { UserInfo, AvatarUploadRequest } from '../common/types';
 import { Config } from '../common/config';
 import { BottomNavBar } from './BottomNavBar';
 import picker from '@ohos.file.picker';
-import fs from '@ohos.file.fs';
-import util from '@ohos.util';
+import { OSSService } from '../service/ossService';
 
 @Entry
 @Component
@@ -33,7 +32,7 @@ export struct InfoPage {
   @State isGeneratingPreview: boolean = false; // 正在生成预览
   @State isAvatarLoading: boolean = false; // 头像加载状态
   @State showAvatarViewer: boolean = false; // 显示头像查看器
-  @State isUploadingAvatar: boolean = false; // 正在上传头像
+  @State imgDatas: Array<string> = []; // 存储选中的图片URI
 
   // 页面生命周期
   aboutToAppear() {
@@ -71,7 +70,7 @@ export struct InfoPage {
     console.log('🖼️ [infopage] 开始更新头像显示');
     console.log('🖼️ [infopage] 原始头像URL:', avatarUrl);
     
-    if (avatarUrl && avatarUrl !== '' && avatarUrl !== '/avatars/default.png') {
+    if (avatarUrl && avatarUrl !== '/avatars/default.png' && avatarUrl !== '') {
       // 如果有后端头像，使用后端头像
       let processedAvatarUrl = avatarUrl;
       
@@ -85,9 +84,9 @@ export struct InfoPage {
       this.userAvatar = processedAvatarUrl;
       console.log('🖼️ [infopage] 头像更新成功');
     } else {
-      // 不显示默认头像，设置为空字符串
-      this.userAvatar = '';
-      console.log('🖼️ [infopage] 头像为空，不显示默认头像');
+      // 使用默认头像
+      this.userAvatar = $r("app.media.image");
+      console.log('🖼️ [infopage] 使用默认头像');
     }
   }
 
@@ -303,80 +302,60 @@ export struct InfoPage {
     this.showGenderDialog = false;
   }
 
-  // 选择并上传本地图片
-  async selectAndUploadImage() {
-    try {
-      console.log('📁 [infopage] 开始选择本地图片...');
+  // 获取相册图片 - 简化的图片选择方法
+  getAllImg() {
+    let photoPicker = new picker.PhotoViewPicker();
+    let options = new picker.PhotoSelectOptions();
+    options.MIMEType = picker.PhotoViewMIMETypes.IMAGE_TYPE;
+    options.maxSelectNumber = 1; // 只选择一张图片作为头像
+
+    photoPicker.select(options).then((result) => {
+      this.imgDatas = result.photoUris;
+      console.info('选中的图片 URI: ' + JSON.stringify(result.photoUris));
       
-      this.isUploadingAvatar = true;
-      promptAction.showToast({ message: '正在选择图片...' });
-
-      // 创建图片选择器
-      const photoPicker = new picker.PhotoViewPicker();
-      const photoSelectOptions: picker.PhotoSelectOptions = {
-        MIMEType: picker.PhotoViewMIMETypes.IMAGE_TYPE,
-        maxSelectNumber: 1
-      };
-
-      // 选择图片
-      const photoView = await photoPicker.select(photoSelectOptions);
-      const uris = photoView.photoUris;
-
-      if (uris && uris.length > 0) {
-        const uri = uris[0];
-        console.log('📁 [infopage] 选择的图片URI:', uri);
-        
-        // 读取图片文件
-        const fileData: ArrayBuffer = await fs.readFile(uri);
-        console.log('📁 [infopage] 图片文件大小:', fileData.byteLength);
-        
-        // 转换为base64
-        const base64Data: string = this.arrayBufferToBase64(fileData);
-        console.log('📁 [infopage] 图片base64长度:', base64Data.length);
-        
-        // 上传到后端
-        promptAction.showToast({ message: '正在上传图片...' });
-        
-        const uploadData: AvatarUploadRequest = {
-          avatarData: base64Data,
-          fileName: `avatar_${Date.now()}.jpg`
-        };
-        const uploadResponse = await ApiService.uploadAvatar(this.userUID, uploadData);
-        
-        if (uploadResponse && uploadResponse.avatarUrl) {
-          console.log('📁 [infopage] 图片上传成功，URL:', uploadResponse.avatarUrl);
-          
-          // 更新本地显示
-          await this.updateAvatarDisplay(uploadResponse.avatarUrl);
-          
-          // 刷新用户信息
-          await this.loadUserInfoAsync();
-          
-          promptAction.showToast({ message: '头像上传成功' });
-        } else {
-          promptAction.showToast({ message: '头像上传失败' });
-        }
-      } else {
-        console.log('📁 [infopage] 未选择图片');
-        promptAction.showToast({ message: '未选择图片' });
+      if (result.photoUris && result.photoUris.length > 0) {
+        // 上传选中的图片
+        this.uploadSelectedImage(result.photoUris[0]);
       }
-    } catch (error) {
-      console.error('📁 [infopage] 选择或上传图片失败:', error);
-      promptAction.showToast({ message: '图片上传失败，请重试' });
-    } finally {
-      this.isUploadingAvatar = false;
-    }
+    }).catch((err : Error) => {
+      console.error('📸 [infopage] 选择图片失败:', err.message);
+      promptAction.showToast({ message: '选择图片失败，请重试' });
+    });
   }
 
-  // ArrayBuffer转Base64
-  arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
+  // 上传选中的图片
+  private async uploadSelectedImage(imageUri: string) {
+    try {
+      this.isAvatarLoading = true;
+      promptAction.showToast({ message: '正在上传头像...' });
+
+      console.log('☁️ [infopage] 开始上传到OSS...');
+      const ossService = OSSService.getInstance();
+      const ossUrl = await ossService.uploadImageViaBackend(imageUri, this.userUID);
+      
+      if (ossUrl) {
+        console.log('☁️ [infopage] 后端原始返回URL:', ossUrl);
+        console.log('☁️ [infopage] OSS上传成功');
+        console.log('☁️ [infopage] OSS URL:', ossUrl);
+        // 直接赋值头像
+        this.userAvatar = ossUrl;
+        // 可选：同步到后端用户信息
+        await ApiService.updateUserInfo(this.userUID, { userAvatar: ossUrl });
+        promptAction.showToast({ message: '头像上传成功' });
+      } else {
+        console.error('☁️ [infopage] OSS上传失败，返回URL为空');
+        promptAction.showToast({ message: '头像上传失败' });
+      }
+    } catch (error) {
+      console.error('☁️ [infopage] 上传图片到OSS失败:', error);
+      if (error instanceof Error) {
+        promptAction.showToast({ message: error.message });
+      } else {
+        promptAction.showToast({ message: '头像上传失败，请重试' });
+      }
+    } finally {
+      this.isAvatarLoading = false;
     }
-    // 使用ArkTS内置的base64编码
-    return util.TextEncoder.create('utf-8').encode(binary).toString('base64');
   }
 
   build() {
@@ -438,61 +417,29 @@ export struct InfoPage {
               // 头像显示区域 - 像预览器一样显示
               Stack() {
                 // 头像图片 - 大尺寸显示
-                if (this.userAvatar && this.userAvatar !== '') {
-                  Image(this.userAvatar)
-                    .width(200)
-                    .height(200)
-                    .borderRadius(100)
-                    .border({ width: 4, color: 'rgba(255,255,255,0.3)' })
-                    .scale({ x: this.avatarScale, y: this.avatarScale })
-                    .animation({
-                      duration: 120,
-                      curve: Curve.EaseInOut
-                    })
-                    .objectFit(ImageFit.Cover)
-                    .onClick(() => {
-                      this.avatarScale = 0.95;
-                      setTimeout(() => {
-                        this.avatarScale = 1.0;
-                        this.showAvatarViewerDialog();
-                      }, 120);
-                    })
-                } else {
-                  // 头像为空时显示占位符
-                  Column() {
-                    Text('👤')
-                      .fontSize(80)
-                      .fontColor('rgba(255,255,255,0.5)')
-                  }
+                Image(this.userAvatar)
                   .width(200)
                   .height(200)
                   .borderRadius(100)
-                  .backgroundColor('rgba(255,255,255,0.1)')
                   .border({ width: 4, color: 'rgba(255,255,255,0.3)' })
-                  .justifyContent(FlexAlign.Center)
-                  .alignItems(HorizontalAlign.Center)
                   .scale({ x: this.avatarScale, y: this.avatarScale })
                   .animation({
                     duration: 120,
                     curve: Curve.EaseInOut
                   })
+                  .objectFit(ImageFit.Cover)
                   .onClick(() => {
                     this.avatarScale = 0.95;
                     setTimeout(() => {
                       this.avatarScale = 1.0;
-                      this.generatePreviewAvatar();
+                      this.showAvatarViewerDialog();
                     }, 120);
                   })
-                }
 
                 // 加载状态遮罩
-                if (this.isAvatarLoading || this.isUploadingAvatar) {
+                if (this.isAvatarLoading) {
                   Column() {
                     LoadingProgress().width(40).height(40)
-                    Text(this.isUploadingAvatar ? '上传中...' : '处理中...')
-                      .fontSize(14)
-                      .fontColor('#fff')
-                      .margin({ top: 8 })
                   }
                   .width(200)
                   .height(200)
@@ -528,7 +475,7 @@ export struct InfoPage {
               // 头像操作按钮
               Row() {
                 Button('查看大图')
-                  .width(80)
+                  .width(100)
                   .height(40)
                   .backgroundColor('rgba(255,255,255,0.1)')
                   .fontColor('#fff')
@@ -536,16 +483,16 @@ export struct InfoPage {
                   .onClick(() => this.showAvatarViewerDialog())
 
                 Button('上传图片')
-                  .width(80)
+                  .width(100)
                   .height(40)
                   .backgroundColor('rgba(255,255,255,0.15)')
                   .fontColor('#fff')
                   .borderRadius(20)
                   .margin({ left: 10 })
-                  .onClick(() => this.selectAndUploadImage())
+                  .onClick(() => this.getAllImg())
 
                 Button('生成新头像')
-                  .width(80)
+                  .width(100)
                   .height(40)
                   .backgroundColor('rgba(255,255,255,0.2)')
                   .fontColor('#fff')
@@ -718,30 +665,13 @@ export struct InfoPage {
             .margin({ bottom: 20 })
 
             // 大尺寸头像显示
-            if (this.userAvatar && this.userAvatar !== '') {
-              Image(this.userAvatar)
-                .width(300)
-                .height(300)
-                .borderRadius(150)
-                .border({ width: 6, color: 'rgba(255,255,255,0.3)' })
-                .objectFit(ImageFit.Cover)
-                .margin({ bottom: 20 })
-            } else {
-              // 头像为空时显示占位符
-              Column() {
-                Text('👤')
-                  .fontSize(120)
-                  .fontColor('rgba(255,255,255,0.5)')
-              }
+            Image(this.userAvatar)
               .width(300)
               .height(300)
               .borderRadius(150)
-              .backgroundColor('rgba(255,255,255,0.1)')
               .border({ width: 6, color: 'rgba(255,255,255,0.3)' })
-              .justifyContent(FlexAlign.Center)
-              .alignItems(HorizontalAlign.Center)
+              .objectFit(ImageFit.Cover)
               .margin({ bottom: 20 })
-            }
 
             // 操作按钮
             Row() {
