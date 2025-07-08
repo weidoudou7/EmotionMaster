@@ -2,8 +2,10 @@
 // 导入页面路由模块
 import { BusinessError } from '@kit.BasicServicesKit';
 import promptAction from '@ohos.promptAction';
+import picker from '@ohos.file.picker';
 import { globalUserData } from '../models/userdata';
 import { ApiService } from '../service/apiservice';
+import { OSSService } from '../service/ossService';
 import { UserInfo } from '../common/types';
 import { Config } from '../common/config';
 import { BottomNavBar } from './BottomNavBar';
@@ -11,7 +13,7 @@ import { BottomNavBar } from './BottomNavBar';
 @Entry
 @Component
 export struct InfoPage {
-  @State userAvatar: Resource | string = $r("app.media.image"); // 用户头像
+  @State userAvatar: string = ''; // 用户头像 - 改为简单字符串类型
   @State userName: string = globalUserData.userName; // 用户名称
   @State userUID: string = globalUserData.userUID; // 用户UID
   @State isPrivacyVisible: boolean = globalUserData.isPrivacyVisible; // 用户隐私是否可见
@@ -30,6 +32,7 @@ export struct InfoPage {
   @State isGeneratingPreview: boolean = false; // 正在生成预览
   @State isAvatarLoading: boolean = false; // 头像加载状态
   @State showAvatarViewer: boolean = false; // 显示头像查看器
+  @State imgDatas: string[] = []; // 选择的图片数据
 
   // 页面生命周期
   aboutToAppear() {
@@ -64,35 +67,27 @@ export struct InfoPage {
 
   // 更新头像显示
   async updateAvatarDisplay(avatarUrl: string | undefined) {
-    console.log('🖼️ [infopage] 开始更新头像显示');
-    console.log('🖼️ [infopage] 原始头像URL:', avatarUrl);
-    
-    if (avatarUrl && avatarUrl !== '/avatars/default.png' && avatarUrl !== '') {
-      // 如果有后端头像，使用后端头像
-      let processedAvatarUrl = avatarUrl;
-      
-      // 处理头像URL - 如果是相对路径，拼接完整URL
-      if (avatarUrl.startsWith('/')) {
-        const baseUrl = Config.getApiBaseUrl().replace('/api', '');
-        processedAvatarUrl = baseUrl + avatarUrl;
-        console.log('🖼️ [infopage] 处理后的头像URL:', processedAvatarUrl);
-      }
-      
-      this.userAvatar = processedAvatarUrl;
-      console.log('🖼️ [infopage] 头像更新成功');
+    // 只用OSS返回的URL，不做任何拼接
+    if (avatarUrl && avatarUrl !== '') {
+      // 强制UI刷新：先清空再设置
+      this.userAvatar = '';
+      await this.sleep(100); // 短暂延迟
+      this.userAvatar = avatarUrl;
+      console.log('🖼️ [infopage] 头像更新成功:', avatarUrl);
     } else {
-      // 使用默认头像
-      this.userAvatar = $r("app.media.image");
-      console.log('🖼️ [infopage] 使用默认头像');
+      this.userAvatar = '';
+      console.log('🖼️ [infopage] 头像为空');
     }
+  }
+
+  // 简单的延迟函数
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   // 获取头像URL（用于显示）
   getAvatarUrl(): string {
-    if (typeof this.userAvatar === 'string') {
-      return this.userAvatar;
-    }
-    return '';
+    return this.userAvatar || '';
   }
 
   // 显示头像查看器
@@ -103,6 +98,58 @@ export struct InfoPage {
   // 关闭头像查看器
   closeAvatarViewer() {
     this.showAvatarViewer = false;
+  }
+
+  // 获取相册图片 - 简化的图片选择方法
+  getAllImg() {
+    let photoPicker = new picker.PhotoViewPicker();
+    let options = new picker.PhotoSelectOptions();
+    options.MIMEType = picker.PhotoViewMIMETypes.IMAGE_TYPE;
+    options.maxSelectNumber = 1; // 只选择一张图片作为头像
+
+    photoPicker.select(options).then((result) => {
+      this.imgDatas = result.photoUris;
+      console.info('选中的图片 URI: ' + JSON.stringify(result.photoUris));
+      
+      if (result.photoUris && result.photoUris.length > 0) {
+        // 上传选中的图片
+        this.uploadSelectedImage(result.photoUris[0]);
+      }
+    }).catch((err: BusinessError) => {
+      console.error('📸 [infopage] 选择图片失败:', err.message);
+      promptAction.showToast({ message: '选择图片失败，请重试' });
+    });
+  }
+
+  // 上传选中的图片
+  private async uploadSelectedImage(imageUri: string) {
+    try {
+      this.isAvatarLoading = true;
+      promptAction.showToast({ message: '正在上传头像...' });
+
+      console.log('☁️ [infopage] 开始上传到OSS...');
+      const ossService = OSSService.getInstance();
+      const ossUrl = await ossService.uploadImageViaBackend(imageUri, this.userUID);
+      
+      if (ossUrl) {
+        console.log('☁️ [infopage] 后端原始返回URL:', ossUrl);
+        console.log('☁️ [infopage] OSS上传成功');
+        console.log('☁️ [infopage] OSS URL:', ossUrl);
+        // 直接赋值头像
+        this.userAvatar = ossUrl;
+        // 可选：同步到后端用户信息
+        await ApiService.updateUserInfo(this.userUID, { userAvatar: ossUrl });
+        promptAction.showToast({ message: '头像上传成功' });
+      } else {
+        console.error('☁️ [infopage] OSS上传失败，返回URL为空');
+        promptAction.showToast({ message: '头像上传失败' });
+      }
+    } catch (error) {
+      console.error('☁️ [infopage] 上传图片到OSS失败:', error);
+      promptAction.showToast({ message: '头像上传失败，请重试' });
+    } finally {
+      this.isAvatarLoading = false;
+    }
   }
 
   // 生成预览头像
@@ -357,56 +404,24 @@ export struct InfoPage {
             Column() {
               // 头像显示区域 - 像预览器一样显示
               Stack() {
-                // 头像图片 - 大尺寸显示
-                Image(this.userAvatar)
-                  .width(200)
-                  .height(200)
-                  .borderRadius(100)
-                  .border({ width: 4, color: 'rgba(255,255,255,0.3)' })
-                  .scale({ x: this.avatarScale, y: this.avatarScale })
-                  .animation({
-                    duration: 120,
-                    curve: Curve.EaseInOut
-                  })
-                  .objectFit(ImageFit.Cover)
-                  .onClick(() => {
-                    this.avatarScale = 0.95;
-                    setTimeout(() => {
-                      this.avatarScale = 1.0;
-                      this.showAvatarViewerDialog();
-                    }, 120);
-                  })
-
-                // 加载状态遮罩
-                if (this.isAvatarLoading) {
+                if (this.userAvatar && this.userAvatar !== '') {
+                  Image(this.userAvatar)
+                    .width(200)
+                    .height(200)
+                    .objectFit(ImageFit.Cover)
+                } else {
+                  // 空白头像占位符
                   Column() {
-                    LoadingProgress().width(40).height(40)
+                    Text('无头像')
+                      .fontSize(16)
+                      .fontColor('rgba(255,255,255,0.5)')
                   }
                   .width(200)
                   .height(200)
                   .borderRadius(100)
-                  .backgroundColor('rgba(0,0,0,0.5)')
+                  .border({ width: 4, color: 'rgba(255,255,255,0.3)', style: BorderStyle.Dashed })
+                  .backgroundColor('rgba(255,255,255,0.05)')
                   .justifyContent(FlexAlign.Center)
-                }
-
-                // 刷新按钮 - 悬浮在头像上
-                if (!this.isGeneratingPreview && !this.isAvatarLoading) {
-                  Button() {
-                    Image($r('app.media.return'))
-                      .width(24)
-                      .height(24)
-                      .fillColor('#fff')
-                  }
-                  .width(48)
-                  .height(48)
-                  .backgroundColor('rgba(0,0,0,0.7)')
-                  .borderRadius(24)
-                  .border({ width: 2, color: '#fff' })
-                  .position({ x: '85%', y: '85%' })
-                  .translate({ x: -24, y: -24 })
-                  .onClick(() => {
-                    this.generatePreviewAvatar();
-                  })
                 }
               }
               .width(200)
@@ -416,20 +431,32 @@ export struct InfoPage {
               // 头像操作按钮
               Row() {
                 Button('查看大图')
-                  .width(100)
+                  .width(80)
                   .height(40)
                   .backgroundColor('rgba(255,255,255,0.1)')
                   .fontColor('#fff')
                   .borderRadius(20)
+                  .fontSize(12)
                   .onClick(() => this.showAvatarViewerDialog())
 
+                Button('上传头像')
+                  .width(80)
+                  .height(40)
+                  .backgroundColor('rgba(255,255,255,0.15)')
+                  .fontColor('#fff')
+                  .borderRadius(20)
+                  .margin({ left: 10 })
+                  .fontSize(12)
+                  .onClick(() => this.getAllImg())
+
                 Button('生成新头像')
-                  .width(100)
+                  .width(80)
                   .height(40)
                   .backgroundColor('rgba(255,255,255,0.2)')
                   .fontColor('#fff')
                   .borderRadius(20)
-                  .margin({ left: 20 })
+                  .margin({ left: 10 })
+                  .fontSize(12)
                   .onClick(() => this.generatePreviewAvatar())
               }
               .justifyContent(FlexAlign.Center)
@@ -576,350 +603,33 @@ export struct InfoPage {
           .width('100%')
           .height('100%')
 
-          // 头像查看器内容
-          Column() {
-            // 关闭按钮
-            Row() {
-              Button() {
-                Image($r('app.media.return'))
-                  .width(24)
-                  .height(24)
-                  .fillColor('#fff')
-              }
-              .width(40)
-              .height(40)
-              .backgroundColor('rgba(0,0,0,0.5)')
-              .borderRadius(20)
-              .onClick(() => this.closeAvatarViewer())
-            }
-            .width('100%')
-            .justifyContent(FlexAlign.End)
-            .margin({ bottom: 20 })
-
-            // 大尺寸头像显示
+          // 头像图片
+          if (this.userAvatar && this.userAvatar !== '') {
             Image(this.userAvatar)
-              .width(300)
-              .height(300)
-              .borderRadius(150)
-              .border({ width: 6, color: 'rgba(255,255,255,0.3)' })
-              .objectFit(ImageFit.Cover)
-              .margin({ bottom: 20 })
-
-            // 操作按钮
-            Row() {
-              Button('生成新头像')
-                .width(120)
-                .height(44)
-                .backgroundColor('rgba(255,255,255,0.2)')
-                .fontColor('#fff')
-                .borderRadius(22)
-                .onClick(() => {
-                  this.closeAvatarViewer();
-                  setTimeout(() => {
-                    this.generatePreviewAvatar();
-                  }, 300);
-                })
-            }
-            .justifyContent(FlexAlign.Center)
+              .width('80%')
+              .height('80%')
+              .objectFit(ImageFit.Contain)
+              .borderRadius(20)
           }
-          .width('90%')
-          .padding(24)
+
+          // 关闭按钮
+          Button() {
+            Text('×')
+              .fontSize(32)
+              .fontColor('#fff')
+          }
+          .width(50)
+          .height(50)
+          .backgroundColor('rgba(255,255,255,0.2)')
+          .borderRadius(25)
+          .position({ x: '85%', y: '10%' })
+          .onClick(() => this.closeAvatarViewer())
         }
         .width('100%')
         .height('100%')
-        .position({ x: 0, y: 0 })
-        .zIndex(999)
       }
 
-      // 个性签名编辑弹窗
-      if (this.showSignatureDialog) {
-        Stack({ alignContent: Alignment.Center }) {
-          // 半透明背景
-          Column() {
-            Blank()
-              .width('100%')
-              .height('100%')
-              .backgroundColor('#000000')
-              .opacity(0.6)
-              .onClick(() => this.cancelEditSignature())
-          }
-          .width('100%')
-          .height('100%')
-
-          // 弹窗内容
-          Column() {
-            // 标题
-            Text('编辑个性签名')
-              .fontSize(20)
-              .fontWeight(FontWeight.Bold)
-              .fontColor('#fff')
-              .margin({ bottom: 20 })
-
-            // 输入框
-            TextInput({
-              text: this.tempSignature,
-              placeholder: '请输入个性签名...'
-            })
-              .width('100%')
-              .height(120)
-              .backgroundColor('rgba(255,255,255,0.1)')
-              .borderRadius(12)
-              .padding(16)
-              .fontSize(16)
-              .fontColor('#fff')
-              .placeholderColor('rgba(255,255,255,0.5)')
-              .textAlign(TextAlign.Start)
-              .onChange((value: string) => {
-                this.tempSignature = value;
-              })
-              .onSubmit((enterKey: EnterKeyType, event: SubmitEvent) => {
-                this.confirmEditSignature();
-              })
-
-            // 按钮区域
-            Row() {
-              Button('取消')
-                .width(100)
-                .height(44)
-                .backgroundColor('rgba(255,255,255,0.1)')
-                .fontColor('#fff')
-                .borderRadius(22)
-                .onClick(() => this.cancelEditSignature())
-
-              Button('确定')
-                .width(100)
-                .height(44)
-                .backgroundColor('rgba(255,255,255,0.2)')
-                .fontColor('#fff')
-                .borderRadius(22)
-                .margin({ left: 20 })
-                .onClick(() => this.confirmEditSignature())
-            }
-            .margin({ top: 20 })
-            .justifyContent(FlexAlign.Center)
-          }
-          .width('85%')
-          .padding(24)
-          .backgroundColor('rgba(0,0,0,0.8)')
-          .borderRadius(20)
-          .backdropBlur(20)
-        }
-        .width('100%')
-        .height('100%')
-        .position({ x: 0, y: 0 })
-        .zIndex(999)
-      }
-
-      // 名称编辑弹窗
-      if (this.showNameDialog) {
-        Stack({ alignContent: Alignment.Center }) {
-          // 半透明背景
-          Column() {
-            Blank()
-              .width('100%')
-              .height('100%')
-              .backgroundColor('#000000')
-              .opacity(0.6)
-              .onClick(() => this.cancelEditName())
-          }
-          .width('100%')
-          .height('100%')
-
-          // 弹窗内容
-          Column() {
-            // 标题
-            Text('编辑用户名称')
-              .fontSize(20)
-              .fontWeight(FontWeight.Bold)
-              .fontColor('#fff')
-              .margin({ bottom: 20 })
-
-            // 输入框
-            TextInput({
-              text: this.tempName,
-              placeholder: '请输入用户名称...'
-            })
-              .width('100%')
-              .height(50)
-              .backgroundColor('rgba(255,255,255,0.1)')
-              .borderRadius(12)
-              .padding(16)
-              .fontSize(16)
-              .fontColor('#fff')
-              .placeholderColor('rgba(255,255,255,0.5)')
-              .textAlign(TextAlign.Start)
-              .onChange((value: string) => {
-                this.tempName = value;
-              })
-              .onSubmit((enterKey: EnterKeyType, event: SubmitEvent) => {
-                this.confirmEditName();
-              })
-
-            // 按钮区域
-            Row() {
-              Button('取消')
-                .width(100)
-                .height(44)
-                .backgroundColor('rgba(255,255,255,0.1)')
-                .fontColor('#fff')
-                .borderRadius(22)
-                .onClick(() => this.cancelEditName())
-
-              Button('确定')
-                .width(100)
-                .height(44)
-                .backgroundColor('rgba(255,255,255,0.2)')
-                .fontColor('#fff')
-                .borderRadius(22)
-                .margin({ left: 20 })
-                .onClick(() => this.confirmEditName())
-            }
-            .margin({ top: 20 })
-            .justifyContent(FlexAlign.Center)
-          }
-          .width('85%')
-          .padding(24)
-          .backgroundColor('rgba(0,0,0,0.8)')
-          .borderRadius(20)
-          .backdropBlur(20)
-        }
-        .width('100%')
-        .height('100%')
-        .position({ x: 0, y: 0 })
-        .zIndex(999)
-      }
-
-      // 性别选择弹窗
-      if (this.showGenderDialog) {
-        Stack({ alignContent: Alignment.Center }) {
-          // 半透明背景
-          Column() {
-            Blank()
-              .width('100%')
-              .height('100%')
-              .backgroundColor('#000000')
-              .opacity(0.6)
-              .onClick(() => this.cancelEditGender())
-          }
-          .width('100%')
-          .height('100%')
-
-          // 弹窗内容
-          Column() {
-            // 标题
-            Text('选择性别')
-              .fontSize(20)
-              .fontWeight(FontWeight.Bold)
-              .fontColor('#fff')
-              .margin({ bottom: 20 })
-
-            // 性别选项
-            Column({ space: 12 }) {
-              // 男
-              Row() {
-                Text('男')
-                  .fontSize(16)
-                  .fontColor(this.tempGender === '男' ? '#fff' : 'rgba(255,255,255,0.7)')
-                  .fontWeight(this.tempGender === '男' ? FontWeight.Bold : FontWeight.Normal)
-
-                if (this.tempGender === '男') {
-                  Image($r('app.media.selectNext'))
-                    .width(20)
-                    .height(20)
-                    .fillColor('#fff')
-                    .margin({ left: 'auto' })
-                }
-              }
-              .width('100%')
-              .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-              .backgroundColor(this.tempGender === '男' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)')
-              .borderRadius(12)
-              .onClick(() => {
-                this.tempGender = '男';
-              })
-
-              // 女
-              Row() {
-                Text('女')
-                  .fontSize(16)
-                  .fontColor(this.tempGender === '女' ? '#fff' : 'rgba(255,255,255,0.7)')
-                  .fontWeight(this.tempGender === '女' ? FontWeight.Bold : FontWeight.Normal)
-
-                if (this.tempGender === '女') {
-                  Image($r('app.media.selectNext'))
-                    .width(20)
-                    .height(20)
-                    .fillColor('#fff')
-                    .margin({ left: 'auto' })
-                }
-              }
-              .width('100%')
-              .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-              .backgroundColor(this.tempGender === '女' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)')
-              .borderRadius(12)
-              .onClick(() => {
-                this.tempGender = '女';
-              })
-
-              // 其他
-              Row() {
-                Text('其他')
-                  .fontSize(16)
-                  .fontColor(this.tempGender === '其他' ? '#fff' : 'rgba(255,255,255,0.7)')
-                  .fontWeight(this.tempGender === '其他' ? FontWeight.Bold : FontWeight.Normal)
-
-                if (this.tempGender === '其他') {
-                  Image($r('app.media.selectNext'))
-                    .width(20)
-                    .height(20)
-                    .fillColor('#fff')
-                    .margin({ left: 'auto' })
-                }
-              }
-              .width('100%')
-              .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-              .backgroundColor(this.tempGender === '其他' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)')
-              .borderRadius(12)
-              .onClick(() => {
-                this.tempGender = '其他';
-              })
-            }
-            .margin({ bottom: 20 })
-
-            // 按钮区域
-            Row() {
-              Button('取消')
-                .width(100)
-                .height(44)
-                .backgroundColor('rgba(255,255,255,0.1)')
-                .fontColor('#fff')
-                .borderRadius(22)
-                .onClick(() => this.cancelEditGender())
-
-              Button('确定')
-                .width(100)
-                .height(44)
-                .backgroundColor('rgba(255,255,255,0.2)')
-                .fontColor('#fff')
-                .borderRadius(22)
-                .margin({ left: 20 })
-                .onClick(() => this.confirmEditGender())
-            }
-            .justifyContent(FlexAlign.Center)
-          }
-          .width('85%')
-          .backgroundColor('rgba(0,0,0,0.8)')
-          .borderRadius(20)
-          .padding(24)
-          .backdropBlur(20)
-        }
-        .width('100%')
-        .height('100%')
-        .position({ x: 0, y: 0 })
-        .zIndex(999)
-      }
-
-      // 头像预览弹窗 - 重写的预览对话框
+      // 预览对话框
       if (this.showPreviewDialog) {
         Stack({ alignContent: Alignment.Center }) {
           // 半透明背景
@@ -928,86 +638,268 @@ export struct InfoPage {
               .width('100%')
               .height('100%')
               .backgroundColor('#000000')
-              .opacity(0.6)
+              .opacity(0.8)
               .onClick(() => this.cancelPreviewAvatar())
           }
           .width('100%')
           .height('100%')
 
-          // 弹窗内容
+          // 预览内容
           Column() {
-            // 标题
-            Text('预览新头像')
+            Text('预览头像')
               .fontSize(20)
               .fontWeight(FontWeight.Bold)
               .fontColor('#fff')
               .margin({ bottom: 20 })
 
-            // 预览头像显示区域
-            Stack() {
-              if (this.previewImage) {
-                Image(this.previewImage)
-                  .width(200)
-                  .height(200)
-                  .borderRadius(100)
-                  .border({ width: 4, color: 'rgba(255,255,255,0.3)' })
-                  .objectFit(ImageFit.Cover)
-              } else {
-                Column() {
-                  LoadingProgress().width(50).height(50)
-                  Text('正在生成预览...').fontSize(16).fontColor('#fff').margin({ top: 10 })
-                }
+            if (this.previewImage) {
+              Image(this.previewImage)
                 .width(200)
                 .height(200)
-                .justifyContent(FlexAlign.Center)
-              }
+                .objectFit(ImageFit.Cover)
+                .borderRadius(20)
+                .margin({ bottom: 20 })
             }
-            .margin({ bottom: 20 })
 
-            // 提示文字
-            Text('这是您的新头像预览，确认后将保存到您的账户')
-              .fontSize(14)
-              .fontColor('rgba(255,255,255,0.7)')
-              .textAlign(TextAlign.Center)
-              .margin({ bottom: 20 })
-
-            // 按钮区域
             Row() {
-              Button('重新生成')
-                .width(100)
-                .height(44)
-                .backgroundColor('rgba(255,255,255,0.1)')
-                .fontColor('#fff')
-                .borderRadius(22)
-                .onClick(() => {
-                  this.showPreviewDialog = false;
-                  setTimeout(() => {
-                    this.generatePreviewAvatar();
-                  }, 300);
-                })
-
-              Button('确认使用')
-                .width(100)
-                .height(44)
+              Button('取消')
+                .width(80)
+                .height(40)
                 .backgroundColor('rgba(255,255,255,0.2)')
                 .fontColor('#fff')
-                .borderRadius(22)
+                .borderRadius(20)
+                .onClick(() => this.cancelPreviewAvatar())
+
+              Button('确认')
+                .width(80)
+                .height(40)
+                .backgroundColor('#4CAF50')
+                .fontColor('#fff')
+                .borderRadius(20)
                 .margin({ left: 20 })
                 .onClick(() => this.confirmPreviewAvatar())
             }
-            .justifyContent(FlexAlign.Center)
           }
-          .width('85%')
-          .backgroundColor('rgba(0,0,0,0.8)')
+          .width('90%')
+          .padding(30)
+          .backgroundColor('rgba(255,255,255,0.1)')
           .borderRadius(20)
-          .padding(24)
           .backdropBlur(20)
         }
         .width('100%')
         .height('100%')
-        .position({ x: 0, y: 0 })
-        .zIndex(999)
+      }
+
+      // 名称编辑对话框
+      if (this.showNameDialog) {
+        Stack({ alignContent: Alignment.Center }) {
+          Column() {
+            Blank()
+              .width('100%')
+              .height('100%')
+              .backgroundColor('#000000')
+              .opacity(0.8)
+              .onClick(() => this.cancelEditName())
+          }
+          .width('100%')
+          .height('100%')
+
+          Column() {
+            Text('编辑用户名称')
+              .fontSize(20)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#fff')
+              .margin({ bottom: 20 })
+
+            TextInput({ text: this.tempName, placeholder: '请输入用户名称' })
+              .width('100%')
+              .height(50)
+              .backgroundColor('rgba(255,255,255,0.1)')
+              .borderRadius(10)
+              .fontColor('#fff')
+              .placeholderColor('rgba(255,255,255,0.5)')
+              .placeholderFont({ size: 16 })
+              .onChange((value: string) => {
+                this.tempName = value;
+              })
+              .margin({ bottom: 20 })
+
+            Row() {
+              Button('取消')
+                .width(80)
+                .height(40)
+                .backgroundColor('rgba(255,255,255,0.2)')
+                .fontColor('#fff')
+                .borderRadius(20)
+                .onClick(() => this.cancelEditName())
+
+              Button('确认')
+                .width(80)
+                .height(40)
+                .backgroundColor('#4CAF50')
+                .fontColor('#fff')
+                .borderRadius(20)
+                .margin({ left: 20 })
+                .onClick(() => this.confirmEditName())
+            }
+          }
+          .width('90%')
+          .padding(30)
+          .backgroundColor('rgba(255,255,255,0.1)')
+          .borderRadius(20)
+          .backdropBlur(20)
+        }
+        .width('100%')
+        .height('100%')
+      }
+
+      // 签名编辑对话框
+      if (this.showSignatureDialog) {
+        Stack({ alignContent: Alignment.Center }) {
+          Column() {
+            Blank()
+              .width('100%')
+              .height('100%')
+              .backgroundColor('#000000')
+              .opacity(0.8)
+              .onClick(() => this.cancelEditSignature())
+          }
+          .width('100%')
+          .height('100%')
+
+          Column() {
+            Text('编辑个性签名')
+              .fontSize(20)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#fff')
+              .margin({ bottom: 20 })
+
+            TextArea({ text: this.tempSignature, placeholder: '请输入个性签名' })
+              .width('100%')
+              .height(100)
+              .backgroundColor('rgba(255,255,255,0.1)')
+              .borderRadius(10)
+              .fontColor('#fff')
+              .placeholderColor('rgba(255,255,255,0.5)')
+              .placeholderFont({ size: 16 })
+              .onChange((value: string) => {
+                this.tempSignature = value;
+              })
+              .margin({ bottom: 20 })
+
+            Row() {
+              Button('取消')
+                .width(80)
+                .height(40)
+                .backgroundColor('rgba(255,255,255,0.2)')
+                .fontColor('#fff')
+                .borderRadius(20)
+                .onClick(() => this.cancelEditSignature())
+
+              Button('确认')
+                .width(80)
+                .height(40)
+                .backgroundColor('#4CAF50')
+                .fontColor('#fff')
+                .borderRadius(20)
+                .margin({ left: 20 })
+                .onClick(() => this.confirmEditSignature())
+            }
+          }
+          .width('90%')
+          .padding(30)
+          .backgroundColor('rgba(255,255,255,0.1)')
+          .borderRadius(20)
+          .backdropBlur(20)
+        }
+        .width('100%')
+        .height('100%')
+      }
+
+      // 性别选择对话框
+      if (this.showGenderDialog) {
+        Stack({ alignContent: Alignment.Center }) {
+          Column() {
+            Blank()
+              .width('100%')
+              .height('100%')
+              .backgroundColor('#000000')
+              .opacity(0.8)
+              .onClick(() => this.cancelEditGender())
+          }
+          .width('100%')
+          .height('100%')
+
+          Column() {
+            Text('选择性别')
+              .fontSize(20)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#fff')
+              .margin({ bottom: 20 })
+
+            Column({ space: 10 }) {
+              Button('男')
+                .width('100%')
+                .height(50)
+                .backgroundColor(this.tempGender === '男' ? '#4CAF50' : 'rgba(255,255,255,0.1)')
+                .fontColor('#fff')
+                .borderRadius(10)
+                .onClick(() => {
+                  this.tempGender = '男';
+                })
+
+              Button('女')
+                .width('100%')
+                .height(50)
+                .backgroundColor(this.tempGender === '女' ? '#4CAF50' : 'rgba(255,255,255,0.1)')
+                .fontColor('#fff')
+                .borderRadius(10)
+                .onClick(() => {
+                  this.tempGender = '女';
+                })
+
+              Button('其他')
+                .width('100%')
+                .height(50)
+                .backgroundColor(this.tempGender === '其他' ? '#4CAF50' : 'rgba(255,255,255,0.1)')
+                .fontColor('#fff')
+                .borderRadius(10)
+                .onClick(() => {
+                  this.tempGender = '其他';
+                })
+            }
+            .margin({ bottom: 20 })
+
+            Row() {
+              Button('取消')
+                .width(80)
+                .height(40)
+                .backgroundColor('rgba(255,255,255,0.2)')
+                .fontColor('#fff')
+                .borderRadius(20)
+                .onClick(() => this.cancelEditGender())
+
+              Button('确认')
+                .width(80)
+                .height(40)
+                .backgroundColor('#4CAF50')
+                .fontColor('#fff')
+                .borderRadius(20)
+                .margin({ left: 20 })
+                .onClick(() => this.confirmEditGender())
+            }
+          }
+          .width('90%')
+          .padding(30)
+          .backgroundColor('rgba(255,255,255,0.1)')
+          .borderRadius(20)
+          .backdropBlur(20)
+        }
+        .width('100%')
+        .height('100%')
       }
     }
+    .width('100%')
+    .height('100%')
   }
 } 

@@ -1,7 +1,7 @@
 import { globalUserData } from '../models/userdata';
 import { Config } from '../common/config';
-import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult, CreateAiRoleRequest, GenerateRoleNameRequest, CreateConversationRequest, Conversation, Message, CreateMessageRequest, CommentItem, RoleTypeStatistics, UserRolePreferenceAnalysis, PreviewAvatarResponse } from '../common/types';
-import {  AiRole } from '../common/types';
+import { UserInfo, UpdateUserRequest, ApiResponse, Dynamic, CreateDynamicRequest, UserStats, MusicDetailVO, SearchUserResult, CreateAiRoleRequest, GenerateRoleNameRequest, CreateConversationRequest, Conversation, Message, CreateMessageRequest, CommentItem, RoleTypeStatistics, UserRolePreferenceAnalysis, PreviewAvatarResponse, AvatarUploadRequest, AvatarUploadResponse } from '../common/types';
+import { AiRole } from '../common/types';
 import http from '@ohos.net.http';
 
 
@@ -247,9 +247,55 @@ export class ApiService {
   }
 
   /**
-   * 上传用户头像 (简化版本，使用base64)
+   * 上传用户头像 (支持对象参数)
    */
-  static async uploadAvatar(userUID: string, imageData: string): Promise<string> {
+  static async uploadAvatar(userUID: string, uploadData: AvatarUploadRequest): Promise<AvatarUploadResponse> {
+    try {
+      console.log('📁 [ApiService] 开始上传头像，用户UID:', userUID);
+      console.log('📁 [ApiService] 文件名:', uploadData.fileName);
+      console.log('📁 [ApiService] 图片数据长度:', uploadData.avatarData.length);
+      
+      const response = await ApiService.request<string>(`${API_BASE_URL}/user/${userUID}/avatar/base64`, {
+        method: http.RequestMethod.POST,
+        body: JSON.stringify({
+          imageData: uploadData.avatarData
+        })
+      });
+
+      if (response.success) {
+        console.log('📁 [ApiService] 头像上传成功，URL:', response.data);
+        
+        // 处理头像URL - 如果是相对路径，拼接完整URL
+        let avatarUrl = response.data;
+        if (avatarUrl && avatarUrl.startsWith('/')) {
+          const baseUrl = Config.getApiBaseUrl().replace('/api', '');
+          avatarUrl = baseUrl + avatarUrl;
+          console.log('📁 [ApiService] 拼接后的完整URL:', avatarUrl);
+        }
+        
+        // 同步到前端全局状态
+        globalUserData.updateUserAvatar(avatarUrl);
+        console.log('📁 [ApiService] 全局状态已更新，头像URL:', avatarUrl);
+        
+        const result: AvatarUploadResponse = { avatarUrl: avatarUrl };
+        return result;
+      } else {
+        throw new Error(response.message || 'Failed to upload avatar');
+      }
+    } catch (error) {
+      console.error('📁 [ApiService] 头像上传失败:', error);
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error('未知错误: ' + JSON.stringify(error));
+      }
+    }
+  }
+
+  /**
+   * 上传用户头像 (简化版本，使用base64，保持向后兼容)
+   */
+  static async uploadAvatarSimple(userUID: string, imageData: string): Promise<string> {
     try {
       const response = await ApiService.request<string>(`${API_BASE_URL}/user/${userUID}/avatar/base64`, {
         method: http.RequestMethod.POST,
@@ -272,6 +318,8 @@ export class ApiService {
       }
     }
   }
+
+
 
   /**
    * 生成新的随机头像

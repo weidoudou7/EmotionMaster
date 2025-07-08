@@ -1,7 +1,9 @@
 package com.ai.companion.service.impl;
 
 import com.ai.companion.service.AvatarGeneratorService;
+import com.ai.companion.service.OssService;
 import com.ai.companion.entity.vo.PreviewAvatarResult;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -19,6 +21,9 @@ import java.util.UUID;
 
 @Service
 public class AvatarGeneratorServiceImpl implements AvatarGeneratorService {
+
+    @Autowired
+    private OssService ossService;
 
     private static final String AVATAR_UPLOAD_PATH = "uploads/avatars/";
     private static final int AVATAR_SIZE = 80; // 80x80像素
@@ -128,56 +133,28 @@ public class AvatarGeneratorServiceImpl implements AvatarGeneratorService {
             System.out.println("🎨 [AvatarGenerator] 图片尺寸: " + avatar.getWidth() + "x" + avatar.getHeight());
             System.out.println("🎨 [AvatarGenerator] 图片类型: " + avatar.getType());
             
-            // 2. 确保目录存在
-            System.out.println("🎨 [AvatarGenerator] 步骤2: 检查并创建头像目录");
-            Path uploadPath = Paths.get(AVATAR_UPLOAD_PATH);
-            System.out.println("🎨 [AvatarGenerator] 目标目录: " + uploadPath.toAbsolutePath());
+            // 2. 生成OSS对象名称
+            System.out.println("🎨 [AvatarGenerator] 步骤2: 生成OSS对象名称");
+            String objectName = ((OssServiceImpl) ossService).generateObjectName(userUID, "avatar.png");
+            System.out.println("🎨 [AvatarGenerator] OSS对象名称: " + objectName);
             
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-                System.out.println("✅ [AvatarGenerator] 头像目录创建成功: " + uploadPath.toAbsolutePath());
-            } else {
-                System.out.println("✅ [AvatarGenerator] 头像目录已存在: " + uploadPath.toAbsolutePath());
-            }
-            
-            // 3. 生成文件名
-            System.out.println("🎨 [AvatarGenerator] 步骤3: 生成唯一文件名");
-            String filename = userUID + "_" + UUID.randomUUID().toString() + ".png";
-            Path filePath = uploadPath.resolve(filename);
-            System.out.println("🎨 [AvatarGenerator] 生成文件名: " + filename);
-            System.out.println("🎨 [AvatarGenerator] 完整文件路径: " + filePath.toAbsolutePath());
-            
-            // 4. 保存图片
-            System.out.println("🎨 [AvatarGenerator] 步骤4: 保存头像图片到文件");
-            File outputFile = filePath.toFile();
-            boolean writeSuccess = ImageIO.write(avatar, "PNG", outputFile);
+            // 3. 将BufferedImage转换为字节数组
+            System.out.println("🎨 [AvatarGenerator] 步骤3: 转换图片为字节数组");
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            boolean writeSuccess = ImageIO.write(avatar, "PNG", baos);
             System.out.println("🎨 [AvatarGenerator] ImageIO.write() 返回值: " + writeSuccess);
             
-            // 5. 验证文件是否成功保存
-            System.out.println("🎨 [AvatarGenerator] 步骤5: 验证文件保存结果");
-            if (outputFile.exists()) {
-                long fileSize = outputFile.length();
-                System.out.println("✅ [AvatarGenerator] 头像文件保存成功");
-                System.out.println("✅ [AvatarGenerator] 文件大小: " + fileSize + " 字节");
-                System.out.println("✅ [AvatarGenerator] 文件路径: " + outputFile.getAbsolutePath());
-                
-                if (fileSize > 0) {
-                    System.out.println("✅ [AvatarGenerator] 文件内容验证通过");
-                } else {
-                    System.err.println("❌ [AvatarGenerator] 文件大小为0，可能保存失败");
-                }
-            } else {
-                System.err.println("❌ [AvatarGenerator] 头像文件保存失败，文件不存在");
-                System.err.println("❌ [AvatarGenerator] 期望文件路径: " + outputFile.getAbsolutePath());
-            }
+            byte[] imageBytes = baos.toByteArray();
+            System.out.println("🎨 [AvatarGenerator] 图片字节数: " + imageBytes.length);
             
-            // 6. 返回相对路径
-            String relativePath = "/avatars/" + filename;
-            System.out.println("🎨 [AvatarGenerator] 步骤6: 返回相对路径");
-            System.out.println("🎨 [AvatarGenerator] 返回相对路径: " + relativePath);
+            // 4. 上传到OSS
+            System.out.println("🎨 [AvatarGenerator] 步骤4: 上传头像到OSS");
+            String avatarUrl = ossService.uploadBytes(imageBytes, objectName, "image/png");
+            System.out.println("🎨 [AvatarGenerator] OSS上传成功，URL: " + avatarUrl);
+            
             System.out.println("🎨 ========== AvatarGenerator.generateAndSaveAvatar() 成功完成 ==========");
             
-            return relativePath;
+            return avatarUrl;
             
         } catch (IOException e) {
             System.err.println("❌ [AvatarGenerator] 生成头像过程中发生IO异常");
@@ -344,29 +321,23 @@ public class AvatarGeneratorServiceImpl implements AvatarGeneratorService {
             
             g2d.dispose();
             
-            // 确保目录存在
-            Path uploadPath = Paths.get(AVATAR_UPLOAD_PATH);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
+            // 生成OSS对象名称
+            String objectName = ((OssServiceImpl) ossService).generateObjectName(userUID, "avatar.png");
+            System.out.println("💾 [AvatarGenerator] OSS对象名称: " + objectName);
             
-            // 生成文件名
-            String filename = userUID + "_" + UUID.randomUUID().toString() + ".png";
-            Path filePath = uploadPath.resolve(filename);
+            // 将BufferedImage转换为字节数组
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(image, "PNG", baos);
+            byte[] imageBytes = baos.toByteArray();
+            System.out.println("💾 [AvatarGenerator] 图片字节数: " + imageBytes.length);
             
-            // 保存图片
-            File outputFile = filePath.toFile();
-            ImageIO.write(image, "PNG", outputFile);
+            // 上传到OSS
+            String avatarUrl = ossService.uploadBytes(imageBytes, objectName, "image/png");
+            System.out.println("💾 [AvatarGenerator] OSS上传成功，URL: " + avatarUrl);
             
-            // 返回相对路径
-            String relativePath = "/avatars/" + filename;
-            
-            System.out.println("💾 [AvatarGenerator] 头像确认并保存成功");
-            System.out.println("💾 [AvatarGenerator] 文件路径: " + outputFile.getAbsolutePath());
-            System.out.println("💾 [AvatarGenerator] 返回路径: " + relativePath);
             System.out.println("💾 ========== AvatarGenerator.confirmAndSaveAvatar() 成功完成 ==========");
             
-            return relativePath;
+            return avatarUrl;
             
         } catch (Exception e) {
             System.err.println("❌ [AvatarGenerator] 确认并保存头像过程中发生异常");
@@ -387,51 +358,14 @@ public class AvatarGeneratorServiceImpl implements AvatarGeneratorService {
         System.out.println("🗑️ [AvatarGenerator] 处理时间: " + java.time.LocalDateTime.now());
         
         try {
-            Path uploadPath = Paths.get(AVATAR_UPLOAD_PATH);
-            System.out.println("🗑️ [AvatarGenerator] 头像目录路径: " + uploadPath.toAbsolutePath());
-            
-            if (Files.exists(uploadPath)) {
-                System.out.println("✅ [AvatarGenerator] 头像目录存在，开始查找旧头像文件");
-                
-                // 查找以用户UID开头的旧头像文件
-                java.util.List<Path> oldFiles = Files.list(uploadPath)
-                    .filter(path -> path.getFileName().toString().startsWith(userUID + "_"))
-                    .toList();
-                
-                System.out.println("🗑️ [AvatarGenerator] 找到 " + oldFiles.size() + " 个旧头像文件");
-                
-                if (oldFiles.isEmpty()) {
-                    System.out.println("ℹ️ [AvatarGenerator] 没有找到旧头像文件，无需删除");
-                } else {
-                    for (Path path : oldFiles) {
-                        try {
-                            System.out.println("🗑️ [AvatarGenerator] 正在删除文件: " + path.getFileName());
-                            boolean deleted = Files.deleteIfExists(path);
-                            if (deleted) {
-                                System.out.println("✅ [AvatarGenerator] 成功删除旧头像文件: " + path.getFileName());
-                            } else {
-                                System.out.println("ℹ️ [AvatarGenerator] 文件不存在或已被删除: " + path.getFileName());
-                            }
-                        } catch (IOException e) {
-                            System.err.println("❌ [AvatarGenerator] 删除旧头像文件失败: " + path.getFileName());
-                            System.err.println("❌ [AvatarGenerator] 错误信息: " + e.getMessage());
-                        }
-                    }
-                }
-            } else {
-                System.out.println("ℹ️ [AvatarGenerator] 头像目录不存在，无需删除旧文件");
-            }
+            // 注意：由于现在使用OSS存储，本地文件删除功能保留用于兼容性
+            // 但主要功能已经迁移到OSS，这里不再需要删除本地文件
+            System.out.println("ℹ️ [AvatarGenerator] 当前使用OSS存储，本地文件删除功能已弃用");
+            System.out.println("ℹ️ [AvatarGenerator] 如需删除OSS中的旧头像，请在用户服务中实现");
             
             System.out.println("🗑️ ========== AvatarGenerator.deleteOldAvatar() 完成 ==========");
-        } catch (IOException e) {
-            System.err.println("❌ [AvatarGenerator] 删除旧头像过程中发生IO异常");
-            System.err.println("❌ [AvatarGenerator] 异常类型: " + e.getClass().getSimpleName());
-            System.err.println("❌ [AvatarGenerator] 异常消息: " + e.getMessage());
-            System.err.println("❌ [AvatarGenerator] 异常堆栈:");
-            e.printStackTrace();
-            System.err.println("❌ ========== AvatarGenerator.deleteOldAvatar() 失败 ==========");
         } catch (Exception e) {
-            System.err.println("❌ [AvatarGenerator] 删除旧头像过程中发生未知异常");
+            System.err.println("❌ [AvatarGenerator] 删除旧头像过程中发生异常");
             System.err.println("❌ [AvatarGenerator] 异常类型: " + e.getClass().getSimpleName());
             System.err.println("❌ [AvatarGenerator] 异常消息: " + e.getMessage());
             System.err.println("❌ [AvatarGenerator] 异常堆栈:");

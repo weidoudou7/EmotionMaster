@@ -35,6 +35,12 @@ export interface UpdateUserRequest {
   signature?: string;
 }
 
+// 头像上传请求接口
+export interface AvatarUploadRequest {
+  avatarData: string;
+  fileName: string;
+}
+
 // 动态接口
 export interface Dynamic {
   id: string;
@@ -203,9 +209,9 @@ export interface RoleTypeStatistics {
 
 // 预览头像响应接口
 export interface PreviewAvatarResponse {
-  previewImage: string;
   previewSeed: number;
-  timestamp: number;
+  previewImage: string;
+  timestamp?: number;
 }
 
 // 用户角色偏好分析结果接口
@@ -215,4 +221,23 @@ export interface UserRolePreferenceAnalysis {
   mostPreferredRoleType: string;
   mostPreferredCount: number;
   analysis: string;
+}
+
+// 头像上传响应接口
+export interface AvatarUploadResponse {
+  avatarUrl: string;
+}
+
+// 文件选择器选项接口
+export interface FilePickerOptions {
+  type: Array<string>;
+  count?: number;
+}
+
+// 文件信息接口
+export interface FileInfo {
+  uri: string;
+  name: string;
+  size: number;
+  type: string;
 }

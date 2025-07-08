@@ -388,8 +388,8 @@ struct DynamicList {
 
   // 处理头像URL - 改为预览器样式
   getAvatarUrl(avatarUrl: string | undefined): Resource | string {
-    if (!avatarUrl || avatarUrl === '/avatars/default.png') {
-      return $r('app.media.image');
+    if (!avatarUrl || avatarUrl === '' || avatarUrl === '/avatars/default.png') {
+      return '';
     }
     
     // 处理头像URL - 如果是相对路径，拼接完整URL
@@ -398,6 +398,21 @@ struct DynamicList {
       const fullUrl = baseUrl + avatarUrl;
       console.log('👤 [DynamicList] 处理后的头像URL:', fullUrl);
       return fullUrl;
+    }
+    
+    return avatarUrl;
+  }
+
+  // 获取处理后的头像URL - 用于@Builder方法
+  getProcessedAvatarUrl(avatarUrl: string | undefined): string {
+    if (!avatarUrl || avatarUrl === '' || avatarUrl === '/avatars/default.png') {
+      return '';
+    }
+    
+    // 处理头像URL - 如果是相对路径，拼接完整URL
+    if (avatarUrl && avatarUrl.startsWith('/')) {
+      const baseUrl = Config.getApiBaseUrl().replace('/api', '');
+      return baseUrl + avatarUrl;
     }
     
     return avatarUrl;
@@ -618,13 +633,30 @@ struct DynamicList {
             .margin({ bottom: 20 })
 
             // 大尺寸头像显示
-            Image(this.currentAvatarUrl)
+            if (this.currentAvatarUrl && this.currentAvatarUrl !== '') {
+              Image(this.currentAvatarUrl)
+                .width(300)
+                .height(300)
+                .borderRadius(150)
+                .border({ width: 6, color: 'rgba(255,255,255,0.3)' })
+                .objectFit(ImageFit.Cover)
+                .margin({ bottom: 20 })
+            } else {
+              // 显示占位符
+              Column() {
+                Text('👤')
+                  .fontSize(80)
+                  .fontColor('rgba(255,255,255,0.5)')
+              }
               .width(300)
               .height(300)
               .borderRadius(150)
+              .backgroundColor('rgba(255,255,255,0.1)')
               .border({ width: 6, color: 'rgba(255,255,255,0.3)' })
-              .objectFit(ImageFit.Cover)
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center)
               .margin({ bottom: 20 })
+            }
 
             // 操作按钮
             Row() {
@@ -664,20 +696,33 @@ struct DynamicList {
         // 头像显示 - 像预览器一样显示
         Stack() {
           // 头像图片 - 大尺寸显示
-          Image(this.getAvatarUrl(dynamic.userAvatar))
+          if (dynamic.userAvatar && dynamic.userAvatar !== '' && dynamic.userAvatar !== '/avatars/default.png') {
+            Image(this.getProcessedAvatarUrl(dynamic.userAvatar))
+              .width(50)
+              .height(50)
+              .borderRadius(25)
+              .backgroundColor('rgba(255,255,255,0.1)')
+              .border({ width: 2, color: 'rgba(255,255,255,0.3)' })
+              .objectFit(ImageFit.Cover)
+              .onClick(() => {
+                // 点击头像显示查看器
+                this.showAvatarViewerDialog(this.getProcessedAvatarUrl(dynamic.userAvatar));
+              })
+          } else {
+            // 头像为空时显示占位符
+            Column() {
+              Text('👤')
+                .fontSize(20)
+                .fontColor('rgba(255,255,255,0.5)')
+            }
             .width(50)
             .height(50)
             .borderRadius(25)
             .backgroundColor('rgba(255,255,255,0.1)')
             .border({ width: 2, color: 'rgba(255,255,255,0.3)' })
-            .objectFit(ImageFit.Cover)
-            .onClick(() => {
-              // 点击头像显示查看器
-              const avatarUrl = this.getAvatarUrl(dynamic.userAvatar);
-              if (typeof avatarUrl === 'string') {
-                this.showAvatarViewerDialog(avatarUrl);
-              }
-            })
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center)
+          }
         }
         
         Column() {
@@ -730,11 +775,26 @@ struct DynamicList {
         Grid() {
           ForEach(dynamic.images, (image: string, index: number) => {
             GridItem() {
-              Image(image)
+              if (image && image !== '') {
+                Image(image)
+                  .width('100%')
+                  .height(120)
+                  .borderRadius(8)
+                  .objectFit(ImageFit.Cover)
+              } else {
+                // 图片为空时显示占位符
+                Column() {
+                  Text('🖼️')
+                    .fontSize(24)
+                    .fontColor('rgba(255,255,255,0.3)')
+                }
                 .width('100%')
                 .height(120)
+                .backgroundColor('rgba(255,255,255,0.05)')
                 .borderRadius(8)
-                .objectFit(ImageFit.Cover)
+                .justifyContent(FlexAlign.Center)
+                .alignItems(HorizontalAlign.Center)
+              }
             }
           })
         }
@@ -867,11 +927,26 @@ struct DynamicList {
             ForEach(this.publishImages, (image: string, index: number) => {
               GridItem() {
                 Stack() {
-                  Image(image)
+                  if (image && image !== '') {
+                    Image(image)
+                      .width('100%')
+                      .height(80)
+                      .borderRadius(8)
+                      .objectFit(ImageFit.Cover)
+                  } else {
+                    // 图片为空时显示占位符
+                    Column() {
+                      Text('🖼️')
+                        .fontSize(20)
+                        .fontColor('rgba(255,255,255,0.3)')
+                    }
                     .width('100%')
                     .height(80)
+                    .backgroundColor('rgba(255,255,255,0.05)')
                     .borderRadius(8)
-                    .objectFit(ImageFit.Cover)
+                    .justifyContent(FlexAlign.Center)
+                    .alignItems(HorizontalAlign.Center)
+                  }
                   
                   // 删除按钮
                   Button() {

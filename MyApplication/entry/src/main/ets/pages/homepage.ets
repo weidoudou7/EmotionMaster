@@ -187,12 +187,29 @@ export struct HomePage {
       Column() {
         // 用户信息行
         Row() {
-          Image(dynamic.userAvatar || '/common/media/default.png')
+          if (dynamic.userAvatar && dynamic.userAvatar !== '' && dynamic.userAvatar !== '/avatars/default.png') {
+            Image(dynamic.userAvatar)
+              .width(40)
+              .height(40)
+              .borderRadius(20)
+              .border({ width: 2, color: 'rgba(255, 255, 255, 0.2)' })
+              .margin({ right: 12 })
+          } else {
+            // 头像为空时显示占位符
+            Column() {
+              Text('👤')
+                .fontSize(16)
+                .fontColor('rgba(255,255,255,0.5)')
+            }
             .width(40)
             .height(40)
             .borderRadius(20)
+            .backgroundColor('rgba(255,255,255,0.1)')
             .border({ width: 2, color: 'rgba(255, 255, 255, 0.2)' })
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center)
             .margin({ right: 12 })
+          }
           
           Column() {
             Text(dynamic.userName || '匿名用户')
