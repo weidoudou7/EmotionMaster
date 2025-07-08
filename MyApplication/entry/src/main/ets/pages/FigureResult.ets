@@ -4,6 +4,7 @@ import http from '@ohos.net.http'
 import { ApiService } from '../service/apiservice'
 import { globalUserData } from '../models/userdata'
 import { getUserId } from '../common/constants'
+import { AiRole } from '../common/types'
 
 // 定义路由参数接口
 interface RouteParams {
@@ -177,35 +178,77 @@ struct FigureResultPage {
       this.showToast('正在保存AI角色...');
 
 
-      // 调用API保存AI角色到数据库
-      const newAiRole = await ApiService.createAiRole({
-        userId: getUserId() || undefined, // 如果全局用户ID为空，则不传递
-        roleName: generatedRoleName,
-        roleDescription: selectedDescription,
-        roleType: selectedStyle,
-        roleAuthor: globalUserData.userName || '用户',
-        avatarUrl: selectedImageUrl,
-        isTemplate: false
-      });
-
-      console.log('AI角色保存成功:', newAiRole);
-      console.log('新角色ID:', newAiRole.id);
-
-      // 显示成功提示
-      this.showToast('AI角色保存成功！');
-
-      // 跳转到聊天页面
-      router.pushUrl({
-        url: 'pages/chat',
-        params: {
-          figureImageUrl: selectedImageUrl,
-          figureType: selectedStyle,
-          figureName: generatedRoleName, // 使用生成的角色名称
-          isFromCreateFigure: true,
-          description: selectedDescription,
-          createdAiRoleId: newAiRole.id
+      // 调用API保存AI角色到数据库，如果重名则重试
+      let newAiRole: AiRole | null = null;
+      let retryCount: number = 0;
+      const maxRetries: number = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          newAiRole = await ApiService.createAiRole({
+            userId: getUserId() || undefined, // 如果全局用户ID为空，则不传递
+            roleName: generatedRoleName,
+            roleDescription: selectedDescription,
+            roleType: selectedStyle,
+            roleAuthor: globalUserData.userName || '用户',
+            avatarUrl: selectedImageUrl,
+            isTemplate: false
+          });
+          break; // 成功则跳出循环
+        } catch (createError) {
+          retryCount++;
+          console.error(`保存AI角色失败 (尝试 ${retryCount}/${maxRetries}):`, createError);
+          
+          // 检查是否是重名错误
+          if (createError instanceof Error && createError.message.includes('同名角色')) {
+            if (retryCount < maxRetries) {
+              // 重新生成角色名称
+              this.showToast(`角色名称重复，正在重新生成... (${retryCount}/${maxRetries})`);
+              try {
+                generatedRoleName = await ApiService.generateRoleName(selectedDescription + ' 独特版本');
+                console.log('重新生成的角色名称:', generatedRoleName);
+              } catch (nameError) {
+                console.error('重新生成角色名称失败:', nameError);
+                generatedRoleName = selectedStyle + retryCount; // 使用风格+数字作为备用名称
+              }
+            } else {
+              // 最后一次尝试，使用带数字的名称
+              generatedRoleName = selectedStyle + Date.now().toString().slice(-4);
+              this.showToast('使用备用名称保存...');
+            }
+          } else {
+            // 非重名错误，直接抛出
+            if (createError instanceof Error) {
+              throw createError;
+            } else {
+              throw new Error('保存AI角色时发生未知错误');
+            }
+          }
         }
-      });
+      }
+
+      if (newAiRole) {
+        console.log('AI角色保存成功:', newAiRole);
+        console.log('新角色ID:', newAiRole.id);
+
+        // 显示成功提示
+        this.showToast('AI角色保存成功！');
+
+        // 跳转到聊天页面
+        router.pushUrl({
+          url: 'pages/chat',
+          params: {
+            figureImageUrl: selectedImageUrl,
+            figureType: selectedStyle,
+            figureName: generatedRoleName, // 使用生成的角色名称
+            isFromCreateFigure: true,
+            description: selectedDescription,
+            createdAiRoleId: newAiRole.id
+          }
+        });
+      } else {
+        throw new Error('AI角色保存失败，返回数据为空');
+      }
 
     } catch (error) {
       console.error('保存AI角色失败:', error);

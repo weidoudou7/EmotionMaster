@@ -238,6 +238,15 @@ public interface AiRoleMapper {
         boolean existsByRoleName(@Param("roleName") String roleName, @Param("excludeId") Integer excludeId);
 
         /**
+         * 检查指定用户下角色名称是否存在
+         * 
+         * @param roleName 角色名称
+         * @param userId   用户ID
+         * @return 是否存在
+         */
+        boolean existsByRoleNameAndUserId(@Param("roleName") String roleName, @Param("userId") Integer userId);
+
+        /**
          * 根据多个ID查询角色
          * 
          * @param ids 角色ID列表

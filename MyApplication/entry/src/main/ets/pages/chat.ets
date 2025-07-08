@@ -160,6 +160,7 @@ export struct Chat {
   private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings)
 
   @State private isLoaded: boolean = false;
+  @State private arcRotation: number = 0; // 旋转角度，用于加载动画
 
   aboutToAppear() {
     console.log('当前环境:', this.isVirtualMachine() ? '虚拟机' : '真机');
@@ -247,8 +248,12 @@ export struct Chat {
     // 仅从导航栏进入时显示加载动画
     if (this.isFromNavBar) {
       this.isLoaded = false;
+      // 启动旋转动画
+      this.startLoadingAnimation();
       setTimeout(() => {
         this.isLoaded = true;
+        // 停止旋转动画
+        this.stopLoadingAnimation();
       }, 800);
     } else {
       this.isLoaded = true;
@@ -336,6 +341,22 @@ export struct Chat {
   aboutToDisappear() {
     // 清除动画循环
     clearInterval(this.animationId);
+    // 停止加载动画
+    this.stopLoadingAnimation();
+  }
+
+  // 启动加载动画
+  private startLoadingAnimation() {
+    // 启动旋转动画
+    setInterval(() => {
+      this.arcRotation += 6; // 每帧旋转6度
+    }, 50); // 每50ms更新一次
+  }
+
+  // 停止加载动画
+  private stopLoadingAnimation() {
+    // 重置旋转角度
+    this.arcRotation = 0;
   }
 
   // 新增：角色入场动画方法
@@ -868,11 +889,62 @@ export struct Chat {
   build() {
     Column() {
       if (!this.isLoaded) {
-        Blank(24)
-        Text('加载中...')
-          .fontSize(20)
-          .fontWeight(FontWeight.Bold)
-          .margin({ top: 32 })
+        // 仿照yourpage的加载界面样式
+        Stack() {
+          // 深色渐变背景
+          Column()
+            .width('100%')
+            .height('100%')
+            .linearGradient({
+              direction: GradientDirection.Bottom,
+              colors: [['#000000', 0.0], ['#0a0a0a', 0.5], ['#1a1a1a', 1.0]]
+            })
+          
+          // 加载内容
+          Column() {
+                         // 加载图标 - 旋转的圆环
+             Stack() {
+               // 外圈圆环
+               Column()
+                 .width(80)
+                 .height(80)
+                 .borderRadius(40)
+                 .border({ width: 3, color: 'rgba(255, 255, 255, 0.2)' })
+               
+               // 旋转的加载指示器
+               Column()
+                 .width(80)
+                 .height(80)
+                 .borderRadius(40)
+                 .border({ 
+                   width: 3, 
+                   color: 'rgba(255, 255, 255, 0.8)',
+                   style: BorderStyle.Solid
+                 })
+                 .rotate({ angle: this.arcRotation })
+             }
+            .margin({ bottom: 24 })
+            
+            // 加载文字
+            Text('正在连接...')
+              .fontSize(18)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#ffffff')
+              .opacity(0.8)
+              .margin({ bottom: 8 })
+            
+            Text('请稍候')
+              .fontSize(14)
+              .fontColor('rgba(255, 255, 255, 0.6)')
+          }
+          .width('100%')
+          .height('100%')
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
+        }
+        .width('100%')
+        .height('100%')
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
       } else {
         Stack() {
           // 全屏背景图片 (Z-index: 1) - 只在没有角色图片时显示

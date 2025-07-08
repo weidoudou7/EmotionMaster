@@ -79,9 +79,9 @@ public class AIRoleController {
                 return ApiResponse.error("角色头像URL不能为空");
             }
 
-            // 检查角色名称是否已存在
-            if (aiRoleMapper.existsByRoleName(request.getRoleName(), null)) {
-                return ApiResponse.error("角色名称已存在，请使用其他名称");
+            // 检查同一用户下角色名称是否已存在（只检查同一用户的重名）
+            if (request.getUserId() != null && aiRoleMapper.existsByRoleNameAndUserId(request.getRoleName(), request.getUserId())) {
+                return ApiResponse.error("您已创建过同名角色，请使用其他名称");
             }
 
             // 创建新的AI角色
@@ -163,7 +163,8 @@ public class AIRoleController {
                     "1. 名称长度控制在2-8个字符\n" +
                     "2. 体现角色的核心特点\n" +
                     "3. 具有创意性和独特性\n" +
-                    "4. 只返回名称，不要添加任何解释或标点符号";
+                    "4. 避免常见的通用名称，尽量使用独特的词汇组合\n" +
+                    "5. 只返回名称，不要添加任何解释或标点符号";
 
             String userPrompt = "请为以下角色描述生成一个合适的名称：\n" + description;
 
