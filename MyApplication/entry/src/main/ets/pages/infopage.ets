@@ -67,7 +67,7 @@ export struct InfoPage {
     console.log('🖼️ [infopage] 开始更新头像显示');
     console.log('🖼️ [infopage] 原始头像URL:', avatarUrl);
     
-    if (avatarUrl && avatarUrl !== '/avatars/default.png' && avatarUrl !== '') {
+    if (avatarUrl && avatarUrl !== '' && avatarUrl !== '/avatars/default.png') {
       // 如果有后端头像，使用后端头像
       let processedAvatarUrl = avatarUrl;
       
@@ -81,9 +81,9 @@ export struct InfoPage {
       this.userAvatar = processedAvatarUrl;
       console.log('🖼️ [infopage] 头像更新成功');
     } else {
-      // 使用默认头像
-      this.userAvatar = $r("app.media.image");
-      console.log('🖼️ [infopage] 使用默认头像');
+      // 不显示默认头像，设置为空字符串
+      this.userAvatar = '';
+      console.log('🖼️ [infopage] 头像为空，不显示默认头像');
     }
   }
 
@@ -358,24 +358,52 @@ export struct InfoPage {
               // 头像显示区域 - 像预览器一样显示
               Stack() {
                 // 头像图片 - 大尺寸显示
-                Image(this.userAvatar)
+                if (this.userAvatar && this.userAvatar !== '') {
+                  Image(this.userAvatar)
+                    .width(200)
+                    .height(200)
+                    .borderRadius(100)
+                    .border({ width: 4, color: 'rgba(255,255,255,0.3)' })
+                    .scale({ x: this.avatarScale, y: this.avatarScale })
+                    .animation({
+                      duration: 120,
+                      curve: Curve.EaseInOut
+                    })
+                    .objectFit(ImageFit.Cover)
+                    .onClick(() => {
+                      this.avatarScale = 0.95;
+                      setTimeout(() => {
+                        this.avatarScale = 1.0;
+                        this.showAvatarViewerDialog();
+                      }, 120);
+                    })
+                } else {
+                  // 头像为空时显示占位符
+                  Column() {
+                    Text('👤')
+                      .fontSize(80)
+                      .fontColor('rgba(255,255,255,0.5)')
+                  }
                   .width(200)
                   .height(200)
                   .borderRadius(100)
+                  .backgroundColor('rgba(255,255,255,0.1)')
                   .border({ width: 4, color: 'rgba(255,255,255,0.3)' })
+                  .justifyContent(FlexAlign.Center)
+                  .alignItems(HorizontalAlign.Center)
                   .scale({ x: this.avatarScale, y: this.avatarScale })
                   .animation({
                     duration: 120,
                     curve: Curve.EaseInOut
                   })
-                  .objectFit(ImageFit.Cover)
                   .onClick(() => {
                     this.avatarScale = 0.95;
                     setTimeout(() => {
                       this.avatarScale = 1.0;
-                      this.showAvatarViewerDialog();
+                      this.generatePreviewAvatar();
                     }, 120);
                   })
+                }
 
                 // 加载状态遮罩
                 if (this.isAvatarLoading) {
@@ -597,13 +625,30 @@ export struct InfoPage {
             .margin({ bottom: 20 })
 
             // 大尺寸头像显示
-            Image(this.userAvatar)
+            if (this.userAvatar && this.userAvatar !== '') {
+              Image(this.userAvatar)
+                .width(300)
+                .height(300)
+                .borderRadius(150)
+                .border({ width: 6, color: 'rgba(255,255,255,0.3)' })
+                .objectFit(ImageFit.Cover)
+                .margin({ bottom: 20 })
+            } else {
+              // 头像为空时显示占位符
+              Column() {
+                Text('👤')
+                  .fontSize(120)
+                  .fontColor('rgba(255,255,255,0.5)')
+              }
               .width(300)
               .height(300)
               .borderRadius(150)
+              .backgroundColor('rgba(255,255,255,0.1)')
               .border({ width: 6, color: 'rgba(255,255,255,0.3)' })
-              .objectFit(ImageFit.Cover)
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center)
               .margin({ bottom: 20 })
+            }
 
             // 操作按钮
             Row() {
