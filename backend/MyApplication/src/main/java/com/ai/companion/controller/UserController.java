@@ -7,12 +7,15 @@ import com.ai.companion.entity.vo.UserStatsVO;
 import com.ai.companion.entity.vo.AvatarUploadRequest;
 import com.ai.companion.entity.vo.PreviewAvatarResponse;
 import com.ai.companion.service.UserService;
+import com.ai.companion.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.ai.companion.entity.User;
-
+import com.ai.companion.service.OssService;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -21,6 +24,8 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final OssService ossService;
+    private final UserMapper userMapper;
 
     /**
      * 获取用户信息
@@ -395,6 +400,91 @@ public class UserController {
         }else{
             return null;
         }
+    }
+
+    /**
+     * 简单头像上传 - 支持base64数据
+     */
+    @PostMapping("/{userUID}/avatar/simple")
+    public ApiResponse<String> uploadAvatarSimple(
+            @PathVariable String userUID,
+            @RequestBody(required = false) Map<String, Object> requestBody,
+            @RequestParam(value = "file", required = false) MultipartFile file) {
+        try {
+            System.out.println("📸 [UserController] 简单头像上传开始");
+            System.out.println("📸 [UserController] 用户UID: " + userUID);
+            
+            String avatarUrl;
+            
+            if (file != null && !file.isEmpty()) {
+                // 处理文件上传
+                System.out.println("📸 [UserController] 处理文件上传");
+                System.out.println("📸 [UserController] 文件名: " + file.getOriginalFilename());
+                System.out.println("📸 [UserController] 文件大小: " + file.getSize() + " 字节");
+                
+                // 检查文件类型
+                String contentType = file.getContentType();
+                if (contentType == null || !contentType.startsWith("image/")) {
+                    return ApiResponse.error("只支持图片文件上传");
+                }
+                
+                // 生成OSS对象名称
+                String extension = getFileExtension(file.getOriginalFilename());
+                String objectName = "avatars/" + userUID + "/" + System.currentTimeMillis() + extension;
+                
+                System.out.println("📸 [UserController] OSS对象名称: " + objectName);
+                
+                // 上传到OSS
+                avatarUrl = ossService.uploadBytes(file.getBytes(), objectName, contentType);
+                
+            } else if (requestBody != null && requestBody.containsKey("imageData")) {
+                // 处理base64数据
+                System.out.println("📸 [UserController] 处理base64数据上传");
+                String imageData = (String) requestBody.get("imageData");
+                String fileName = (String) requestBody.getOrDefault("fileName", "avatar.jpg");
+                
+                System.out.println("📸 [UserController] 图片数据长度: " + imageData.length());
+                System.out.println("📸 [UserController] 文件名: " + fileName);
+                
+                // 使用UserService的base64上传方法
+                avatarUrl = userService.uploadAvatarBase64(userUID, imageData);
+                
+            } else {
+                return ApiResponse.error("缺少上传数据");
+            }
+            
+            System.out.println("📸 [UserController] OSS上传成功，URL: " + avatarUrl);
+            
+            // 更新用户头像信息
+            User user = userMapper.selectByUID(userUID);
+            if (user != null) {
+                user.setUserAvatar(avatarUrl);
+                user.setUpdateTime(LocalDateTime.now());
+                userMapper.updateUser(user);
+                System.out.println("📸 [UserController] 用户头像信息已更新");
+            }
+            
+            return ApiResponse.success(avatarUrl);
+            
+        } catch (Exception e) {
+            System.err.println("❌ [UserController] 简单头像上传失败: " + e.getMessage());
+            e.printStackTrace();
+            return ApiResponse.error("头像上传失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取文件扩展名
+     */
+    private String getFileExtension(String fileName) {
+        if (fileName == null || fileName.isEmpty()) {
+            return ".jpg";
+        }
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            return fileName.substring(lastDotIndex);
+        }
+        return ".jpg";
     }
 
 } 

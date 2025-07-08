@@ -2,6 +2,7 @@
 import http from '@ohos.net.http';
 import fs from '@ohos.file.fs';
 import { Config } from '../common/config';
+import { AvatarUploadRequest, AvatarUploadResponse } from '../common/types';
 
 // 定义接口
 interface OSSConfig {
@@ -278,14 +279,20 @@ export class OSSService {
       const fileContent = await this.readFileAsBase64(filePath);
       console.log('☁️ [OSS] 文件读取成功，大小:', fileContent.length, '字符');
 
-      // 构建请求数据
+      // 构建请求数据 - 使用B目录中稳定运行的格式
       const requestData: OSSRequestData = {
         userId: userId,
         imageData: fileContent,
         fileName: this.generateFileName(filePath)
       };
 
-      // 调用后端API
+      console.log('☁️ [OSS] 请求数据格式:', JSON.stringify({
+        userId: userId,
+        imageData: fileContent.substring(0, 100) + '...', // 只显示前100个字符用于调试
+        fileName: this.generateFileName(filePath)
+      }));
+
+      // 调用后端API - 使用B目录中的端点
       const httpRequest = http.createHttp();
       const backendHeader: OSSBackendHeader = {
         'Content-Type': 'application/json'
@@ -306,8 +313,17 @@ export class OSSService {
       if (response.responseCode === 200) {
         const resultString: string = response.result as string;
         const result: BackendOSSResponse = JSON.parse(resultString);
-        console.log('☁️ [OSS] 上传成功，OSS URL:', result.data?.ossUrl);
-        return result.data?.ossUrl ?? '';
+        console.log('☁️ [OSS] 后端响应:', resultString);
+        console.log('☁️ [OSS] 解析后的响应:', result);
+        
+        // B目录中的响应格式：result.data.ossUrl
+        if (result.success && result.data && result.data.ossUrl) {
+          console.log('☁️ [OSS] 上传成功，OSS URL:', result.data.ossUrl);
+          return result.data.ossUrl;
+        } else {
+          console.error('☁️ [OSS] 后端返回失败:', result.message);
+          throw new Error(`后端返回失败: ${result.message}`);
+        }
       } else {
         console.error('☁️ [OSS] 后端API上传失败，状态码:', response.responseCode);
         console.error('☁️ [OSS] 响应内容:', response.result);

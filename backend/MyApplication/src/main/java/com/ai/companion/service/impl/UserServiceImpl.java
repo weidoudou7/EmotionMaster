@@ -161,31 +161,43 @@ public class UserServiceImpl implements UserService {
             System.out.println("🖼️ [UserService] 用户UID: " + userUID);
             System.out.println("🖼️ [UserService] 图片数据长度: " + imageData.length());
             
-            // 解析base64数据
-            String[] parts = imageData.split(",");
-            if (parts.length != 2) {
-                throw new RuntimeException("无效的base64图片数据格式");
-            }
-
-            String header = parts[0];
-            String base64Data = parts[1];
-
-            System.out.println("🖼️ [UserService] Base64头部信息: " + header);
-            System.out.println("🖼️ [UserService] Base64数据长度: " + base64Data.length());
-
-            // 确定文件扩展名和内容类型
+            // 解析base64数据 - 支持两种格式
+            String base64Data;
             String extension = ".jpg"; // 默认扩展名
             String contentType = "image/jpeg"; // 默认内容类型
-            if (header.contains("image/png")) {
-                extension = ".png";
-                contentType = "image/png";
-            } else if (header.contains("image/gif")) {
-                extension = ".gif";
-                contentType = "image/gif";
-            } else if (header.contains("image/webp")) {
-                extension = ".webp";
-                contentType = "image/webp";
+            
+            if (imageData.contains(",")) {
+                // 格式: data:image/jpeg;base64,/9j/4AAQ...
+                String[] parts = imageData.split(",");
+                if (parts.length != 2) {
+                    throw new RuntimeException("无效的base64图片数据格式");
+                }
+
+                String header = parts[0];
+                base64Data = parts[1];
+
+                System.out.println("🖼️ [UserService] Base64头部信息: " + header);
+                
+                // 确定文件扩展名和内容类型
+                if (header.contains("image/png")) {
+                    extension = ".png";
+                    contentType = "image/png";
+                } else if (header.contains("image/gif")) {
+                    extension = ".gif";
+                    contentType = "image/gif";
+                } else if (header.contains("image/webp")) {
+                    extension = ".webp";
+                    contentType = "image/webp";
+                }
+            } else {
+                // 格式: 纯base64数据
+                base64Data = imageData;
+                System.out.println("🖼️ [UserService] 检测到纯base64数据格式");
             }
+
+            System.out.println("🖼️ [UserService] Base64数据长度: " + base64Data.length());
+            System.out.println("🖼️ [UserService] 检测到的文件扩展名: " + extension);
+            System.out.println("🖼️ [UserService] 内容类型: " + contentType);
 
             System.out.println("🖼️ [UserService] 检测到的文件扩展名: " + extension);
             System.out.println("🖼️ [UserService] 内容类型: " + contentType);
