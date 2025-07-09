@@ -1061,15 +1061,15 @@ export struct Chat {
                   router.pushUrl({
                     url: 'pages/chatComment',
                     params: {
-                      aiRoleId: 311, //TODO : 实际为该界面对应的角色id
+                      aiRoleId: this.createdAiRoleId, //TODO : 实际为该界面对应的角色id
                       aiRoleName: this.agentName,
                       aiRoleAvatar: this.agentAvatar,
                       aiRoleType: this.figureType || 'default',
                       aiRoleDescription: this.description || '',
-                      currentUserId: 405 // TODO:实际应从用户数据获取
+                      currentUserId: getUserId() // TODO:实际应从用户数据获取
                     }
                   });
-                  console.log('跳转到评论页面，AI角色ID:', 311, '名称:', this.agentName);
+                  console.log('跳转到评论页面，AI角色ID:', this.createdAiRoleId, '名称:', this.agentName,'用户id:',getUserId());
                 })
 
                 Blank() // 占据剩余空间，将右侧按钮推到最右边

@@ -238,9 +238,10 @@
                     v-model="editRoleData.roleType"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   >
-                    <option value="system">系统预设</option>
-                    <option value="custom">自定义</option>
-                    <option value="community">社区分享</option>
+                    <option value="dongman">动漫</option>
+                    <option value="keai">可爱</option>
+                    <option value="kehuan">科幻</option>
+                    <option value="xieshi">写实</option>
                   </select>
                 </div>
                 
@@ -391,9 +392,9 @@ export default {
         console.error('获取角色失败:', e)
         // 使用模拟数据
         this.roles = [
-          {id: 1, roleName: '智能助理', roleAuthor: '系统', roleType: 'system', viewCount: 100, createdAt: '2024-01-01', roleDescription: '智能对话助手', avatarUrl: '', isTemplate: true, userId: null},
-          {id: 2, roleName: '社区小助手', roleAuthor: '张三', roleType: 'community', viewCount: 50, createdAt: '2024-02-01', roleDescription: '社区管理助手', avatarUrl: '', isTemplate: false, userId: 1},
-          {id: 3, roleName: '学习导师', roleAuthor: '李四', roleType: 'custom', viewCount: 80, createdAt: '2024-03-01', roleDescription: '专业学习指导', avatarUrl: '', isTemplate: true, userId: 2}
+          {id: 1, roleName: '智能助理', roleAuthor: '系统', roleType: 'xieshi', viewCount: 100, createdAt: '2024-01-01', roleDescription: '智能对话助手', avatarUrl: '', isTemplate: true, userId: null},
+          {id: 2, roleName: '社区小助手', roleAuthor: '张三', roleType: 'xieshi', viewCount: 50, createdAt: '2024-02-01', roleDescription: '社区管理助手', avatarUrl: '', isTemplate: false, userId: 1},
+          {id: 3, roleName: '学习导师', roleAuthor: '李四', roleType: 'xieshi', viewCount: 80, createdAt: '2024-03-01', roleDescription: '专业学习指导', avatarUrl: '', isTemplate: true, userId: 2}
         ]
       }
     },
@@ -548,9 +549,10 @@ export default {
     // 获取角色类型文本
     getRoleTypeText(type) {
       const typeMap = {
-        'system': '系统预设',
-        'custom': '自定义',
-        'community': '社区分享'
+        'dongman': '动漫',
+        'keai': '可爱',
+        'kehuan': '科幻',
+        'xieshi':'写实'
       }
       return typeMap[type] || type
     },
@@ -558,9 +560,10 @@ export default {
     // 获取角色类型颜色类
     getRoleTypeClass(type) {
       const classMap = {
-        'system': 'bg-blue-100 text-blue-700',
-        'custom': 'bg-green-100 text-green-700',
-        'community': 'bg-purple-100 text-purple-700'
+        '动漫': 'bg-blue-100 text-blue-700',
+        '可爱': 'bg-green-100 text-green-700',
+        '科幻': 'bg-purple-100 text-purple-700',
+        '写实':'bg-yellow-100 text-yellow-700'
       }
       return classMap[type] || 'bg-gray-100 text-gray-600'
     },

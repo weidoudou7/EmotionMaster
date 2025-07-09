@@ -105,7 +105,7 @@ struct EmailConfirmPage {
           promptAction.showToast({ message: '登录成功，欢迎回来！' });
           
           // 跳转到主页面
-          router.push({ url: 'pages/BottomNavBar' });
+          router.pushUrl({ url: 'pages/BottomNavBar' });
         } catch (userError) {
           console.error('用户创建或登录失败:', userError);
           console.error('错误详情:', JSON.stringify(userError));
